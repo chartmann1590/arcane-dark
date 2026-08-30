@@ -9,6 +9,7 @@ import '../../domain/map/tile_types.dart' as m;
 import '../../providers/campaign_provider.dart';
 import '../../providers/character_provider.dart';
 import '../../domain/campaign_seed.dart';
+import '../../services/audio_service.dart';
 
 class GamePlayScreen extends ConsumerStatefulWidget {
   const GamePlayScreen({super.key});
@@ -45,6 +46,7 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
 
   Future<void> _send(String text) async {
     if (text.trim().isEmpty || _isGenerating) return;
+    AudioService.instance.playSend();
     final campaign = ref.read(campaignProvider);
     setState(() {
       chat.add({'role': 'player', 'text': text});
@@ -80,6 +82,7 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
             setState(() => _streamingText += chunk);
           },
         );
+        if (result.dice != null) AudioService.instance.playDiceRoll();
         setState(() {
           chat.add({'role': 'dm', 'text': result.narration, 'roll': result.dice != null ? '${result.dice!.total}' : ''});
           _isGenerating = false;
@@ -88,6 +91,7 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
         });
       }
     } catch (e) {
+      AudioService.instance.playError();
       if (!mounted) return;
       setState(() {
         chat.add({'role': 'dm', 'text': 'The Dungeon Master falls silent for a moment... (${_friendlyError(e)})'});
@@ -178,44 +182,42 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
                   final tile = _dungeon.tileAt(x, y);
                   final isPlayer = playerPos.x == x && playerPos.y == y;
                   final isVisited = visited.contains('$x,$y');
-                  final isRoomCenter = _dungeon.rooms.any((r) => r.centerX == x && r.centerY == y);
 
-                  Color bg;
-                  IconData? icon;
-                  switch (tile) {
-                    case m.TileType.wall:
-                      bg = const Color(0xFF1A1826);
-                      break;
-                    case m.TileType.floor:
-                      bg = isVisited ? const Color(0xFF2A2840) : const Color(0xFF1F1D2E);
-                      if (isRoomCenter) icon = Icons.circle_rounded;
-                      break;
-                    case m.TileType.door:
-                      bg = ArcaneTheme.secondary.withOpacity(0.35);
-                      icon = Icons.door_front_door_rounded;
-                      break;
-                    default:
-                      bg = const Color(0xFF1B2A22);
-                  }
+                  final tileAsset = switch (tile) {
+                    m.TileType.wall => 'assets/tiles/wall.png',
+                    m.TileType.floor => 'assets/tiles/floor.png',
+                    m.TileType.door => 'assets/tiles/door.png',
+                    m.TileType.water => 'assets/tiles/water.png',
+                    m.TileType.forest => 'assets/tiles/forest.png',
+                    m.TileType.mountain => 'assets/tiles/mountain.png',
+                    m.TileType.plains => 'assets/tiles/plains.png',
+                  };
 
-                  return Container(
-                    decoration: BoxDecoration(
-                      color: bg,
-                      borderRadius: BorderRadius.circular(3),
-                      border: isPlayer ? Border.all(color: ArcaneTheme.primary, width: 1.5) : null,
-                      boxShadow: isPlayer ? [BoxShadow(color: ArcaneTheme.primary.withOpacity(0.4), blurRadius: 6)] : null,
-                    ),
-                    child: Stack(alignment: Alignment.center, children: [
-                      if (icon != null) Icon(icon, size: 10, color: ArcaneTheme.secondary.withOpacity(0.8)),
+                  // Walls/doors/water always render (you can see the dungeon's shape from
+                  // a lit room), but floor tiles you haven't stepped into stay hidden —
+                  // this is what actually creates the "exploring fog of war" feel.
+                  final canFog = tile == m.TileType.floor;
+
+                  return ClipRRect(
+                    borderRadius: BorderRadius.circular(3),
+                    child: Stack(alignment: Alignment.center, fit: StackFit.expand, children: [
+                      Image.asset(tileAsset, fit: BoxFit.cover),
+                      if (canFog && !isVisited)
+                        Container(color: Colors.black)
+                      else if (canFog && isVisited && !isPlayer)
+                        Container(color: Colors.black.withOpacity(0.38))
+                      else if (!canFog)
+                        Container(color: Colors.black.withOpacity(0.15)),
                       if (isPlayer)
-                        Container(
-                          width: 18,
-                          height: 18,
-                          decoration: BoxDecoration(color: ArcaneTheme.primary, shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 1.5)),
-                          child: const Icon(Icons.person_rounded, size: 12, color: Colors.white),
-                        )
-                      else if (!isVisited && tile == m.TileType.floor)
-                        Container(color: Colors.black.withOpacity(0.35)),
+                        DecoratedBox(
+                          decoration: BoxDecoration(border: Border.all(color: ArcaneTheme.primary, width: 1.5), boxShadow: [BoxShadow(color: ArcaneTheme.primary.withOpacity(0.5), blurRadius: 8)]),
+                          child: Container(
+                            width: 18,
+                            height: 18,
+                            decoration: BoxDecoration(color: ArcaneTheme.primary, shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 1.5)),
+                            child: const Icon(Icons.person_rounded, size: 12, color: Colors.white),
+                          ),
+                        ),
                     ]),
                   );
                 },

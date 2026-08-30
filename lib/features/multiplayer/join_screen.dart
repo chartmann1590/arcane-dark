@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../app/theme.dart';
+import '../../services/audio_service.dart';
 
 class JoinScreen extends StatefulWidget {
   const JoinScreen({super.key});
@@ -16,10 +17,12 @@ class _JoinScreenState extends State<JoinScreen> {
   void _join() {
     final code = _codeCtrl.text.trim().toUpperCase();
     if (code.length != 6) {
+      AudioService.instance.playError();
       setState(() => _error = 'Enter a 6-character code (e.g. A7K9P2)');
       return;
     }
     setState(() => _error = null);
+    AudioService.instance.playSuccess();
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Joining party $code...', style: GoogleFonts.manrope()), backgroundColor: ArcaneTheme.primary));
     Future.delayed(const Duration(milliseconds: 700), () {
       if (mounted) context.go('/party');

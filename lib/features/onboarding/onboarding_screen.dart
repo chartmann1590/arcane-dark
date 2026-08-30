@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../app/theme.dart';
 import '../../providers/settings_provider.dart';
+import '../../services/audio_service.dart';
 import '../../services/model_download_manager.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
@@ -17,6 +18,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   bool downloading = false;
   bool done = false;
   String? error;
+
+  @override
+  void initState() {
+    super.initState();
+    AudioService.instance.playMusic(MusicTrack.tavern);
+  }
 
   Future<void> _skip() async {
     await ref.read(settingsProvider.notifier).setOnboardingSkipped(true);

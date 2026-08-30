@@ -75,6 +75,31 @@ class SettingsScreen extends ConsumerWidget {
             ]),
           ),
           const SizedBox(height: 18),
+          Text('AUDIO', style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.1, color: ArcaneTheme.textMuted)),
+          const SizedBox(height: 10),
+          Container(
+            decoration: ArcaneTheme.cardDecoration(),
+            child: Column(children: [
+              SwitchListTile(
+                value: settings.musicEnabled,
+                onChanged: (v) => ref.read(settingsProvider.notifier).setMusicEnabled(v),
+                activeThumbColor: ArcaneTheme.primary,
+                secondary: Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: ArcaneTheme.primary.withOpacity(0.15), borderRadius: BorderRadius.circular(8)), child: const Icon(Icons.music_note_rounded, color: ArcaneTheme.primary, size: 18)),
+                title: Text('Music', style: GoogleFonts.manrope(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
+                subtitle: Text('Ambient tavern & dungeon music', style: GoogleFonts.manrope(fontSize: 12, color: ArcaneTheme.textMuted)),
+              ),
+              const Divider(height: 1),
+              SwitchListTile(
+                value: settings.sfxEnabled,
+                onChanged: (v) => ref.read(settingsProvider.notifier).setSfxEnabled(v),
+                activeThumbColor: ArcaneTheme.primary,
+                secondary: Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: ArcaneTheme.secondary.withOpacity(0.15), borderRadius: BorderRadius.circular(8)), child: const Icon(Icons.graphic_eq_rounded, color: ArcaneTheme.secondary, size: 18)),
+                title: Text('Sound Effects', style: GoogleFonts.manrope(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
+                subtitle: Text('Dice rolls, taps, and notifications', style: GoogleFonts.manrope(fontSize: 12, color: ArcaneTheme.textMuted)),
+              ),
+            ]),
+          ),
+          const SizedBox(height: 18),
           Text('DIAGNOSTICS', style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.1, color: ArcaneTheme.textMuted)),
           const SizedBox(height: 10),
           Container(

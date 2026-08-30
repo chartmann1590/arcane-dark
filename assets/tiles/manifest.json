@@ -1,1 +1,9 @@
-{ "tiles": ["wall","floor","door","water","forest","mountain","plains"], "sprites": {} }
+{ "tiles": ["wall","floor","door","water","forest","mountain","plains"], "sprites": {
+  "wall": "assets/tiles/wall.png",
+  "floor": "assets/tiles/floor.png",
+  "door": "assets/tiles/door.png",
+  "water": "assets/tiles/water.png",
+  "forest": "assets/tiles/forest.png",
+  "mountain": "assets/tiles/mountain.png",
+  "plains": "assets/tiles/plains.png"
+} }

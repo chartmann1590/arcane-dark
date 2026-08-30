@@ -27,18 +27,9 @@ class AppearanceStep extends ConsumerWidget {
         ),
         const SizedBox(height: 16),
         AvatarBuilderWidget(
+          race: draft.race,
           config: draft.avatar,
           onChanged: (c) => ref.read(characterDraftProvider.notifier).setAvatar(c),
-        ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(color: ArcaneTheme.secondary.withOpacity(0.08), borderRadius: BorderRadius.circular(12), border: Border.all(color: ArcaneTheme.secondary.withOpacity(0.2))),
-          child: Row(children: [
-            const Icon(Icons.palette_rounded, color: ArcaneTheme.secondary, size: 18),
-            const SizedBox(width: 8),
-            Expanded(child: Text('Layered avatar — swap any layer instantly. Final art from Phase 07 will drop in via manifest with zero code changes.', style: GoogleFonts.manrope(fontSize: 11, color: ArcaneTheme.textSecondary))),
-          ]),
         ),
       ],
     );

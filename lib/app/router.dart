@@ -9,6 +9,7 @@ import '../features/settings/settings_screen.dart';
 import '../features/onboarding/onboarding_screen.dart';
 import '../features/settings/privacy_policy_screen.dart';
 import '../services/ad_service.dart';
+import '../services/audio_service.dart';
 import 'theme.dart';
 
 class ScaffoldWithNav extends StatelessWidget {
@@ -22,7 +23,16 @@ class ScaffoldWithNav extends StatelessWidget {
     // narration/gameplay, both for UX and because AdMob policy prohibits
     // placements likely to cause accidental taps over interactive content.
     final showBanner = currentIndex != 2;
+    // Dungeon ambience while adventuring, tavern ambience everywhere else in
+    // the shell. playMusic() no-ops if this track is already playing, so it's
+    // safe to call on every rebuild rather than needing a StatefulWidget.
+    AudioService.instance.playMusic(currentIndex == 2 ? MusicTrack.dungeon : MusicTrack.tavern);
     return Scaffold(
+      // Each tab's own screen (e.g. GamePlayScreen) has its own nested Scaffold
+      // and handles keyboard resizing itself. Letting this outer shell Scaffold
+      // resize too double-subtracts the keyboard inset and overflows fixed-height
+      // layouts (e.g. Play's map viewport) by the keyboard's height difference.
+      resizeToAvoidBottomInset: false,
       body: child,
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
@@ -49,6 +59,7 @@ class _NavBar extends StatelessWidget {
     return BottomNavigationBar(
           currentIndex: currentIndex,
           onTap: (i) {
+            AudioService.instance.playTap();
             switch (i) {
               case 0:
                 context.go('/home');

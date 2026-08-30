@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../app/theme.dart';
 import '../../../providers/character_provider.dart';
 import '../../../services/ad_service.dart';
+import '../../../services/audio_service.dart';
 
 class ReviewStep extends ConsumerWidget {
   const ReviewStep({super.key});
@@ -21,7 +22,7 @@ class ReviewStep extends ConsumerWidget {
           decoration: ArcaneTheme.cardDecoration(goldBorder: true),
           padding: const EdgeInsets.all(16),
           child: Column(children: [
-            CircleAvatar(radius: 36, backgroundColor: ArcaneTheme.primary.withOpacity(0.15), child: Text(draft.name.isEmpty ? '?' : draft.name[0].toUpperCase(), style: GoogleFonts.playfairDisplay(fontSize: 28, fontWeight: FontWeight.w800, color: ArcaneTheme.primary))),
+            CircleAvatar(radius: 36, backgroundColor: ArcaneTheme.primary.withOpacity(0.15), backgroundImage: AssetImage('assets/avatar/portraits/${draft.race.name}.png')),
             const SizedBox(height: 12),
             Text(draft.name.isEmpty ? 'Unnamed Hero' : draft.name, style: GoogleFonts.playfairDisplay(fontSize: 20, fontWeight: FontWeight.w800, color: Colors.white)),
             Text('${draft.race.label} • ${draft.charClass.label} • ${draft.background.label}', style: GoogleFonts.manrope(fontSize: 12, color: ArcaneTheme.textSecondary)),
@@ -62,6 +63,7 @@ class ReviewStep extends ConsumerWidget {
               final char = draft.toCharacter();
               await ref.read(savedCharactersProvider.notifier).add(char);
               ref.read(characterDraftProvider.notifier).reset();
+              AudioService.instance.playSuccess();
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${char.name} created — ready for adventure!', style: GoogleFonts.manrope()), backgroundColor: ArcaneTheme.primary));
                 context.go('/home');

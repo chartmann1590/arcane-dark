@@ -6,16 +6,23 @@ import 'app/router.dart';
 import 'data/local/app_database.dart';
 import 'providers/settings_provider.dart';
 import 'services/ad_service.dart';
+import 'services/audio_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // Phase 01 acceptance: Drift DB opens without error (stub)
   await AppDatabase().open();
   // Warm SharedPreferences so first frame has settings
-  await SharedPreferences.getInstance();
+  final prefs = await SharedPreferences.getInstance();
   final showOnboarding = await shouldShowOnboardingOnLaunch();
   await initializeAds();
   InterstitialAdManager.instance.preload();
+  // Init before the first screen mounts so playMusic() calls in onboarding/router
+  // never briefly play at the AudioPlayer's un-configured default volume.
+  await AudioService.instance.init(
+    musicEnabled: prefs.getBool('musicEnabled') ?? true,
+    sfxEnabled: prefs.getBool('sfxEnabled') ?? true,
+  );
   runApp(ProviderScope(child: MyApp(initialLocation: showOnboarding ? '/onboarding' : '/home')));
 }
 

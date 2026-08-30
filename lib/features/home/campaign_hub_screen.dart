@@ -6,6 +6,8 @@ import '../../app/theme.dart';
 import '../../providers/campaign_provider.dart';
 import '../../providers/character_provider.dart';
 import '../../domain/campaign_seed.dart';
+import '../../domain/campaign_state.dart';
+import '../../domain/character.dart';
 import '../../services/ad_service.dart';
 
 class CampaignHubScreen extends ConsumerWidget {
@@ -52,8 +54,8 @@ class CampaignHubScreen extends ConsumerWidget {
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(color: ArcaneTheme.secondary.withOpacity(0.4)),
-                              image: const DecorationImage(
-                                image: NetworkImage('https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=200'),
+                              image: DecorationImage(
+                                image: AssetImage('assets/avatar/portraits/${_leaderRace(campaign, chars)}.png'),
                                 fit: BoxFit.cover,
                               ),
                             ),
@@ -236,6 +238,15 @@ class CampaignHubScreen extends ConsumerWidget {
       ),
     );
   }
+}
+
+String _leaderRace(CampaignState campaign, List<Character> chars) {
+  if (campaign.party.isEmpty) return Race.human.name;
+  final leaderId = campaign.party.first.characterId;
+  for (final c in chars) {
+    if (c.id == leaderId) return c.race.name;
+  }
+  return Race.human.name;
 }
 
 class _ActionCard extends StatelessWidget {
