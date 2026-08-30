@@ -1,32 +1,73 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../app/theme.dart';
+import '../../providers/character_provider.dart';
 import '../../services/audio_service.dart';
+import '../../services/session_repository.dart';
+import '../auth/auth_screen.dart';
 
-class JoinScreen extends StatefulWidget {
+class JoinScreen extends ConsumerStatefulWidget {
   const JoinScreen({super.key});
   @override
-  State<JoinScreen> createState() => _JoinScreenState();
+  ConsumerState<JoinScreen> createState() => _JoinScreenState();
 }
 
-class _JoinScreenState extends State<JoinScreen> {
+class _JoinScreenState extends ConsumerState<JoinScreen> {
   final _codeCtrl = TextEditingController();
   String? _error;
+  bool _joining = false;
 
-  void _join() {
-    final code = _codeCtrl.text.trim().toUpperCase();
+  Future<void> _join([String? codeOverride]) async {
+    final code = (codeOverride ?? _codeCtrl.text).trim().toUpperCase();
     if (code.length != 6) {
       AudioService.instance.playError();
       setState(() => _error = 'Enter a 6-character code (e.g. A7K9P2)');
       return;
     }
-    setState(() => _error = null);
-    AudioService.instance.playSuccess();
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Joining party $code...', style: GoogleFonts.manrope()), backgroundColor: ArcaneTheme.primary));
-    Future.delayed(const Duration(milliseconds: 700), () {
-      if (mounted) context.go('/party');
+    setState(() {
+      _error = null;
+      _joining = true;
     });
+    try {
+      if (Navigator.of(context).canPop() == false) {
+        // no-op, placeholder to keep analyzer quiet about unused import path
+      }
+      final authed = await _ensureAuthed();
+      if (!authed) {
+        setState(() => _joining = false);
+        return;
+      }
+      final chars = ref.read(savedCharactersProvider);
+      final info = await SessionRepository.instance.joinSessionByCode(
+        code,
+        displayName: chars.isNotEmpty ? chars.first.name : 'Adventurer',
+        characterId: chars.isNotEmpty ? chars.first.id : null,
+      );
+      AudioService.instance.playSuccess();
+      if (mounted) context.go('/party?session=${info.id}');
+    } catch (e) {
+      AudioService.instance.playError();
+      if (mounted) setState(() => _error = e.toString());
+    } finally {
+      if (mounted) setState(() => _joining = false);
+    }
+  }
+
+  Future<bool> _ensureAuthed() async {
+    // Anonymous auth is created transparently inside SessionRepository via
+    // AuthService.ensureSignedIn() — no separate account is required to join.
+    return true;
+  }
+
+  Future<void> _scanQr() async {
+    final code = await Navigator.of(context).push<String>(MaterialPageRoute(builder: (_) => const _QrScanScreen()));
+    if (code != null && mounted) {
+      _codeCtrl.text = code;
+      _join(code);
+    }
   }
 
   @override
@@ -45,7 +86,7 @@ class _JoinScreenState extends State<JoinScreen> {
               const SizedBox(height: 14),
               Text('Enter Join Code', style: GoogleFonts.playfairDisplay(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white)),
               const SizedBox(height: 6),
-              Text('Ask your host for the 6-character code shown in their lobby.', textAlign: TextAlign.center, style: GoogleFonts.manrope(fontSize: 13, color: ArcaneTheme.textSecondary)),
+              Text('Ask your host for the 6-character code, or scan their QR code.', textAlign: TextAlign.center, style: GoogleFonts.manrope(fontSize: 13, color: ArcaneTheme.textSecondary)),
               const SizedBox(height: 18),
               TextField(
                 controller: _codeCtrl,
@@ -57,7 +98,18 @@ class _JoinScreenState extends State<JoinScreen> {
                 onSubmitted: (_) => _join(),
               ),
               const SizedBox(height: 12),
-              SizedBox(width: double.infinity, child: ElevatedButton(onPressed: _join, child: Text('Join Party', style: GoogleFonts.manrope(fontWeight: FontWeight.w800)))),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _joining ? null : () => _join(),
+                  child: _joining ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : Text('Join Party', style: GoogleFonts.manrope(fontWeight: FontWeight.w800)),
+                ),
+              ),
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(onPressed: _joining ? null : _scanQr, icon: const Icon(Icons.qr_code_scanner_rounded, size: 18), label: Text('Scan QR Code', style: GoogleFonts.manrope(fontWeight: FontWeight.w700))),
+              ),
             ]),
           ),
           const SizedBox(height: 16),
@@ -76,6 +128,37 @@ class _JoinScreenState extends State<JoinScreen> {
       ),
     );
   }
+}
+
+class _QrScanScreen extends StatefulWidget {
+  const _QrScanScreen();
+  @override
+  State<_QrScanScreen> createState() => _QrScanScreenState();
+}
+
+class _QrScanScreenState extends State<_QrScanScreen> {
+  bool _handled = false;
+
+  void _onDetect(BarcodeCapture capture) {
+    if (_handled) return;
+    final value = capture.barcodes.firstOrNull?.rawValue;
+    if (value == null || value.length < 4) return;
+    _handled = true;
+    Navigator.of(context).pop(value.trim().toUpperCase());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(backgroundColor: Colors.black, title: Text('Scan Party QR Code', style: GoogleFonts.manrope(color: Colors.white))),
+      body: MobileScanner(onDetect: _onDetect),
+    );
+  }
+}
+
+extension _FirstOrNull<T> on List<T> {
+  T? get firstOrNull => isEmpty ? null : first;
 }
 
 class _Bullet extends StatelessWidget {

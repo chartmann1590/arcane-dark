@@ -1,5 +1,7 @@
 {
-  "projects": {},
+  "projects": {
+    "default": "arcane-dark-rpg"
+  },
   "targets": {},
   "etags": {}
 }

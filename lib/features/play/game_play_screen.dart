@@ -155,6 +155,7 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
 
     return Scaffold(
       backgroundColor: ArcaneTheme.background,
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         title: Text(campaign?.seed.title.toUpperCase() ?? 'ADVENTURE', style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.w800, letterSpacing: 1.1)),
         centerTitle: true,
@@ -367,11 +368,15 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
           ),
         ),
 
-        // Input bar
-        Container(
-          padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-          decoration: const BoxDecoration(color: ArcaneTheme.surface, border: Border(top: BorderSide(color: ArcaneTheme.border))),
-          child: Row(children: [
+        // Input bar — flush with keyboard, no gap
+        SafeArea(
+          top: false,
+          bottom: true,
+          minimum: EdgeInsets.zero,
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+            decoration: const BoxDecoration(color: ArcaneTheme.surface, border: Border(top: BorderSide(color: ArcaneTheme.border))),
+            child: Row(children: [
             Expanded(
               child: TextField(
                 controller: _inputController,

@@ -3,34 +3,90 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Arcane Dark — AI Dungeon Master RPG for your phone</title>
-  <meta name="description" content="A Dungeons & Dragons–style adventure with an AI Dungeon Master that lives entirely on your phone. Solo offline or with up to 5 friends. On-device Gemma AI • Private • No cloud."/>
+  <title>Arcane Dark — Your AI Dungeon Master. Coming soon to Google Play.</title>
+  <meta name="description" content="Arcane Dark is a D&D-style mobile RPG where your AI Dungeon Master lives on your phone. Play solo offline — your story stays private — or team up with up to 5 friends. Coming soon to Google Play."/>
+  <meta name="keywords" content="Arcane Dark, D&D, Dungeons and Dragons, AI Dungeon Master, mobile RPG, offline RPG, tabletop RPG, fantasy adventure, solo RPG, multiplayer RPG, Google Play"/>
+  <meta name="author" content="Arcane Dark"/>
+  <meta name="robots" content="index, follow, max-image-preview:large"/>
   <meta name="theme-color" content="#0F0D17"/>
-  <meta property="og:title" content="Arcane Dark — AI Dungeon Master RPG"/>
-  <meta property="og:description" content="Your AI Dungeon Master lives on your phone. Solo, offline, completely private. Or gather up to 5 friends and share one adventure."/>
+  <link rel="canonical" href="https://chartmann1590.github.io/arcane-dark/"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Arcane Dark — Your AI Dungeon Master. Solo offline or with friends."/>
+  <meta property="og:description" content="Create a hero, explore ever-changing dungeons, and let an AI Dungeon Master that lives on your phone tell your story. Private, offline for solo, and co-op for up to 6. Coming soon to Google Play."/>
   <meta property="og:type" content="website"/>
   <meta property="og:url" content="https://chartmann1590.github.io/arcane-dark/"/>
+  <meta property="og:site_name" content="Arcane Dark"/>
+  <meta property="og:locale" content="en_US"/>
   <meta property="og:image" content="https://chartmann1590.github.io/arcane-dark/screenshots/04-gameplay.svg"/>
+  <meta property="og:image:width" content="1200"/>
+  <meta property="og:image:height" content="630"/>
+  <meta property="og:image:alt" content="Arcane Dark gameplay — dungeon map and AI narration on a phone"/>
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image"/>
+  <meta name="twitter:title" content="Arcane Dark — Your AI Dungeon Master"/>
+  <meta name="twitter:description" content="A cozy, torch-lit D&D adventure for your phone. Solo offline & private — or bring 5 friends. Coming soon to Google Play."/>
+  <meta name="twitter:image" content="https://chartmann1590.github.io/arcane-dark/screenshots/04-gameplay.svg"/>
+
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%230F0D17'/><rect x='6' y='6' width='20' height='20' rx='6' fill='%238B5CF6'/><text x='16' y='21' text-anchor='middle' font-size='14' fill='white'>✦</text></svg>"/>
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='16' fill='%230F0D17'/><rect x='14' y='14' width='36' height='36' rx='10' fill='%238B5CF6'/><text x='32' y='40' text-anchor='middle' font-size='24' fill='white'>✦</text></svg>"/>
+  <link rel="sitemap" type="application/xml" href="sitemap.xml"/>
   <link rel="stylesheet" href="assets/css/style.css"/>
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Arcane Dark",
+    "description": "A D&D-style mobile RPG where your AI Dungeon Master lives on your phone. Play solo offline with complete privacy, or adventure with up to 5 friends.",
+    "applicationCategory": "GameApplication",
+    "operatingSystem": "Android",
+    "offers": {"@type": "Offer", "availability": "https://schema.org/PreOrder", "price": "0", "priceCurrency": "USD"},
+    "author": {"@type": "Organization", "name": "Arcane Dark", "url": "https://chartmann1590.github.io/arcane-dark/"},
+    "publisher": {"@type": "Organization", "name": "Arcane Dark"},
+    "isAccessibleForFree": true,
+    "inLanguage": "en",
+    "image": "https://chartmann1590.github.io/arcane-dark/screenshots/04-gameplay.svg",
+    "url": "https://chartmann1590.github.io/arcane-dark/",
+    "sameAs": ["https://github.com/chartmann1590/arcane-dark"]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {"@type": "Question", "name": "Does solo play need internet?", "acceptedAnswer": {"@type": "Answer", "text": "No. After a one-time download, solo adventures work fully offline. No signal needed — perfect for planes, camping, or anywhere."}},
+      {"@type": "Question", "name": "Is my story private?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. In solo play your characters, choices, and the AI's story stay only on your phone. Nothing is uploaded anywhere."}},
+      {"@type": "Question", "name": "Can I play with friends?", "acceptedAnswer": {"@type": "Answer", "text": "Yes! Host or join a party of up to 6 players. Invite friends with a code or QR and share one living adventure."}},
+      {"@type": "Question", "name": "When is Arcane Dark on Google Play?", "acceptedAnswer": {"@type": "Answer", "text": "Coming soon to Google Play for Android. iOS is planned for later. Follow the GitHub repo or website for the launch announcement."}},
+      {"@type": "Question", "name": "Is Arcane Dark free?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. The game is free with ads to support development. You can manage ad preferences in Settings."}}
+    ]
+  }
+  </script>
 </head>
 <body>
 
   <!-- NAV -->
-  <nav class="nav">
+  <nav class="nav" aria-label="Primary">
     <div class="nav-inner">
       <a class="brand" href="./" aria-label="Arcane Dark home">
-        <span class="brand-mark">
+        <span class="brand-mark" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.8 5.7L21 9l-4.5 4.4L17.5 21 12 18.2 6.5 21l1-7.6L3 9l6.2-1.3L12 2z"/></svg>
         </span>
         <span class="brand-name">ARCANE DARK</span>
       </a>
       <div class="nav-links">
-        <a href="#features" class="hide-sm">Features</a>
+        <a href="#features" class="hide-sm">Why it’s different</a>
         <a href="#screenshots" class="hide-sm">Screenshots</a>
+        <a href="#faq" class="hide-sm">FAQ</a>
         <a href="privacy.html">Privacy</a>
-        <a href="https://github.com/chartmann1590/arcane-dark" target="_blank" rel="noopener" class="hide-sm">GitHub</a>
-        <a class="btn btn-primary" href="https://github.com/chartmann1590/arcane-dark" target="_blank" rel="noopener">View on GitHub</a>
+        <a class="btn btn-ghost hide-sm" href="https://github.com/chartmann1590/arcane-dark" target="_blank" rel="noopener">GitHub</a>
+        <a class="btn btn-primary" href="#get-it">Get it soon</a>
       </div>
     </div>
   </nav>
@@ -39,48 +95,56 @@
   <header class="hero">
     <div class="hero-grid">
       <div class="reveal in">
-        <div class="pill"><span class="dot"></span> ON-DEVICE GEMMA 4 AI • PRIVATE • OFFLINE</div>
+        <div class="pill"><span class="dot" aria-hidden="true"></span> COMING SOON TO GOOGLE PLAY • ANDROID FIRST • iOS LATER</div>
         <h1>Your AI<br/>Dungeon Master<br/><span>lives on your phone.</span></h1>
         <p class="lead">
-          Create a hero, step into a torch-lit dungeon, and let an on-device AI weave your story — solo, offline, completely private. Or gather up to <strong style="color:white">five friends</strong> and share one adventure together.
+          A cozy, torch-lit D&amp;D adventure you can play anywhere. Make a hero you love, wander ever-changing dungeons, and watch an AI storyteller react to every choice — <strong style="color:white">solo and private, or with up to 5 friends at the same table.</strong>
         </p>
-        <div class="hero-cta">
-          <a class="btn btn-primary" href="https://github.com/chartmann1590/arcane-dark" target="_blank" rel="noopener">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="white" aria-hidden="true"><path d="M12 2a10 10 0 0 0-3.16 19.49c.5.1.68-.22.68-.48v-1.7c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.9 1.52 2.34 1.08 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.1.39-1.99 1.03-2.69-.1-.25-.45-1.26.1-2.64 0 0 .84-.27 2.75 1.02.8-.22 1.65-.33 2.5-.33.85 0 1.7.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.56 1.38.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.69 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85v2.74c0 .26.18.58.69.48A10 10 0 0 0 12 2z"/></svg>
-            Get the app — GitHub
+
+        <!-- Play Store coming soon -->
+        <div class="hero-cta" id="get-it">
+          <a class="btn" href="https://github.com/chartmann1590/arcane-dark" target="_blank" rel="noopener" aria-label="Coming soon on Google Play" style="padding:0;border:none;background:transparent;box-shadow:none">
+            <span style="display:inline-flex;align-items:center;gap:12px;background:black;color:white;border:1px solid #2E2A44;border-radius:12px;padding:10px 16px;box-shadow:0 10px 28px rgba(0,0,0,0.35)">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 20.5L21 12 3 3.5v17z" fill="#3DDC84" stroke="white" stroke-opacity="0.12"/><path d="M3 3.5l13 8.5L3 20.5V3.5z" fill="#00B0FF"/><path d="M16 12l5-3-5-5.5v8.5z" fill="#FFD600"/><path d="M16 12v8.5l5-5.5L16 12z" fill="#FF3D00"/></svg>
+              <span style="text-align:left;line-height:1">
+                <span style="display:block;font-size:10px;font-weight:700;letter-spacing:0.7px;opacity:0.8">COMING SOON ON</span>
+                <span style="display:block;font-size:15px;font-weight:800;letter-spacing:-0.2px">Google Play</span>
+              </span>
+              <span style="margin-left:8px;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.14);font-size:11px;font-weight:800;letter-spacing:0.6px">FREE</span>
+            </span>
           </a>
-          <a class="btn btn-ghost" href="#screenshots">See screenshots</a>
-          <a class="btn btn-gold" href="privacy.html">Privacy Policy</a>
+          <a class="btn btn-ghost" href="#screenshots">See inside →</a>
         </div>
-        <div class="hero-meta">
-          <span class="meta-chip">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" stroke-width="1.8"><path d="M12 3l7 4v6c0 3.8-2.6 7.3-7 8-4.4-.7-7-4.2-7-8V7l7-4z"/></svg>
-            Solo stays on-device
-          </span>
-          <span class="meta-chip">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#C9A227" stroke-width="1.8"><path d="M8 11l2 2 5-5"/><rect x="3" y="3" width="18" height="18" rx="3"/></svg>
-            No signal needed
-          </span>
-          <span class="meta-chip">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#3DD68C" stroke-width="1.8"><path d="M17 11V7a5 5 0 0 0-10 0v4"/><rect x="5" y="11" width="14" height="8" rx="2"/><path d="M12 15v2"/></svg>
-            Up to 6 players
-          </span>
-        </div>
-        <p style="margin-top:14px;color:var(--text-muted);font-size:12px;">
-          Android today • iOS coming later • Built with Flutter + LiteRT-LM • Model ~2.6GB one-time download from Hugging Face
+        <p style="margin:10px 0 0;color:var(--text-muted);font-size:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <span style="display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:rgba(61,214,140,0.10);border:1px solid rgba(61,214,140,0.18);color:#3DD68C;font-weight:800;font-size:11px;letter-spacing:0.6px">✦ No account needed for solo</span>
+          <span>Android first • iOS later • Free with ads</span>
         </p>
+
+        <div class="hero-meta" aria-label="Key benefits">
+          <span class="meta-chip">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#3DD68C" stroke-width="1.8" aria-hidden="true"><path d="M12 3l7 4v6c0 3.8-2.6 7.3-7 8-4.4-.7-7-4.2-7-8V7l7-4z"/></svg>
+            Private — solo stays on your phone
+          </span>
+          <span class="meta-chip">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#C9A227" stroke-width="1.8" aria-hidden="true"><path d="M12 2l8 4.5v7c0 4-2.7 7.7-8 8.5-5.3-.8-8-4.5-8-8.5v-7L12 2z"/><path d="M9 12l2 2 4-5"/></svg>
+            Works offline — no signal needed
+          </span>
+          <span class="meta-chip">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" stroke-width="1.8" aria-hidden="true"><circle cx="9" cy="8" r="2.4"/><circle cx="16" cy="9" r="2"/><path d="M4 19c0-2.4 1.9-4.3 4.3-4.3H11"/><path d="M13.5 19c0-1.4 1-2.6 2.4-2.9"/></svg>
+            Co-op with friends — up to 6
+          </span>
+        </div>
       </div>
 
       <div class="hero-visual reveal in" style="transition-delay: .12s">
-        <div class="glow-orb"></div>
-        <div class="glow-orb gold"></div>
+        <div class="glow-orb" aria-hidden="true"></div>
+        <div class="glow-orb gold" aria-hidden="true"></div>
         <div class="phone" aria-hidden="true">
           <div class="phone-notch"><span class="notch-dot"></span><span style="width:36px;height:4px;border-radius:999px;background:#1A162B;border:1px solid #2E2A44;display:inline-block"></span></div>
           <div class="phone-screen">
             <div class="phone-status"><span>9:41</span><span style="display:flex;gap:6px;align-items:center">● ● ● <span style="width:20px;height:10px;border-radius:999px;border:1px solid #F5F3FF;display:inline-block"></span></span></div>
             <div class="phone-mini-nav"><span class="mini-brand">ARCANE DARK</span><span style="width:22px;height:22px;border-radius:999px;background:#24203A;border:1px solid #2E2A44;display:grid;place-items:center;font-size:10px;color:#B8B2D0">◈</span></div>
             <div class="screen-body" style="background:#0B0A12;">
-              <!-- mini map -->
               <div style="padding:8px;display:grid;grid-template-columns:repeat(7,1fr);gap:3px;">
                 <script>document.write(Array.from({length:42}).map((_,i)=>{
                   const isWall = [0,1,2,5,6,7,14,21,27,28,35,36,37,38,39,40,41].includes(i);
@@ -107,80 +171,75 @@
               </div>
               <div class="floating-cards">
                 <div class="float-card">
-                  <div class="kicker">LIVE NARRATION</div>
+                  <div class="kicker">LIVE STORY</div>
                   <div class="title">“You hear a faint violet hum…”</div>
-                  <div class="desc">The AI Dungeon Master reacts to every choice — in real time, on your device.</div>
+                  <div class="desc">Your Dungeon Master listens and replies — in the moment, just for you.</div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-        <!-- side mini phones -->
-        <div style="position:absolute;right: -6px;top:54%;transform:translateY(-50%) rotate(4deg);width:124px;height:260px;border-radius:22px;background:linear-gradient(180deg,#1E1B2E,#0F0D17);border:1px solid #2E2A44;box-shadow:0 18px 40px rgba(0,0,0,0.45);overflow:hidden;opacity:0.92;display:none" class="hide-mobile-card">
-          <div style="height:22px;background:#0F0D17;border-bottom:1px solid #2E2A44"></div>
-          <img src="screenshots/02-character-creation.svg" alt="" style="width:100%;height:calc(100% - 22px);object-fit:cover;object-position:top"/>
-        </div>
       </div>
     </div>
   </header>
 
-  <!-- FEATURES -->
+  <!-- FEATURES — customer facing -->
   <section id="features" class="section">
     <div class="container">
       <div class="section-head reveal">
-        <div class="kicker-label">Why Arcane Dark is different</div>
-        <h2>A real table, <em>inside</em> your phone.</h2>
-        <p>No subscriptions. No cloud story storage. No “AI credits.” Just you, your dice, and a Dungeon Master that never phones home in solo play.</p>
+        <div class="kicker-label">Why players love it</div>
+        <h2>A real table, <em>inside</em> your pocket.</h2>
+        <p>No subscriptions. No waiting for a host. Just you, your dice, and a storyteller that’s always ready — whether you have five minutes or five hours.</p>
       </div>
 
       <div class="features reveal">
         <div class="feature">
-          <div class="feature-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><path d="M9 9h6v6H9z"/><circle cx="12" cy="12" r="1.6"/></svg>
+          <div class="feature-icon" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 10h6M12 7v6"/></svg>
           </div>
-          <h3>On-Device AI Dungeon Master</h3>
-          <p>Powered by Google’s <strong style="color:white">Gemma 4 E2B</strong> via LiteRT-LM. The model runs locally — your story text, character details, and choices never leave your phone in solo mode.</p>
-          <ul><li>Gemma 4 • LiteRT-LM</li><li>Streaming tokens</li><li>Private by design</li></ul>
+          <h3>Your story stays private</h3>
+          <p>Solo quests live only on your phone. No cloud saves, no “training on your story” — your characters and choices are yours alone.</p>
+          <ul><li>No account needed for solo</li><li>Stays on your device</li><li>Delete anytime</li></ul>
         </div>
         <div class="feature">
-          <div class="feature-icon">
+          <div class="feature-icon" aria-hidden="true">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2l8 4.5v7c0 4-2.7 7.7-8 8.5-5.3-.8-8-4.5-8-8.5v-7L12 2z"/><path d="M9 12l2 2 4-5"/></svg>
           </div>
-          <h3>Play anywhere, no signal needed</h3>
-          <p>After a one-time ~2.6GB download, solo mode works fully offline — on a plane, underground, camping, wherever. Stored in private app storage.</p>
-          <ul><li>Offline solo</li><li>Wi-Fi confirmation</li><li>Resumable download</li></ul>
+          <h3>Play anywhere — no signal</h3>
+          <p>After a quick one-time setup, solo mode works fully offline. On a plane, in a cabin, underground — the dungeon goes where you go.</p>
+          <ul><li>Works offline for solo</li><li>Quick one-time setup</li><li>Resumes where you paused</li></ul>
         </div>
         <div class="feature">
-          <div class="feature-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M6 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M12 12v2"/><circle cx="18" cy="18" r="2"/></svg>
+          <div class="feature-icon" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M6 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>
           </div>
-          <h3>A real character creator</h3>
-          <p>Pick a race, class, background, allocate ability scores the tabletop way, and build a look with a live portrait editor. Every hero feels yours.</p>
-          <ul><li>Races + Classes</li><li>Point-buy abilities</li><li>Portrait builder</li></ul>
+          <h3>Make a hero you love</h3>
+          <p>Choose ancestry, calling, and background — then shape looks and personality with an easy, step-by-step portrait builder.</p>
+          <ul><li>Many races & classes</li><li>Point-buy the tabletop way</li><li>Live portrait preview</li></ul>
         </div>
         <div class="feature">
-          <div class="feature-icon">
+          <div class="feature-icon" aria-hidden="true">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/><rect x="11" y="11" width="4" height="4" rx="1"/></svg>
           </div>
-          <h3>Procedurally generated dungeons</h3>
-          <p>Every playthrough drops you into a freshly generated map — rooms, corridors, doors, hazards — no two runs alike. Explore with fog-of-war.</p>
-          <ul><li>Seeded generator</li><li>18×18 rooms</li><li>Fog of war</li></ul>
+          <h3>A new dungeon every time</h3>
+          <p>Every run shuffles rooms, corridors, and secrets. Explore with a gentle fog-of-war that rewards curiosity.</p>
+          <ul><li>Never the same twice</li><li>Cozy torch-lit maps</li><li>Explore at your pace</li></ul>
         </div>
         <div class="feature">
-          <div class="feature-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="10" r="2.5"/><path d="M3 20c0-2.8 2.2-5 5-5h2c2.8 0 5 2.2 5 5"/><path d="M14 20c0-1.8 1.2-3.3 2.8-3.7"/></svg>
+          <div class="feature-icon" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="10" r="2.5"/><path d="M3 20c0-2.8 2.2-5 5-5h2c2.8 0 5 2.2 5 5"/></svg>
           </div>
           <h3>Bring your friends</h3>
-          <p>Host or join a party of up to <strong style="color:white">six</strong> and adventure together in a shared session. Invite with a code or QR — Firebase keeps everyone in sync.</p>
-          <ul><li>Up to 6 players</li><li>QR + invite code</li><li>Shared world state</li></ul>
+          <p>Host a party or join one — up to 6 at the same table. Share a code or QR and adventure together, everyone seeing the same world.</p>
+          <ul><li>Up to 6 players</li><li>QR + invite code</li><li>Same world for all</li></ul>
         </div>
         <div class="feature">
-          <div class="feature-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M9 15c-1 1.2-2 2.8-2 4"/><path d="M15 15c1 1.2 2 2.8 2 4"/></svg>
+          <div class="feature-icon" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l7 4v6c0 3.8-2.6 7.3-7 8-4.4-.7-7-4.2-7-8V7l7-4z"/><circle cx="12" cy="12" r="1.8"/><path d="M12 16v2"/></svg>
           </div>
-          <h3>Private &amp; respectful</h3>
-          <p>Solo play never leaves your device. Multiplayer only syncs what the party needs. Ads via AdMob with EEA consent, and you can manage it in Settings.</p>
-          <ul><li>Local-only solo</li><li>Ad consent controls</li><li><a href="privacy.html" style="color:var(--violet);text-decoration:underline">Full privacy policy</a></li></ul>
+          <h3>Free to start, fair to play</h3>
+          <p>Jump in for free — no paywalls on your story. Ads help keep the lights on, and you’re in control of your preferences.</p>
+          <ul><li>Free to play</li><li><a href="privacy.html" style="color:var(--violet);text-decoration:underline">Private by design</a></li><li>Coming soon to Play Store</li></ul>
         </div>
       </div>
     </div>
@@ -190,75 +249,75 @@
   <section id="screenshots" class="section alt">
     <div class="container">
       <div class="section-head reveal">
-        <div class="kicker-label">Screenshots</div>
-        <h2>Take a look <em>inside the tavern.</em></h2>
-        <p>Dark fantasy, violet magic, aged gold — the same design system the app uses. Tap any frame to enlarge.</p>
+        <div class="kicker-label">A peek inside</div>
+        <h2>Step into the <em>tavern light.</em></h2>
+        <p>Deep purple, warm gold, soft shadows — a cozy dungeon that feels like a favorite table. Tap any image to enlarge.</p>
       </div>
 
       <div class="screenshots reveal">
-        <a class="screenshot" href="screenshots/01-onboarding.svg" data-lightbox data-title="Onboarding — one-time Gemma download, works offline after">
+        <a class="screenshot" href="screenshots/01-onboarding.svg" data-lightbox data-title="First time — quick setup, then offline">
           <div class="shot-frame">
-            <span class="badge">01 • Onboarding</span>
-            <img src="screenshots/01-onboarding.svg" alt="Onboarding screen — Gemma download with progress" loading="lazy" width="390" height="844"/>
+            <span class="badge">01 • Welcome</span>
+            <img src="screenshots/01-onboarding.svg" alt="Welcome screen showing quick setup and offline solo play" loading="lazy" width="390" height="844"/>
           </div>
           <div class="shot-caption">
-            <h4>Onboarding &amp; model download</h4>
-            <p>Wi-Fi confirmation, resumable 2.6GB download, and offline-ready solo play.</p>
+            <h4>Welcome & quick setup</h4>
+            <p>One quick setup, then solo works offline. Pick up and play in seconds.</p>
           </div>
         </a>
 
-        <a class="screenshot" href="screenshots/02-character-creation.svg" data-lightbox data-title="Character creation — race, class, abilities, portrait">
+        <a class="screenshot" href="screenshots/02-character-creation.svg" data-lightbox data-title="Make a hero — ancestry, calling, and looks">
           <div class="shot-frame">
-            <span class="badge">02 • Creator</span>
-            <img src="screenshots/02-character-creation.svg" alt="Character creation — choose your race" loading="lazy" width="390" height="844"/>
+            <span class="badge">02 • Your Hero</span>
+            <img src="screenshots/02-character-creation.svg" alt="Character creation showing ancestry choices like Elf, Human, Dwarf" loading="lazy" width="390" height="844"/>
           </div>
           <div class="shot-caption">
-            <h4>Character creation</h4>
-            <p>6-step flow: race, class, background, abilities, appearance, review.</p>
+            <h4>Make your hero</h4>
+            <p>Pick ancestry, calling, and background — then fine-tune looks step by step.</p>
           </div>
         </a>
 
-        <a class="screenshot" href="screenshots/03-campaign-hub.svg" data-lightbox data-title="Campaign hub — current campaign, heroes, multiplayer">
+        <a class="screenshot" href="screenshots/03-campaign-hub.svg" data-lightbox data-title="Home — resume, heroes, or gather friends">
           <div class="shot-frame">
-            <span class="badge">03 • Campaign Hub</span>
-            <img src="screenshots/03-campaign-hub.svg" alt="Campaign hub — current campaign and hero roster" loading="lazy" width="390" height="844"/>
+            <span class="badge">03 • Home</span>
+            <img src="screenshots/03-campaign-hub.svg" alt="Home screen showing current campaign Whispers of the Forgotten Crypt and hero roster" loading="lazy" width="390" height="844"/>
           </div>
           <div class="shot-caption">
-            <h4>Campaign hub</h4>
-            <p>Resume your legend, browse heroes, or jump into multiplayer.</p>
+            <h4>Home — your campaigns</h4>
+            <p>Continue your story, meet your heroes, or start a shared party.</p>
           </div>
         </a>
 
-        <a class="screenshot" href="screenshots/04-gameplay.svg" data-lightbox data-title="Gameplay — dungeon map + AI narration + dice">
+        <a class="screenshot" href="screenshots/04-gameplay.svg" data-lightbox data-title="At the table — map, dice, and living story">
           <div class="shot-frame">
-            <span class="badge">04 • Gameplay</span>
-            <img src="screenshots/04-gameplay.svg" alt="Gameplay — dungeon map and AI narration" loading="lazy" width="390" height="844"/>
+            <span class="badge">04 • At the Table</span>
+            <img src="screenshots/04-gameplay.svg" alt="Gameplay with dungeon map, narration, dice roll and quick actions Attack, Talk, Inspect" loading="lazy" width="390" height="844"/>
           </div>
           <div class="shot-caption">
-            <h4>Dungeon &amp; narration</h4>
-            <p>Fog-of-war map, D-pad, and a streaming AI Dungeon Master that reacts to every word.</p>
+            <h4>At the table</h4>
+            <p>Touch to move, tap to act — the story answers you line by line.</p>
           </div>
         </a>
       </div>
 
       <div style="margin-top:18px;display:grid;grid-template-columns:1fr 1fr;gap:16px" class="reveal">
-        <a class="screenshot" href="screenshots/05-multiplayer.svg" data-lightbox data-title="Multiplayer lobby — QR + invite code, up to 6 players" style="display:flex;flex-direction:column">
+        <a class="screenshot" href="screenshots/05-multiplayer.svg" data-lightbox data-title="Gather your party — QR or code, up to 6" style="display:flex;flex-direction:column">
           <div class="shot-frame" style="aspect-ratio:9/12">
-            <span class="badge">05 • Multiplayer</span>
-            <img src="screenshots/05-multiplayer.svg" alt="Multiplayer lobby with QR and party list" loading="lazy" width="390" height="520" style="object-position:top"/>
+            <span class="badge">05 • With Friends</span>
+            <img src="screenshots/05-multiplayer.svg" alt="Multiplayer lobby with QR code and party of up to 6" loading="lazy" width="390" height="520" style="object-position:top"/>
           </div>
           <div class="shot-caption">
-            <h4>Multiplayer lobby</h4>
-            <p>Invite with QR or code. Party state syncs via Firebase — everyone sees the same world.</p>
+            <h4>Gather your party</h4>
+            <p>Invite with QR or a short code. Everyone shares the same map and story.</p>
           </div>
         </a>
         <div class="feature" style="display:flex;flex-direction:column;justify-content:center;min-height:260px">
-          <div class="docs-badge">📸 Real device screenshots coming soon</div>
-          <h3 style="margin-top:12px">Want the real thing?</h3>
-          <p>These are high-fidelity mockups from the app’s design system (see <code>lib/app/theme.dart</code>). Once the Play Store listing is live, this gallery will show actual Pixel + emulator captures.</p>
+          <div class="docs-badge">📱 Android first — iOS later</div>
+          <h3 style="margin-top:12px">Coming soon to Google Play</h3>
+          <p>Be first through the tavern doors. Follow the project on GitHub for the launch day note — we’ll post the store link here the moment it’s live.</p>
           <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
-            <a class="btn btn-primary" href="https://github.com/chartmann1590/arcane-dark" target="_blank" rel="noopener">Browse the code</a>
-            <a class="btn btn-ghost" href="privacy.html">Read privacy</a>
+            <a class="btn btn-primary" href="https://github.com/chartmann1590/arcane-dark" target="_blank" rel="noopener">Follow on GitHub</a>
+            <a class="btn btn-ghost" href="privacy.html">How privacy works</a>
           </div>
         </div>
       </div>
@@ -270,79 +329,100 @@
     <div class="container">
       <div class="section-head reveal">
         <div class="kicker-label">How it works</div>
-        <h2>Three steps to <em>your legend.</em></h2>
+        <h2>Three taps to <em>your legend.</em></h2>
       </div>
       <div class="steps reveal">
         <div class="step">
           <div class="step-num">1</div>
-          <h3>Forge a hero</h3>
-          <p>Choose race, class, background, and portrait. Point-buy your abilities the tabletop way — every stat matters when the dice roll.</p>
+          <h3>Make your hero</h3>
+          <p>Choose who you are, how you fight, and what you carry — the portrait updates live as you pick.</p>
         </div>
         <div class="step">
           <div class="step-num">2</div>
-          <h3>Enter the dungeon</h3>
-          <p>Pick a campaign seed or let the generator roll you a new map. Move with the D-pad, inspect, talk, attack, roll — the AI narrates it all.</p>
+          <h3>Step into the dark</h3>
+          <p>Start a new tale or let the dungeon surprise you. Move, look, talk, bluff — just say what you do.</p>
         </div>
         <div class="step">
           <div class="step-num">3</div>
           <h3>Play your way</h3>
-          <p>Solo offline on the trail, or host a party. Your campaign persists on-device; delete a character or campaign anytime.</p>
+          <p>Five minutes on the couch or a full night with friends — your progress waits right where you left it.</p>
         </div>
       </div>
 
       <div class="privacy-card reveal" style="margin-top:22px">
         <div>
-          <div class="kicker-label">Privacy, plain and simple</div>
+          <div class="kicker-label">Your story is yours</div>
           <h3>Solo stays on your phone. Period.</h3>
-          <p>Solo campaigns are generated and stored only on-device. Multiplayer syncs only the party state needed to keep everyone together. Ads are via AdMob with EEA consent controls.</p>
+          <p>When you play alone, nothing about your adventure is uploaded — not your hero, not your choices, not a single line of the story. Multiplayer only shares what the table needs to stay in sync.</p>
           <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
-            <a class="btn btn-ghost" href="privacy.html">Read the full policy</a>
-            <a class="btn btn-ghost" href="https://github.com/chartmann1590/arcane-dark/blob/main/PRIVACY.md" target="_blank" rel="noopener">PRIVACY.md on GitHub</a>
+            <a class="btn btn-ghost" href="privacy.html">Read the privacy policy</a>
+            <a class="btn btn-ghost" href="#faq">Common questions</a>
           </div>
         </div>
         <div class="privacy-points">
           <div class="point">
             <div class="point-icon">✓</div>
-            <div><strong>Solo = offline &amp; local-only</strong><br/><span>After the one-time download, no solo story text is ever uploaded — not even to us.</span></div>
+            <div><strong>Solo = offline & private</strong><br/><span>After the one-time setup, no story text ever leaves your device — not even to us.</span></div>
           </div>
           <div class="point">
             <div class="point-icon" style="background:rgba(139,92,246,0.12);border-color:rgba(139,92,246,0.18);color:#8B5CF6">◈</div>
-            <div><strong>Multiplayer = minimal sync</strong><br/><span>Only character stats, position, quest progress, and session messages — tied to an anonymous account.</span></div>
+            <div><strong>Together = just the table</strong><br/><span>Only the party’s shared map, stats, and messages — linked to a simple anonymous account.</span></div>
           </div>
           <div class="point">
             <div class="point-icon" style="background:rgba(201,162,39,0.12);border-color:rgba(201,162,39,0.22);color:#C9A227">◎</div>
-            <div><strong>You’re in control</strong><br/><span>Manage ad consent, delete characters/campaigns, or uninstall to wipe all local data and the model.</span></div>
+            <div><strong>You’re in control</strong><br/><span>Change ad choices anytime, delete a hero or campaign with a tap, uninstall to clear everything.</span></div>
           </div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- FOR DEVELOPERS -->
-  <section class="section alt">
+  <!-- FAQ — customer facing + SEO -->
+  <section id="faq" class="section alt">
     <div class="container">
       <div class="section-head reveal">
-        <div class="kicker-label">For developers</div>
-        <h2>Built in Flutter. <em>Designed to be forked.</em></h2>
-        <p>Feature-organized, documented phase-by-phase in <code>plan/</code>. Replace placeholder AdMob IDs and drop in your own Firebase project to ship your own build.</p>
+        <div class="kicker-label">Questions, answered</div>
+        <h2>Good to know <em>before you roll.</em></h2>
       </div>
-      <div class="features reveal">
-        <div class="feature">
-          <h3>Stack</h3>
-          <p>Flutter 3.35+ / Dart 3.9+ • Riverpod • go_router • LiteRT-LM Kotlin bridge (<code>LlmEngine.kt</code>) • Firebase (Auth, Firestore, Crashlytics, Performance) • AdMob • Hugging Face Gemma download.</p>
-        </div>
-        <div class="feature">
-          <h3>Quick start</h3>
-          <p><code>flutter pub get</code><br/><code>flutter run</code><br/>Model (~2.6GB) downloads on first run per <code>assets/model_manifest.json</code>. Needs a real Android device (API 26+).</p>
-        </div>
-        <div class="feature">
-          <h3>Before you ship</h3>
-          <p>Swap AdMob IDs in <code>lib/services/ad_config.dart</code> + manifests, add your <code>google-services.json</code>, and follow the release checklist in <code>plan/09-testing-polish-launch.md</code>.</p>
-        </div>
+      <div style="max-width:760px;margin:0 auto;display:grid;gap:12px" class="reveal">
+        <details style="background:var(--surface-card);border:1px solid var(--border);border-radius:14px;padding:16px">
+          <summary style="cursor:pointer;font-weight:800;list-style:none;display:flex;justify-content:space-between;align-items:center">Do I need internet to play? <span style="color:var(--violet)">+</span></summary>
+          <p style="margin:10px 0 0;color:var(--text-secondary);font-size:13px;line-height:1.6">No — not for solo. After your first quick setup, solo adventures work fully offline. Great for flights, cabins, or anywhere without a signal. Multiplayer does need a connection to keep everyone in sync.</p>
+        </details>
+        <details style="background:var(--surface-card);border:1px solid var(--border);border-radius:14px;padding:16px">
+          <summary style="cursor:pointer;font-weight:800;list-style:none;display:flex;justify-content:space-between;align-items:center">Is my story private? <span style="color:var(--violet)">+</span></summary>
+          <p style="margin:10px 0 0;color:var(--text-secondary);font-size:13px;line-height:1.6">Yes. Solo stories stay only on your phone — never uploaded. That’s the whole point of an on-device Dungeon Master.</p>
+        </details>
+        <details style="background:var(--surface-card);border:1px solid var(--border);border-radius:14px;padding:16px">
+          <summary style="cursor:pointer;font-weight:800;list-style:none;display:flex;justify-content:space-between;align-items:center">Can I play with friends? <span style="color:var(--violet)">+</span></summary>
+          <p style="margin:10px 0 0;color:var(--text-secondary);font-size:13px;line-height:1.6">Absolutely. Host or join a party of up to 6. Share a short code or QR and you’ll all see the same dungeon and story.</p>
+        </details>
+        <details style="background:var(--surface-card);border:1px solid var(--border);border-radius:14px;padding:16px">
+          <summary style="cursor:pointer;font-weight:800;list-style:none;display:flex;justify-content:space-between;align-items:center">When is it on Google Play? <span style="color:var(--violet)">+</span></summary>
+          <p style="margin:10px 0 0;color:var(--text-secondary);font-size:13px;line-height:1.6"><strong style="color:white">Coming soon to Google Play for Android</strong> — iOS is planned for later. Follow the GitHub repo and this site will show the store link the moment it’s live.</p>
+        </details>
+        <details style="background:var(--surface-card);border:1px solid var(--border);border-radius:14px;padding:16px">
+          <summary style="cursor:pointer;font-weight:800;list-style:none;display:flex;justify-content:space-between;align-items:center">Is it free? <span style="color:var(--violet)">+</span></summary>
+          <p style="margin:10px 0 0;color:var(--text-secondary);font-size:13px;line-height:1.6">Yes — free with friendly ads that help keep development going. You can manage ad preferences anytime in Settings.</p>
+        </details>
       </div>
       <div style="text-align:center;margin-top:18px" class="reveal">
-        <a class="btn btn-primary" href="https://github.com/chartmann1590/arcane-dark" target="_blank" rel="noopener">Explore the repository</a>
-        <a class="btn btn-ghost" href="https://github.com/chartmann1590/arcane-dark/tree/main/plan" target="_blank" rel="noopener">Read the plan →</a>
+        <a class="btn btn-primary" href="privacy.html">See how privacy works</a>
+        <a class="btn btn-ghost" href="https://github.com/chartmann1590/arcane-dark" target="_blank" rel="noopener">Follow launch on GitHub</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Gentle open-source note — not technical -->
+  <section class="section" style="padding-top:32px;padding-bottom:32px">
+    <div class="container">
+      <div style="max-width:760px;margin:0 auto;background:var(--surface-card);border:1px solid var(--border);border-radius:16px;padding:18px;display:flex;gap:14px;align-items:center;flex-wrap:wrap" class="reveal">
+        <div style="width:40px;height:40px;border-radius:10px;background:rgba(139,92,246,0.12);border:1px solid rgba(139,92,246,0.18);display:grid;place-items:center;color:var(--violet);flex:0 0 40px">◈</div>
+        <div style="flex:1;min-width:220px">
+          <div style="font-weight:800;font-size:13px">Built with care — and open on GitHub</div>
+          <div style="color:var(--text-secondary);font-size:13px;line-height:1.5">Curious how it works or want to peek under the hood? The whole project is open — issues and ideas are welcome.</div>
+        </div>
+        <a class="btn btn-ghost" href="https://github.com/chartmann1590/arcane-dark" target="_blank" rel="noopener">Open GitHub</a>
       </div>
     </div>
   </section>
@@ -351,35 +431,35 @@
     <div class="container">
       <div class="footer-grid">
         <div>
-          <div class="brand" style="margin-bottom:10px"><span class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" stroke-width="1.8"><path d="M12 2l2.8 5.7L21 9l-4.5 4.4L17.5 21 12 18.2 6.5 21l1-7.6L3 9l6.2-1.3L12 2z"/></svg></span><span class="brand-name">ARCANE DARK</span></div>
-          <p style="margin:0;color:var(--text-secondary);font-size:13px;line-height:1.6">A D&D-style adventure with an AI Dungeon Master that lives on your phone. Solo offline or with up to five friends.</p>
-          <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap">
-            <a class="btn btn-ghost" href="https://github.com/chartmann1590/arcane-dark" target="_blank" rel="noopener" style="padding:8px 12px;font-size:12px">⭐ Star on GitHub</a>
+          <div class="brand" style="margin-bottom:10px"><span class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" stroke-width="1.8" aria-hidden="true"><path d="M12 2l2.8 5.7L21 9l-4.5 4.4L17.5 21 12 18.2 6.5 21l1-7.6L3 9l6.2-1.3L12 2z"/></svg></span><span class="brand-name">ARCANE DARK</span></div>
+          <p style="margin:0;color:var(--text-secondary);font-size:13px;line-height:1.6">A cozy D&amp;D-style adventure with an AI Dungeon Master that lives on your phone. Solo offline &amp; private, or with up to 5 friends.</p>
+          <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+            <span style="display:inline-flex;align-items:center;gap:6px;padding:7px 10px;border-radius:999px;background:black;color:white;border:1px solid #2E2A44;font-size:11px;font-weight:800;letter-spacing:0.6px">▶ Coming soon on Google Play</span>
             <a class="btn btn-ghost" href="privacy.html" style="padding:8px 12px;font-size:12px">Privacy</a>
           </div>
         </div>
         <div>
-          <h4>Project</h4>
+          <h4>Explore</h4>
           <div style="display:grid;gap:8px">
-            <a href="https://github.com/chartmann1590/arcane-dark" target="_blank" rel="noopener">Repository</a>
-            <a href="https://github.com/chartmann1590/arcane-dark/issues" target="_blank" rel="noopener">Issues &amp; support</a>
+            <a href="#features">Why it’s different</a>
+            <a href="#screenshots">Screenshots</a>
+            <a href="#faq">FAQ</a>
             <a href="privacy.html">Privacy policy</a>
-            <a href="https://github.com/chartmann1590/arcane-dark/blob/main/PRIVACY.md" target="_blank" rel="noopener">PRIVACY.md</a>
           </div>
         </div>
         <div>
-          <h4>Resources</h4>
+          <h4>Get it</h4>
           <div style="display:grid;gap:8px">
-            <a href="https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm" target="_blank" rel="noopener">Gemma model (HF)</a>
-            <a href="https://github.com/chartmann1590/arcane-dark/tree/main/plan" target="_blank" rel="noopener">Architecture plan</a>
-            <a href="https://flutter.dev" target="_blank" rel="noopener">Flutter</a>
-            <a href="https://ai.google.dev/edge/litert" target="_blank" rel="noopener">LiteRT-LM</a>
+            <span style="color:var(--text-secondary);font-size:13px">Coming soon to <strong style="color:white">Google Play</strong> (Android)</span>
+            <span style="color:var(--text-muted);font-size:13px">iOS planned for later</span>
+            <a href="https://github.com/chartmann1590/arcane-dark" target="_blank" rel="noopener">Follow on GitHub for launch</a>
+            <a href="https://github.com/chartmann1590/arcane-dark/issues" target="_blank" rel="noopener">Questions? Contact us</a>
           </div>
         </div>
       </div>
       <div class="footer-bottom">
-        <span>© 2026 Arcane Dark • No license chosen yet — all rights reserved unless a <code>LICENSE</code> says otherwise.</span>
-        <span>Questions? Open an issue on GitHub.</span>
+        <span>© 2026 Arcane Dark • Coming soon to Google Play • <a href="privacy.html">Privacy Policy</a> • <a href="https://github.com/chartmann1590/arcane-dark" target="_blank" rel="noopener">GitHub</a></span>
+        <span style="color:var(--text-muted)">No account needed for solo • Your story stays on your phone.</span>
       </div>
     </div>
   </footer>
