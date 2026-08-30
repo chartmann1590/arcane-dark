@@ -7,21 +7,58 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../app/theme.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../services/ad_service.dart';
+import '../../services/auth_service.dart';
 import '../../services/crash_reporting.dart';
+import '../auth/auth_screen.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsProvider);
+    final authUser = ref.watch(authStateProvider).valueOrNull;
+    final hasRealAccount = ref.watch(hasRealAccountProvider);
     return Scaffold(
       backgroundColor: ArcaneTheme.background,
       appBar: AppBar(title: Text('SETTINGS', style: GoogleFonts.manrope(fontWeight: FontWeight.w800, letterSpacing: 1.1, fontSize: 13))),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
         children: [
+          Text('ACCOUNT', style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.1, color: ArcaneTheme.textMuted)),
+          const SizedBox(height: 10),
+          Container(
+            decoration: ArcaneTheme.cardDecoration(),
+            padding: const EdgeInsets.all(14),
+            child: hasRealAccount
+                ? Row(children: [
+                    Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: const Color(0xFF3DD68C).withOpacity(0.15), borderRadius: BorderRadius.circular(8)), child: const Icon(Icons.verified_user_rounded, color: Color(0xFF3DD68C), size: 18)),
+                    const SizedBox(width: 10),
+                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text('Signed in', style: GoogleFonts.manrope(fontWeight: FontWeight.w700, color: Colors.white)),
+                      Text(authUser?.email ?? authUser?.displayName ?? 'Characters sync to the cloud', style: GoogleFonts.manrope(fontSize: 12, color: ArcaneTheme.textSecondary)),
+                    ])),
+                    TextButton(onPressed: () => AuthService.instance.signOut(), child: Text('Sign Out', style: GoogleFonts.manrope(color: ArcaneTheme.tertiary, fontWeight: FontWeight.w700, fontSize: 12))),
+                  ])
+                : Row(children: [
+                    Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: ArcaneTheme.primary.withOpacity(0.15), borderRadius: BorderRadius.circular(8)), child: const Icon(Icons.person_outline_rounded, color: ArcaneTheme.primary, size: 18)),
+                    const SizedBox(width: 10),
+                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text('Playing as a guest', style: GoogleFonts.manrope(fontWeight: FontWeight.w700, color: Colors.white)),
+                      Text('Sign in to back up characters and play multiplayer', style: GoogleFonts.manrope(fontSize: 12, color: ArcaneTheme.textSecondary)),
+                    ])),
+                    ElevatedButton(
+                      onPressed: () async {
+                        await Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AuthScreen()));
+                      },
+                      style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 14)),
+                      child: Text('Sign In', style: GoogleFonts.manrope(fontWeight: FontWeight.w700, fontSize: 12)),
+                    ),
+                  ]),
+          ),
+          const SizedBox(height: 18),
           Text('AI CONFIGURATION', style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.1, color: ArcaneTheme.textMuted)),
           const SizedBox(height: 10),
           Container(

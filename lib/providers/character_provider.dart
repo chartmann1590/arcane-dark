@@ -1,9 +1,11 @@
 import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import '../domain/character.dart';
 import '../domain/ability_scores.dart';
+import '../services/auth_service.dart';
 
 class CharacterDraft {
   String name;
@@ -52,10 +54,16 @@ class CharacterDraftNotifier extends StateNotifier<CharacterDraft> {
 
 final characterDraftProvider = StateNotifierProvider<CharacterDraftNotifier, CharacterDraft>((ref) => CharacterDraftNotifier());
 
+/// Characters always live locally first (offline-first — solo play must never
+/// depend on a network call). When the player has signed in with a real
+/// (non-anonymous) account, every add/remove also mirrors to
+/// `users/{uid}/characters/{id}` in Firestore, and signing in pulls down any
+/// characters saved from another device and merges them in by id.
 class SavedCharactersNotifier extends StateNotifier<List<Character>> {
   SavedCharactersNotifier() : super([]) {
     _load();
   }
+
   Future<void> _load() async {
     final p = await SharedPreferences.getInstance();
     final raw = p.getString('saved_characters');
@@ -72,14 +80,46 @@ class SavedCharactersNotifier extends StateNotifier<List<Character>> {
     p.setString('saved_characters', jsonEncode(state.map((e) => e.toJson()).toList()));
   }
 
+  CollectionReference<Map<String, dynamic>>? _cloudCollection() {
+    final user = AuthService.instance.currentUser;
+    if (user == null || user.isAnonymous) return null;
+    return FirebaseFirestore.instance.collection('users').doc(user.uid).collection('characters');
+  }
+
   Future<void> add(Character c) async {
     state = [...state, c];
     await _persist();
+    await _cloudCollection()?.doc(c.id).set(c.toJson()).catchError((_) {});
   }
 
   Future<void> remove(String id) async {
     state = state.where((e) => e.id != id).toList();
     await _persist();
+    await _cloudCollection()?.doc(id).delete().catchError((_) {});
+  }
+
+  /// Call right after a real sign-in completes: pulls this account's cloud
+  /// characters and merges them into the local list (local copy wins on id
+  /// collision, since it's more likely to be the actively-played version).
+  Future<void> syncFromCloud() async {
+    final col = _cloudCollection();
+    if (col == null) return;
+    try {
+      final snap = await col.get();
+      final cloudChars = snap.docs.map((d) => Character.fromJson(d.data())).toList();
+      final localIds = state.map((c) => c.id).toSet();
+      final merged = [...state, ...cloudChars.where((c) => !localIds.contains(c.id))];
+      state = merged;
+      await _persist();
+      // Push any purely-local characters up to the cloud too, so this device's
+      // roster is now fully backed up under the real account.
+      final cloudIds = cloudChars.map((c) => c.id).toSet();
+      for (final c in state.where((c) => !cloudIds.contains(c.id))) {
+        await col.doc(c.id).set(c.toJson());
+      }
+    } catch (_) {
+      // Offline or rules-denied — local data is still intact, just try again later.
+    }
   }
 }
 

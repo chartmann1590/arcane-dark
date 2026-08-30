@@ -8,7 +8,6 @@ import '../../app/theme.dart';
 import '../../providers/character_provider.dart';
 import '../../services/auth_service.dart';
 import '../../services/session_repository.dart';
-import '../auth/auth_screen.dart';
 
 /// Real Firestore-backed lobby. If [sessionId] is null this device is hosting
 /// (a session is created on first build); otherwise it's watching a session
@@ -37,19 +36,17 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
     }
   }
 
-  Future<void> _ensureAuthed() async {
-    if (AuthService.instance.currentUser != null) return;
-    if (!mounted) return;
-    await Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AuthScreen()));
-  }
-
   Future<void> _hostNewSession() async {
     setState(() {
       _creating = true;
       _error = null;
     });
     try {
-      await _ensureAuthed();
+      // No sign-in screen here on purpose — SessionRepository.createSession()
+      // signs in anonymously under the hood so a quick "host a game for my
+      // friends" flow never demands an account. Settings offers a real
+      // Google/email sign-in separately, for players who want their
+      // characters to follow them across devices.
       final chars = ref.read(savedCharactersProvider);
       final seedJson = {'title': 'A Shared Adventure', 'tone': 'classic fantasy', 'setting': 'A forgotten dungeon', 'hook': 'The party gathers at the mouth of the ruins.', 'startingLocation': 'The Ruined Gate', 'beats': <String>[]};
       final info = await SessionRepository.instance.createSession(
@@ -137,7 +134,7 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                                       SizedBox(
                                         width: double.infinity,
                                         child: OutlinedButton.icon(
-                                          onPressed: () => SharePlus.instance.share(ShareParams(text: _shareText)),
+                                          onPressed: () => Share.share(_shareText),
                                           icon: const Icon(Icons.ios_share_rounded, size: 16),
                                           label: Text('Share Invite', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w700)),
                                         ),

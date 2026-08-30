@@ -1,20 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../app/theme.dart';
+import '../../providers/character_provider.dart';
 import '../../services/auth_service.dart';
 
 /// Only shown when the player opts into something that needs a real identity
 /// (multiplayer, cloud sync) — never blocks solo play. Pass [onSignedIn] to
 /// pop back to whatever screen asked for sign-in.
-class AuthScreen extends StatefulWidget {
+class AuthScreen extends ConsumerStatefulWidget {
   final VoidCallback? onSignedIn;
   const AuthScreen({super.key, this.onSignedIn});
   @override
-  State<AuthScreen> createState() => _AuthScreenState();
+  ConsumerState<AuthScreen> createState() => _AuthScreenState();
 }
 
-class _AuthScreenState extends State<AuthScreen> {
+class _AuthScreenState extends ConsumerState<AuthScreen> {
   bool _isRegister = false;
   bool _busy = false;
   String? _error;
@@ -45,6 +47,7 @@ class _AuthScreenState extends State<AuthScreen> {
     });
     try {
       await action();
+      await ref.read(savedCharactersProvider.notifier).syncFromCloud();
       if (mounted) _done();
     } catch (e) {
       if (mounted) setState(() => _error = AuthService.instance.friendlyError(e));

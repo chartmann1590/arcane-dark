@@ -148,7 +148,7 @@ class CampaignHubScreen extends ConsumerWidget {
             Text('YOUR HEROES', style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.2, color: ArcaneTheme.textMuted)),
             const SizedBox(height: 10),
             SizedBox(
-              height: 96,
+              height: 108,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 itemCount: chars.length,
@@ -161,7 +161,7 @@ class CampaignHubScreen extends ConsumerWidget {
                     decoration: ArcaneTheme.cardDecoration(),
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Row(children: [
-                        CircleAvatar(radius: 16, backgroundColor: ArcaneTheme.primary.withOpacity(0.2), child: Text(ch.name.isNotEmpty ? ch.name[0].toUpperCase() : '?', style: GoogleFonts.playfairDisplay(color: ArcaneTheme.primary, fontWeight: FontWeight.w700))),
+                        CircleAvatar(radius: 16, backgroundColor: ArcaneTheme.primary.withOpacity(0.2), backgroundImage: AssetImage('assets/avatar/portraits/${ch.race.name}.png')),
                         const SizedBox(width: 8),
                         Expanded(child: Text(ch.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white))),
                       ]),

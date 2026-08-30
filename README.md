@@ -3,6 +3,7 @@
 <p align="center">
   <a href="https://chartmann1590.github.io/arcane-dark/"><img src="https://img.shields.io/badge/Website-arcane--dark-8B5CF6?style=for-the-badge&logo=sparkles&logoColor=white" alt="Website"/></a>
   <a href="https://chartmann1590.github.io/arcane-dark/privacy.html"><img src="https://img.shields.io/badge/Privacy-Solo%20stays%20on--device-3DD68C?style=for-the-badge" alt="Privacy"/></a>
+  <a href="https://buymeacoffee.com/charleshartmann"><img src="https://img.shields.io/badge/Buy%20me%20a%20coffee-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=black" alt="Buy me a coffee"/></a>
   <img src="https://img.shields.io/badge/Coming%20soon-Google%20Play-000000?style=for-the-badge&logo=googleplay&logoColor=white" alt="Coming soon to Google Play"/>
 </p>
 
@@ -78,6 +79,18 @@ Full policy: **[chartmann1590.github.io/arcane-dark/privacy.html](https://chartm
 - **Privacy on the web:** [https://chartmann1590.github.io/arcane-dark/privacy.html](https://chartmann1590.github.io/arcane-dark/privacy.html)
 - **Store link:** We’ll post it here and on the website the moment it’s approved — follow the repo to be notified.
 
+### ☕ Support the tavern
+
+Enjoying the adventure? Keeping the story going takes time, art, and a lot of coffee. If you’d like to support development, you can buy me a coffee — it keeps the lights on and the dungeons warm.
+
+<p align="center">
+  <a href="https://buymeacoffee.com/charleshartmann"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" width="180"/></a>
+</p>
+
+<p align="center">
+  <a href="https://buymeacoffee.com/charleshartmann"><strong>☕ buymeacoffee.com/charleshartmann</strong></a> • also via the Sponsor button at the top of this repo (FUNDING.yml)
+</p>
+
 ### 💬 Questions or ideas?
 
 Open an issue — we read them. Want a peek under the hood? The whole project is open on GitHub.
@@ -109,4 +122,4 @@ flutter run
 
 No license has been chosen yet. All rights reserved unless a `LICENSE` file says otherwise.
 
-<p align="center"><em>© 2026 Arcane Dark • <a href="https://chartmann1590.github.io/arcane-dark/">Website</a> • <a href="https://chartmann1590.github.io/arcane-dark/privacy.html">Privacy Policy</a> • Coming soon to Google Play</em></p>
+<p align="center"><em>© 2026 Arcane Dark • <a href="https://chartmann1590.github.io/arcane-dark/">Website</a> • <a href="https://chartmann1590.github.io/arcane-dark/privacy.html">Privacy Policy</a> • <a href="https://buymeacoffee.com/charleshartmann">☕ Buy me a coffee</a> • Coming soon to Google Play</em></p>

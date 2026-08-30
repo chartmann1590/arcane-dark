@@ -7,7 +7,6 @@ import '../../app/theme.dart';
 import '../../providers/character_provider.dart';
 import '../../services/audio_service.dart';
 import '../../services/session_repository.dart';
-import '../auth/auth_screen.dart';
 
 class JoinScreen extends ConsumerStatefulWidget {
   const JoinScreen({super.key});
@@ -32,14 +31,6 @@ class _JoinScreenState extends ConsumerState<JoinScreen> {
       _joining = true;
     });
     try {
-      if (Navigator.of(context).canPop() == false) {
-        // no-op, placeholder to keep analyzer quiet about unused import path
-      }
-      final authed = await _ensureAuthed();
-      if (!authed) {
-        setState(() => _joining = false);
-        return;
-      }
       final chars = ref.read(savedCharactersProvider);
       final info = await SessionRepository.instance.joinSessionByCode(
         code,
@@ -54,12 +45,6 @@ class _JoinScreenState extends ConsumerState<JoinScreen> {
     } finally {
       if (mounted) setState(() => _joining = false);
     }
-  }
-
-  Future<bool> _ensureAuthed() async {
-    // Anonymous auth is created transparently inside SessionRepository via
-    // AuthService.ensureSignedIn() — no separate account is required to join.
-    return true;
   }
 
   Future<void> _scanQr() async {

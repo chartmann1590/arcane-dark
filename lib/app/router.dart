@@ -8,6 +8,7 @@ import '../features/multiplayer/join_screen.dart';
 import '../features/settings/settings_screen.dart';
 import '../features/onboarding/onboarding_screen.dart';
 import '../features/settings/privacy_policy_screen.dart';
+import '../features/auth/auth_screen.dart';
 import '../services/ad_service.dart';
 import '../services/audio_service.dart';
 import 'theme.dart';
@@ -100,6 +101,7 @@ GoRouter buildAppRouter({required String initialLocation}) => GoRouter(
   routes: [
     GoRoute(path: '/onboarding', builder: (c, s) => const OnboardingScreen()),
     GoRoute(path: '/privacy', builder: (c, s) => const PrivacyPolicyScreen()),
+    GoRoute(path: '/auth', builder: (c, s) => const AuthScreen()),
     ShellRoute(
       builder: (context, state, child) {
         final loc = state.matchedLocation;
@@ -116,7 +118,7 @@ GoRouter buildAppRouter({required String initialLocation}) => GoRouter(
         GoRoute(path: '/heroes', builder: (c, s) => const CharacterCreationFlow()),
         GoRoute(path: '/create', builder: (c, s) => const CharacterCreationFlow()),
         GoRoute(path: '/play', builder: (c, s) => const GamePlayScreen()),
-        GoRoute(path: '/party', builder: (c, s) => const LobbyScreen()),
+        GoRoute(path: '/party', builder: (c, s) => LobbyScreen(sessionId: s.uri.queryParameters['session'])),
         GoRoute(path: '/join', builder: (c, s) => const JoinScreen()),
         GoRoute(path: '/settings', builder: (c, s) => const SettingsScreen()),
       ],
