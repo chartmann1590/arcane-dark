@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'ability_scores.dart';
 import 'campaign_state.dart';
 
 class DiceResult {
@@ -10,6 +11,52 @@ class DiceResult {
   String toString() => '${rolls.join("+")} + $modifier = $total';
 }
 
+/// A d20 ability check: real modifier pulled from the acting character's own
+/// ability scores (not whatever number the model happens to type), compared
+/// against a difficulty class. This is what makes "the rules" real instead of
+/// cosmetic — the same DEX 14 rogue always gets the same +2 on a DEX check.
+class CheckResult {
+  final String ability;
+  final int roll;
+  final int modifier;
+  final int total;
+  final int dc;
+  final bool success;
+  final bool critical; // natural 20
+  final bool fumble; // natural 1
+  const CheckResult({required this.ability, required this.roll, required this.modifier, required this.total, required this.dc, required this.success, required this.critical, required this.fumble});
+}
+
+class AttackResult {
+  final int roll;
+  final int modifier;
+  final int total;
+  final int targetAc;
+  final bool hit;
+  final bool critical;
+  final DiceResult? damage;
+  const AttackResult({required this.roll, required this.modifier, required this.total, required this.targetAc, required this.hit, required this.critical, this.damage});
+}
+
+/// Standard 5e proficiency bonus by level (characters start at level 1).
+int proficiencyBonusForLevel(int level) {
+  if (level >= 17) return 6;
+  if (level >= 13) return 5;
+  if (level >= 9) return 4;
+  if (level >= 5) return 3;
+  return 2;
+}
+
+int abilityModifierByName(AbilityScores a, String ability) => switch (ability.toUpperCase()) {
+      'STR' => a.strMod,
+      'DEX' => a.dexMod,
+      'CON' => a.conMod,
+      'INT' => a.intMod,
+      'WIS' => a.wisMod,
+      'CHA' => a.chaMod,
+      _ => 0,
+    };
+
 class DmTools {
   final Random _rng;
   DmTools({int? seed}) : _rng = Random(seed);
@@ -18,6 +65,44 @@ class DmTools {
     final rolls = List.generate(count, (_) => _rng.nextInt(sides) + 1);
     final total = rolls.fold(0, (a, b) => a + b) + modifier;
     return DiceResult(rolls, modifier, total);
+  }
+
+  PartyMemberStatus _resolveMember(CampaignState state, String? characterId) {
+    if (characterId != null) {
+      for (final m in state.party) {
+        if (m.characterId == characterId || m.name.toLowerCase() == characterId.toLowerCase()) return m;
+      }
+    }
+    return state.party.first;
+  }
+
+  /// d20 + real ability modifier vs a difficulty class. Natural 20 always
+  /// succeeds, natural 1 always fails (standard 5e rule), regardless of DC.
+  CheckResult abilityCheck(CampaignState state, {String? characterId, required String ability, required int dc}) {
+    final member = _resolveMember(state, characterId);
+    final mod = abilityModifierByName(member.abilities, ability);
+    final roll = _rng.nextInt(20) + 1;
+    final total = roll + mod;
+    final critical = roll == 20;
+    final fumble = roll == 1;
+    return CheckResult(ability: ability.toUpperCase(), roll: roll, modifier: mod, total: total, dc: dc, success: critical || (!fumble && total >= dc), critical: critical, fumble: fumble);
+  }
+
+  /// d20 + ability modifier + proficiency bonus vs target AC. On a hit, rolls
+  /// damage too (doubled dice on a natural 20, per 5e crit rules) so the
+  /// narration always has a real number to point to, not an invented one.
+  AttackResult attackRoll(CampaignState state, {String? characterId, String ability = 'STR', required int targetAc, int damageDie = 6, int damageModifier = 0}) {
+    final member = _resolveMember(state, characterId);
+    final mod = abilityModifierByName(member.abilities, ability) + proficiencyBonusForLevel(1);
+    final roll = _rng.nextInt(20) + 1;
+    final total = roll + mod;
+    final critical = roll == 20;
+    final hit = critical || total >= targetAc;
+    DiceResult? damage;
+    if (hit) {
+      damage = rollDice(sides: damageDie, count: critical ? 2 : 1, modifier: damageModifier);
+    }
+    return AttackResult(roll: roll, modifier: mod, total: total, targetAc: targetAc, hit: hit, critical: critical, damage: damage);
   }
 
   void updateHp(CampaignState state, String targetId, int delta) {

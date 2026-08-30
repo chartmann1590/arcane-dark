@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="390" height="844" viewBox="0 0 390 844" role="img" aria-label="Campaign hub screen">
+  <defs>
+    <linearGradient id="bg3" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0F0D17"/><stop offset="100%" stop-color="#1A162B"/></linearGradient>
+    <linearGradient id="btnGold" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#2A2440"/><stop offset="100%" stop-color="#1E1B2E"/></linearGradient>
+  </defs>
+  <rect width="390" height="844" fill="url(#bg3)"/>
+  <rect x="0" y="0" width="390" height="44" fill="#0F0D17"/>
+  <text x="24" y="28" font-family="Manrope, Arial" font-size="13" font-weight="700" fill="#7C7892">9:41</text>
+  <!-- app bar -->
+  <rect x="0" y="44" width="390" height="52" fill="#0F0D17"/>
+  <text x="195" y="74" text-anchor="middle" font-family="Playfair Display, serif" font-size="13" font-weight="800" fill="#C9A227" letter-spacing="2">ARCANE DARK</text>
+  <!-- campaign card -->
+  <rect x="16" y="108" width="358" height="200" rx="16" fill="#1E1B2E" stroke="rgba(201,162,39,0.35)"/>
+  <rect x="28" y="124" width="108" height="22" rx="6" fill="rgba(139,92,246,0.15)" stroke="rgba(139,92,246,0.25)"/>
+  <text x="82" y="139" text-anchor="middle" font-family="Manrope, Arial" font-size="9" font-weight="800" fill="#8B5CF6" letter-spacing="1">CURRENT CAMPAIGN</text>
+  <rect x="286" y="124" width="56" height="56" rx="10" fill="#24203A" stroke="rgba(201,162,39,0.4)"/>
+  <text x="314" y="158" text-anchor="middle" font-size="22">🧝</text>
+  <rect x="296" y="170" width="36" height="14" rx="4" fill="#C9A227"/>
+  <text x="314" y="180" text-anchor="middle" font-family="Manrope, Arial" font-size="8" font-weight="800" fill="black">LVL 3</text>
+  <text x="28" y="178" font-family="Playfair Display, serif" font-size="18" font-weight="800" fill="white">Whispers of the</text>
+  <text x="28" y="198" font-family="Playfair Display, serif" font-size="18" font-weight="800" fill="white">Forgotten Crypt</text>
+  <text x="28" y="218" font-family="Manrope, Arial" font-size="11" fill="#B8B2D0">The village sleeps. Beneath it, something</text>
+  <text x="28" y="232" font-family="Manrope, Arial" font-size="11" fill="#B8B2D0">stirs in the dark — and it knows your name.</text>
+  <rect x="28" y="252" width="334" height="38" rx="10" fill="#2A2440" stroke="rgba(201,162,39,0.5)"/>
+  <text x="195" y="276" text-anchor="middle" font-family="Manrope, Arial" font-size="12" font-weight="800" fill="#C9A227" letter-spacing="1">RESUME  →</text>
+
+  <!-- action cards -->
+  <rect x="16" y="324" width="358" height="64" rx="14" fill="#24203A" stroke="#2E2A44"/>
+  <rect x="28" y="338" width="36" height="36" rx="10" fill="rgba(139,92,246,0.15)" stroke="rgba(139,92,246,0.22)"/>
+  <text x="46" y="360" text-anchor="middle" font-size="14" fill="#8B5CF6">＋</text>
+  <text x="76" y="356" font-family="Manrope, Arial" font-size="13" font-weight="800" fill="white">New Solo Campaign</text>
+  <text x="76" y="372" font-family="Manrope, Arial" font-size="11" fill="#B8B2D0">Start a fresh journey</text>
+  <text x="354" y="360" text-anchor="middle" font-family="Arial" font-size="14" fill="#7C7892">›</text>
+
+  <rect x="16" y="398" width="358" height="64" rx="14" fill="#24203A" stroke="#2E2A44"/>
+  <rect x="28" y="412" width="36" height="36" rx="10" fill="rgba(201,162,39,0.12)" stroke="rgba(201,162,39,0.22)"/>
+  <text x="46" y="434" text-anchor="middle" font-size="14" fill="#C9A227">◈</text>
+  <text x="76" y="430" font-family="Manrope, Arial" font-size="13" font-weight="800" fill="white">Multiplayer</text>
+  <text x="76" y="446" font-family="Manrope, Arial" font-size="11" fill="#B8B2D0">Join or Host  •  Up to 6 players</text>
+  <text x="354" y="434" text-anchor="middle" font-family="Arial" font-size="14" fill="#7C7892">›</text>
+
+  <!-- heroes -->
+  <text x="16" y="490" font-family="Manrope, Arial" font-size="10" font-weight="800" fill="#7C7892" letter-spacing="1.2">YOUR HEROES</text>
+  <rect x="16" y="502" width="140" height="96" rx="12" fill="#1E1B2E" stroke="#2E2A44"/>
+  <circle cx="42" cy="528" r="14" fill="rgba(139,92,246,0.2)" stroke="rgba(139,92,246,0.25)"/>
+  <text x="42" y="533" text-anchor="middle" font-family="Playfair Display, serif" font-size="12" font-weight="800" fill="#8B5CF6">E</text>
+  <text x="64" y="526" font-family="Manrope, Arial" font-size="12" font-weight="800" fill="white">Elyndra</text>
+  <text x="64" y="540" font-family="Manrope, Arial" font-size="10" fill="#B8B2D0">Elf • Wizard</text>
+  <rect x="28" y="552" width="48" height="18" rx="6" fill="#24203A" stroke="#2E2A44"/>
+  <text x="52" y="564" text-anchor="middle" font-family="Manrope, Arial" font-size="9" font-weight="700" fill="#7C7892">HP 28</text>
+  <rect x="82" y="552" width="48" height="18" rx="6" fill="#24203A" stroke="#2E2A44"/>
+  <text x="106" y="564" text-anchor="middle" font-family="Manrope, Arial" font-size="9" font-weight="700" fill="#7C7892">AC 14</text>
+
+  <rect x="168" y="502" width="140" height="96" rx="12" fill="#1E1B2E" stroke="#2E2A44"/>
+  <circle cx="194" cy="528" r="14" fill="rgba(201,162,39,0.15)" stroke="rgba(201,162,39,0.2)"/>
+  <text x="194" y="533" text-anchor="middle" font-family="Playfair Display, serif" font-size="12" font-weight="800" fill="#C9A227">G</text>
+  <text x="216" y="526" font-family="Manrope, Arial" font-size="12" font-weight="800" fill="white">Gromm</text>
+  <text x="216" y="540" font-family="Manrope, Arial" font-size="10" fill="#B8B2D0">Orc • Fighter</text>
+  <rect x="180" y="552" width="48" height="18" rx="6" fill="#24203A" stroke="#2E2A44"/>
+  <text x="204" y="564" text-anchor="middle" font-family="Manrope, Arial" font-size="9" font-weight="700" fill="#7C7892">HP 34</text>
+  <rect x="234" y="552" width="48" height="18" rx="6" fill="#24203A" stroke="#2E2A44"/>
+  <text x="258" y="564" text-anchor="middle" font-family="Manrope, Arial" font-size="9" font-weight="700" fill="#7C7892">AC 16</text>
+
+  <!-- tip -->
+  <rect x="16" y="620" width="358" height="56" rx="12" fill="rgba(139,92,246,0.08)" stroke="rgba(139,92,246,0.18)"/>
+  <text x="38" y="652" font-size="16" fill="#8B5CF6">💡</text>
+  <text x="62" y="644" font-family="Manrope, Arial" font-size="11" fill="#B8B2D0">Tip: Your party can share one story — host a</text>
+  <text x="62" y="658" font-family="Manrope, Arial" font-size="11" fill="#B8B2D0">multiplayer game and invite friends with a code.</text>
+
+  <!-- bottom nav -->
+  <rect x="0" y="780" width="390" height="64" fill="#0F0D17" stroke="#2E2A44"/>
+  <g text-anchor="middle" font-family="Manrope, Arial" font-size="9" font-weight="700">
+    <text x="65" y="806" fill="#8B5CF6">⬢</text><text x="65" y="820" fill="#8B5CF6">Hub</text>
+    <text x="130" y="806" fill="#7C7892">⚔</text><text x="130" y="820" fill="#7C7892">Play</text>
+    <text x="195" y="806" fill="#7C7892">◈</text><text x="195" y="820" fill="#7C7892">Heroes</text>
+    <text x="260" y="806" fill="#7C7892">⬣</text><text x="260" y="820" fill="#7C7892">Party</text>
+    <text x="325" y="806" fill="#7C7892">⚙</text><text x="325" y="820" fill="#7C7892">Settings</text>
+  </g>
+  <rect x="135" y="832" width="120" height="5" rx="999" fill="white"/>
+</svg>

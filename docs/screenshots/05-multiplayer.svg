@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="390" height="844" viewBox="0 0 390 844" role="img" aria-label="Multiplayer lobby">
+  <defs>
+    <linearGradient id="bg5" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0F0D17"/><stop offset="100%" stop-color="#1A162B"/></linearGradient>
+  </defs>
+  <rect width="390" height="844" fill="url(#bg5)"/>
+  <rect x="0" y="0" width="390" height="44" fill="#0F0D17"/>
+  <text x="24" y="28" font-family="Manrope, Arial" font-size="13" font-weight="700" fill="#7C7892">9:41</text>
+  <rect x="0" y="44" width="390" height="48" fill="#0F0D17" stroke="#2E2A44"/>
+  <text x="20" y="72" font-family="Arial" font-size="14" fill="#F5F3FF">‹</text>
+  <text x="195" y="72" text-anchor="middle" font-family="Manrope, Arial" font-size="11" font-weight="800" fill="#C9A227" letter-spacing="1">PARTY LOBBY</text>
+  <text x="370" y="72" text-anchor="end" font-family="Arial" font-size="14" fill="#F5F3FF">⋯</text>
+
+  <!-- code card -->
+  <rect x="16" y="108" width="358" height="120" rx="16" fill="#1E1B2E" stroke="#2E2A44"/>
+  <text x="28" y="132" font-family="Manrope, Arial" font-size="10" font-weight="800" fill="#7C7892" letter-spacing="0.8">INVITE CODE</text>
+  <rect x="28" y="142" width="200" height="38" rx="10" fill="#24203A" stroke="#2E2A44"/>
+  <text x="128" y="166" text-anchor="middle" font-family="Manrope, Arial" font-size="18" font-weight="800" fill="white" letter-spacing="3">ARCA-7X9P</text>
+  <rect x="236" y="142" width="56" height="38" rx="10" fill="rgba(201,162,39,0.12)" stroke="rgba(201,162,39,0.22)"/><text x="264" y="166" text-anchor="middle" font-size="14" fill="#C9A227">⎙</text>
+  <rect x="300" y="142" width="56" height="38" rx="10" fill="rgba(139,92,246,0.15)" stroke="rgba(139,92,246,0.22)"/><text x="328" y="166" text-anchor="middle" font-size="14" fill="#8B5CF6">◈</text>
+  <text x="28" y="204" font-family="Manrope, Arial" font-size="11" fill="#B8B2D0">Share this code — friends join by scanning the</text>
+  <text x="28" y="218" font-family="Manrope, Arial" font-size="11" fill="#B8B2D0">QR code or entering the code in “Join Party”.</text>
+
+  <!-- qr -->
+  <rect x="140" y="236" width="110" height="110" rx="12" fill="white" stroke="#2E2A44"/>
+  <g fill="black">
+    <rect x="152" y="248" width="28" height="28" rx="4"/><rect x="158" y="254" width="16" height="16" rx="2" fill="white"/><rect x="162" y="258" width="8" height="8" rx="1"/>
+    <rect x="210" y="248" width="28" height="28" rx="4"/><rect x="216" y="254" width="16" height="16" rx="2" fill="white"/><rect x="220" y="258" width="8" height="8" rx="1"/>
+    <rect x="152" y="306" width="28" height="28" rx="4"/><rect x="158" y="312" width="16" height="16" rx="2" fill="white"/><rect x="162" y="316" width="8" height="8" rx="1"/>
+    <rect x="188" y="288" width="6" height="6"/><rect x="200" y="288" width="6" height="6"/><rect x="188" y="300" width="6" height="6"/><rect x="210" y="306" width="6" height="6"/><rect x="224" y="288" width="6" height="18"/>
+  </g>
+
+  <!-- party list -->
+  <text x="16" y="376" font-family="Manrope, Arial" font-size="10" font-weight="800" fill="#7C7892" letter-spacing="1.2">PARTY  •  3 / 6</text>
+  <rect x="16" y="388" width="358" height="62" rx="12" fill="#1E1B2E" stroke="#8B5CF6" stroke-width="1.2"/>
+  <circle cx="44" cy="419" r="18" fill="rgba(139,92,246,0.2)" stroke="rgba(139,92,246,0.25)"/><text x="44" y="424" text-anchor="middle" font-size="16">🧝</text>
+  <text x="70" y="414" font-family="Manrope, Arial" font-size="13" font-weight="800" fill="white">Elyndra  • Host</text>
+  <text x="70" y="430" font-family="Manrope, Arial" font-size="11" fill="#B8B2D0">Elf Wizard • Ready ✓</text>
+  <rect x="310" y="406" width="52" height="24" rx="999" fill="rgba(61,214,140,0.12)" stroke="rgba(61,214,140,0.18)"/><text x="336" y="422" text-anchor="middle" font-family="Manrope, Arial" font-size="10" font-weight="800" fill="#3DD68C">READY</text>
+
+  <rect x="16" y="458" width="358" height="62" rx="12" fill="#1E1B2E" stroke="#2E2A44"/>
+  <circle cx="44" cy="489" r="18" fill="rgba(201,162,39,0.14)" stroke="rgba(201,162,39,0.22)"/><text x="44" y="494" text-anchor="middle" font-size="16">⛏️</text>
+  <text x="70" y="484" font-family="Manrope, Arial" font-size="13" font-weight="700" fill="white">Gromm</text>
+  <text x="70" y="500" font-family="Manrope, Arial" font-size="11" fill="#B8B2D0">Orc Fighter • Ready ✓</text>
+  <rect x="310" y="476" width="52" height="24" rx="999" fill="rgba(61,214,140,0.12)" stroke="rgba(61,214,140,0.18)"/><text x="336" y="492" text-anchor="middle" font-family="Manrope, Arial" font-size="10" font-weight="800" fill="#3DD68C">READY</text>
+
+  <rect x="16" y="528" width="358" height="62" rx="12" fill="#1E1B2E" stroke="#2E2A44"/>
+  <circle cx="44" cy="559" r="18" fill="#24203A" stroke="#2E2A44"/><text x="44" y="564" text-anchor="middle" font-size="16">😈</text>
+  <text x="70" y="554" font-family="Manrope, Arial" font-size="13" font-weight="700" fill="white">Zara</text>
+  <text x="70" y="570" font-family="Manrope, Arial" font-size="11" fill="#7C7892">Tiefling Rogue • Joining…</text>
+  <circle cx="336" cy="559" r="12" fill="none" stroke="#8B5CF6" stroke-width="2" stroke-dasharray="3 2"/><text x="336" y="563" text-anchor="middle" font-size="8" fill="#8B5CF6">◐</text>
+
+  <!-- waiting -->
+  <rect x="16" y="602" width="358" height="46" rx="12" fill="rgba(139,92,246,0.08)" stroke="rgba(139,92,246,0.18)"/>
+  <text x="28" y="630" font-size="14" fill="#8B5CF6">◷</text>
+  <text x="50" y="624" font-family="Manrope, Arial" font-size="12" font-weight="700" fill="#B8B2D0">Waiting for players…</text>
+  <text x="50" y="638" font-family="Manrope, Arial" font-size="11" fill="#7C7892">Start when everyone is ready — the story syncs for all.</text>
+
+  <rect x="16" y="670" width="358" height="52" rx="14" fill="#8B5CF6"/>
+  <text x="195" y="702" text-anchor="middle" font-family="Manrope, Arial" font-size="13" font-weight="800" fill="white" letter-spacing="0.6">Start Adventure  →</text>
+  <rect x="16" y="732" width="358" height="40" rx="12" fill="none" stroke="#2E2A44"/>
+  <text x="195" y="756" text-anchor="middle" font-family="Manrope, Arial" font-size="11" font-weight="700" fill="#B8B2D0">Copy Invite Link</text>
+
+  <rect x="135" y="832" width="120" height="5" rx="999" fill="white"/>
+</svg>

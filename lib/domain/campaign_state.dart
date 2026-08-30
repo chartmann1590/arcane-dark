@@ -1,5 +1,7 @@
+import 'ability_scores.dart';
 import 'campaign_seed.dart';
 import 'character.dart';
+import 'persona.dart';
 
 class NpcRef {
   final String id;
@@ -12,14 +14,48 @@ class NpcRef {
 
 class PartyMemberStatus {
   final String characterId;
+  // Snapshotted at campaign start so the DM prompt can address each character
+  // by name/persona without needing a separate character lookup at prompt time.
+  final String name;
+  final String raceLabel;
+  final String classLabel;
+  final String persona;
+  final AbilityScores abilities;
   int hp;
   int maxHp;
   List<String> conditions;
   List<String> inventory;
-  PartyMemberStatus({required this.characterId, required this.hp, required this.maxHp, this.conditions = const [], this.inventory = const []});
-  Map<String, dynamic> toJson() => {'characterId': characterId, 'hp': hp, 'maxHp': maxHp, 'conditions': conditions, 'inventory': inventory};
+  PartyMemberStatus({
+    required this.characterId,
+    required this.name,
+    required this.raceLabel,
+    required this.classLabel,
+    required this.persona,
+    required this.abilities,
+    required this.hp,
+    required this.maxHp,
+    this.conditions = const [],
+    this.inventory = const [],
+  });
+  Map<String, dynamic> toJson() => {
+        'characterId': characterId,
+        'name': name,
+        'raceLabel': raceLabel,
+        'classLabel': classLabel,
+        'persona': persona,
+        'abilities': abilities.toJson(),
+        'hp': hp,
+        'maxHp': maxHp,
+        'conditions': conditions,
+        'inventory': inventory,
+      };
   factory PartyMemberStatus.fromJson(Map<String, dynamic> j) => PartyMemberStatus(
         characterId: j['characterId'],
+        name: j['name'] as String? ?? 'Unknown',
+        raceLabel: j['raceLabel'] as String? ?? '',
+        classLabel: j['classLabel'] as String? ?? '',
+        persona: j['persona'] as String? ?? '',
+        abilities: j['abilities'] != null ? AbilityScores.fromJson(j['abilities'] as Map<String, dynamic>) : const AbilityScores(),
         hp: j['hp'],
         maxHp: j['maxHp'],
         conditions: (j['conditions'] as List?)?.cast<String>() ?? [],
@@ -81,7 +117,17 @@ class CampaignState {
       seed: seed,
       currentSceneDescription: 'You gather at ${seed.startingLocation}. ${seed.hook}',
       party: characters
-          .map((c) => PartyMemberStatus(characterId: c.id, hp: c.hp, maxHp: c.hp, inventory: List.from(c.inventory)))
+          .map((c) => PartyMemberStatus(
+                characterId: c.id,
+                name: c.name,
+                raceLabel: c.race.label,
+                classLabel: c.charClass.label,
+                persona: c.personaDescription,
+                abilities: c.abilities,
+                hp: c.hp,
+                maxHp: c.hp,
+                inventory: List.from(c.inventory),
+              ))
           .toList(),
       questLog: seed.beats.asMap().entries.map((e) => QuestEntry(id: 'beat_${e.key}', title: e.value, stage: e.key == 0 ? 'active' : 'locked', status: e.key == 0 ? 'active' : 'locked')).toList(),
       worldFlags: {},

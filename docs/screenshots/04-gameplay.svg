@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="390" height="844" viewBox="0 0 390 844" role="img" aria-label="Gameplay — dungeon map and AI narration">
+  <defs>
+    <linearGradient id="bg4" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0F0D17"/><stop offset="100%" stop-color="#1A162B"/></linearGradient>
+  </defs>
+  <rect width="390" height="844" fill="url(#bg4)"/>
+  <rect x="0" y="0" width="390" height="44" fill="#0F0D17"/>
+  <text x="24" y="28" font-family="Manrope, Arial" font-size="13" font-weight="700" fill="#7C7892">9:41</text>
+  <!-- app bar -->
+  <rect x="0" y="44" width="390" height="48" fill="#0F0D17" stroke="#2E2A44"/>
+  <text x="20" y="72" font-family="Arial" font-size="14" fill="#F5F3FF">‹</text>
+  <text x="195" y="72" text-anchor="middle" font-family="Manrope, Arial" font-size="11" font-weight="800" fill="#C9A227" letter-spacing="1">THE FORGOTTEN CRYPT</text>
+  <circle cx="344" cy="68" r="14" fill="#24203A" stroke="#2E2A44"/><text x="344" y="72" text-anchor="middle" font-size="10" fill="white">⟳</text>
+  <circle cx="368" cy="68" r="14" fill="#24203A" stroke="#2E2A44"/><text x="368" y="72" text-anchor="middle" font-size="10" fill="white">⋯</text>
+
+  <!-- map -->
+  <rect x="0" y="92" width="390" height="252" fill="#0B0A12" stroke="#2E2A44"/>
+  <!-- grid -->
+  <g>
+    <!-- 12x7 grid represented -->
+    <!-- row 1 -->
+    <rect x="8" y="102" width="40" height="40" rx="4" fill="#2A2A3A" stroke="#3A3450"/><rect x="50" y="102" width="40" height="40" rx="4" fill="#2A2A3A" stroke="#3A3450"/><rect x="92" y="102" width="40" height="40" rx="4" fill="#2A2A3A" stroke="#3A3450"/><rect x="134" y="102" width="40" height="40" rx="4" fill="#C9A227" opacity="0.25"/><rect x="176" y="102" width="40" height="40" rx="4" fill="#2A2A3A" stroke="#3A3450"/><rect x="218" y="102" width="40" height="40" rx="4" fill="#2A2A3A" stroke="#3A3450"/><rect x="260" y="102" width="40" height="40" rx="4" fill="#2A2A3A" stroke="#3A3450"/><rect x="302" y="102" width="40" height="40" rx="4" fill="#2A2A3A" stroke="#3A3450"/>
+    <!-- row 2 -->
+    <rect x="8" y="144" width="40" height="40" rx="4" fill="#2A2A3A" stroke="#3A3450"/><rect x="50" y="144" width="40" height="40" rx="4" fill="#C9A227" opacity="0.15"/><rect x="92" y="144" width="40" height="40" rx="4" fill="#D9C6A5"/><rect x="134" y="144" width="40" height="40" rx="4" fill="#D9C6A5"/><rect x="176" y="144" width="40" height="40" rx="4" fill="#D9C6A5"/><rect x="218" y="144" width="40" height="40" rx="4" fill="#D9C6A5"/><rect x="260" y="144" width="40" height="40" rx="4" fill="#1A6B4A" opacity="0.5"/><rect x="302" y="144" width="40" height="40" rx="4" fill="#2A2A3A" stroke="#3A3450"/>
+    <!-- row 3 -->
+    <rect x="8" y="186" width="40" height="40" rx="4" fill="#2A2A3A" stroke="#3A3450"/><rect x="50" y="186" width="40" height="40" rx="4" fill="#D9C6A5"/><rect x="92" y="186" width="40" height="40" rx="4" fill="#8B5CF6"/><rect x="96" y="190" width="32" height="32" rx="16" fill="#8B5CF6" stroke="white" stroke-width="1.5"/><text x="112" y="210" text-anchor="middle" font-size="12" fill="white">●</text><rect x="134" y="186" width="40" height="40" rx="4" fill="#D9C6A5"/><rect x="176" y="186" width="40" height="40" rx="4" fill="#D9C6A5"/><rect x="218" y="186" width="40" height="40" rx="4" fill="#D9C6A5"/><rect x="260" y="186" width="40" height="40" rx="4" fill="#D9C6A5"/><rect x="302" y="186" width="40" height="40" rx="4" fill="#2A2A3A" stroke="#3A3450"/>
+    <!-- row 4 -->
+    <rect x="8" y="228" width="40" height="40" rx="4" fill="#2A2A3A" stroke="#3A3450"/><rect x="50" y="228" width="40" height="40" rx="4" fill="#D9C6A5"/><rect x="92" y="228" width="40" height="40" rx="4" fill="#D9C6A5"/><rect x="134" y="228" width="40" height="40" rx="4" fill="#D9C6A5"/><rect x="176" y="228" width="40" height="40" rx="4" fill="#D9C6A5"/><rect x="218" y="228" width="40" height="40" rx="4" fill="#1A6B4A" opacity="0.5"/><rect x="260" y="228" width="40" height="40" rx="4" fill="#24203A"/><rect x="302" y="228" width="40" height="40" rx="4" fill="#2A2A3A" stroke="#3A3450"/>
+    <!-- row 5 fog -->
+    <rect x="8" y="270" width="40" height="40" rx="4" fill="#0F0D17"/><rect x="50" y="270" width="40" height="40" rx="4" fill="#0F0D17"/><rect x="92" y="270" width="40" height="40" rx="4" fill="#0F0D17"/><rect x="134" y="270" width="40" height="40" rx="4" fill="#0F0D17"/><rect x="176" y="270" width="40" height="40" rx="4" fill="#0F0D17"/><rect x="218" y="270" width="40" height="40" rx="4" fill="#0F0D17"/><rect x="260" y="270" width="40" height="40" rx="4" fill="#0F0D17"/><rect x="302" y="270" width="40" height="40" rx="4" fill="#0F0D17"/>
+    <rect x="346" y="102" width="32" height="32" rx="8" fill="rgba(0,0,0,0.5)" stroke="rgba(255,255,255,0.12)"/><text x="362" y="122" text-anchor="middle" font-size="12" fill="white">＋</text>
+    <rect x="346" y="138" width="32" height="32" rx="8" fill="rgba(0,0,0,0.5)" stroke="rgba(255,255,255,0.12)"/><text x="362" y="158" text-anchor="middle" font-size="12" fill="white">−</text>
+    <!-- dpad -->
+    <rect x="10" y="296" width="84" height="84" rx="10" fill="rgba(0,0,0,0.45)" stroke="rgba(255,255,255,0.08)"/>
+    <rect x="32" y="302" width="30" height="22" rx="6" fill="rgba(255,255,255,0.08)"/><text x="47" y="318" text-anchor="middle" font-size="10" fill="white">▲</text>
+    <rect x="10" y="336" width="22" height="30" rx="6" fill="rgba(255,255,255,0.08)"/><text x="21" y="356" text-anchor="middle" font-size="10" fill="white">◀</text>
+    <rect x="62" y="336" width="22" height="30" rx="6" fill="rgba(255,255,255,0.08)"/><text x="73" y="356" text-anchor="middle" font-size="10" fill="white">▶</text>
+    <rect x="32" y="372" width="30" height="22" rx="6" fill="rgba(255,255,255,0.08)"/><text x="47" y="388" text-anchor="middle" font-size="10" fill="white">▼</text>
+    <rect x="118" y="368" width="160" height="18" rx="6" fill="rgba(0,0,0,0.55)"/><text x="198" y="380" text-anchor="middle" font-family="Manrope, Arial" font-size="8" fill="rgba(255,255,255,0.7)">Seed 482910 • 7 rooms • Tap arrows to move</text>
+  </g>
+
+  <!-- narration -->
+  <rect x="16" y="360" width="358" height="72" rx="12" fill="#1E1B2E" stroke="#2E2A44"/>
+  <text x="28" y="380" font-family="Manrope, Arial" font-size="11" font-style="italic" fill="#B8B2D0">You push open the iron-bound door. Cold air</text>
+  <text x="28" y="394" font-family="Manrope, Arial" font-size="11" font-style="italic" fill="#B8B2D0">rushes out, carrying the scent of old stone</text>
+  <text x="28" y="408" font-family="Manrope, Arial" font-size="11" font-style="italic" fill="#B8B2D0">and something faintly sweet — like incense left too</text>
+  <text x="28" y="422" font-family="Manrope, Arial" font-size="11" font-style="italic" fill="#B8B2D0">long to burn.</text>
+
+  <!-- chat -->
+  <rect x="28" y="444" width="260" height="56" rx="14" fill="#1E1B2E" stroke="#2E2A44"/>
+  <text x="40" y="466" font-family="Manrope, Arial" font-size="12" fill="#F5F3FF">I inspect the altar carefully.</text>
+  <rect x="36" y="476" width="88" height="18" rx="6" fill="rgba(201,162,39,0.15)"/><text x="80" y="488" text-anchor="middle" font-family="Manrope, Arial" font-size="10" font-weight="700" fill="#C9A227">🎲 Roll: 17</text>
+
+  <rect x="102" y="512" width="272" height="84" rx="14" fill="#8B5CF6"/>
+  <text x="116" y="532" font-family="Manrope, Arial" font-size="12" fill="white">The altar is cracked down the middle.</text>
+  <text x="116" y="548" font-family="Manrope, Arial" font-size="12" fill="white">A faint violet sigil pulses beneath the</text>
+  <text x="116" y="564" font-family="Manrope, Arial" font-size="12" fill="white">dust. It reacts to your touch — the air</text>
+  <text x="116" y="580" font-family="Manrope, Arial" font-size="12" fill="white">shivers.</text>
+
+  <!-- typing -->
+  <rect x="16" y="608" width="358" height="48" rx="14" fill="#1E1B2E" stroke="rgba(139,92,246,0.3)"/>
+  <circle cx="36" cy="632" r="10" fill="none" stroke="#8B5CF6" stroke-width="2"/><text x="36" y="636" text-anchor="middle" font-size="8" fill="#8B5CF6">◐</text>
+  <text x="56" y="636" font-family="Manrope, Arial" font-size="11" fill="#B8B2D0">The Dungeon Master is weaving your fate…</text>
+
+  <!-- quick actions -->
+  <rect x="16" y="668" width="74" height="28" rx="999" fill="#24203A" stroke="rgba(176,38,58,0.3)"/><text x="52" y="686" text-anchor="middle" font-family="Manrope, Arial" font-size="10" font-weight="700" fill="white">⚡ Attack</text>
+  <rect x="98" y="668" width="68" height="28" rx="999" fill="#24203A" stroke="rgba(139,92,246,0.3)"/><text x="132" y="686" text-anchor="middle" font-family="Manrope, Arial" font-size="10" font-weight="700" fill="white">💬 Talk</text>
+  <rect x="174" y="668" width="74" height="28" rx="999" fill="#24203A" stroke="rgba(201,162,39,0.3)"/><text x="211" y="686" text-anchor="middle" font-family="Manrope, Arial" font-size="10" font-weight="700" fill="white">🔍 Inspect</text>
+  <rect x="256" y="668" width="74" height="28" rx="999" fill="#24203A" stroke="rgba(139,92,246,0.3)"/><text x="293" y="686" text-anchor="middle" font-family="Manrope, Arial" font-size="10" font-weight="700" fill="white">🎲 Roll</text>
+
+  <!-- input -->
+  <rect x="0" y="712" width="390" height="68" fill="#1A162B" stroke="#2E2A44"/>
+  <rect x="16" y="726" width="278" height="40" rx="20" fill="#24203A" stroke="#2E2A44"/>
+  <text x="32" y="750" font-family="Manrope, Arial" font-size="12" fill="#7C7892">What do you do?</text>
+  <circle cx="318" cy="746" r="22" fill="#8B5CF6"/><text x="318" y="751" text-anchor="middle" font-size="14" fill="white">➤</text>
+
+  <rect x="135" y="832" width="120" height="5" rx="999" fill="white"/>
+</svg>

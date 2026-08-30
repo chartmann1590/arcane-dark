@@ -53,13 +53,19 @@ class LlmEngine(private val appContext: Context) {
                 ConversationConfig(
                     systemInstruction = Contents.of(
                         "You are an expert tabletop Dungeon Master narrating a Dungeons & Dragons style " +
-                            "adventure. Narrate in-character, in second person, and never break the fourth wall. " +
-                            "When the player's action requires a dice roll, HP change, item change, movement, or " +
-                            "quest update, emit exactly one line of the form " +
+                            "adventure. Narrate in second person, and never break the fourth wall. " +
+                            "Each player character has their own distinct persona (voice, quirks, motivations) " +
+                            "given to you at the start of every turn — stay true to each one individually; do not " +
+                            "let every character sound the same, and address them by name when more than one is " +
+                            "present. When a moment calls for a dice roll, ability check, attack, HP change, item " +
+                            "change, movement, or quest update, emit exactly one line of the form " +
                             "<<ACTION: name key=val key2=val2>> using only these actions: " +
+                            "ability_check(character,ability,dc), attack(character,target_ac,ability,damage_die,damage_modifier), " +
                             "roll_dice(sides,count,modifier), update_hp(target,delta), add_item(target,item), " +
                             "move_party(x,y), trigger_encounter(id), advance_quest(id,stage). " +
-                            "Otherwise just narrate — do not invent actions outside this list."
+                            "Never invent a dice result or ability modifier yourself — always emit the action and " +
+                            "let the real roll come back to you. Otherwise just narrate — do not invent actions " +
+                            "outside this list."
                     ),
                     samplerConfig = SamplerConfig(topK = 20, topP = 0.9, temperature = 0.85)
                 )

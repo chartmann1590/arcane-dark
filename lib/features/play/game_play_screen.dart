@@ -9,6 +9,7 @@ import '../../domain/map/tile_types.dart' as m;
 import '../../providers/campaign_provider.dart';
 import '../../providers/character_provider.dart';
 import '../../domain/campaign_seed.dart';
+import '../../domain/dm_turn_engine.dart';
 import '../../services/audio_service.dart';
 
 class GamePlayScreen extends ConsumerStatefulWidget {
@@ -82,9 +83,9 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
             setState(() => _streamingText += chunk);
           },
         );
-        if (result.dice != null) AudioService.instance.playDiceRoll();
+        if (result.hadRoll) AudioService.instance.playDiceRoll();
         setState(() {
-          chat.add({'role': 'dm', 'text': result.narration, 'roll': result.dice != null ? '${result.dice!.total}' : ''});
+          chat.add({'role': 'dm', 'text': result.narration, 'roll': _rollBadge(result)});
           _isGenerating = false;
           _streamingText = '';
           ref.read(campaignProvider.notifier).load(campaign); // refresh UI
@@ -106,6 +107,21 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
     if (s.contains('MODEL_NOT_DOWNLOADED')) return 'AI model not downloaded yet — visit Settings to download it.';
     if (s.contains('TIMEOUT')) return 'the model took too long to respond';
     return 'a technical hiccup';
+  }
+
+  String _rollBadge(DmTurnResult result) {
+    if (result.attack != null) {
+      final a = result.attack!;
+      final crit = a.critical ? ' CRIT!' : '';
+      final dmg = a.hit && a.damage != null ? ' • ${a.damage!.total} dmg' : '';
+      return '${a.hit ? "HIT" : "MISS"} (d20:${a.roll}+${a.modifier}=${a.total} vs AC ${a.targetAc})$crit$dmg';
+    }
+    if (result.check != null) {
+      final c = result.check!;
+      return '${c.success ? "SUCCESS" : "FAIL"} (${c.ability} d20:${c.roll}+${c.modifier}=${c.total} vs DC ${c.dc})';
+    }
+    if (result.dice != null) return '${result.dice!.total}';
+    return '';
   }
 
   void _move(int dx, int dy) {
@@ -313,7 +329,7 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
                                   margin: const EdgeInsets.only(top: 6),
                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                   decoration: BoxDecoration(color: ArcaneTheme.secondary.withOpacity(0.15), borderRadius: BorderRadius.circular(6)),
-                                  child: Text('🎲 Roll: ${m['roll']}', style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w700, color: ArcaneTheme.secondary)),
+                                  child: Text('🎲 ${m['roll']}', style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w700, color: ArcaneTheme.secondary)),
                                 ),
                             ]),
                           ),

@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="390" height="844" viewBox="0 0 390 844" role="img" aria-label="Character creation — race selection">
+  <defs>
+    <linearGradient id="bg2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0F0D17"/><stop offset="100%" stop-color="#1A162B"/></linearGradient>
+    <linearGradient id="cardGold" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#C9A227" stop-opacity="0.12"/><stop offset="100%" stop-color="#C9A227" stop-opacity="0"/></linearGradient>
+  </defs>
+  <rect width="390" height="844" fill="url(#bg2)"/>
+  <rect x="0" y="0" width="390" height="44" fill="#0F0D17"/>
+  <text x="24" y="28" font-family="Manrope, Arial" font-size="13" font-weight="700" fill="#7C7892">9:41</text>
+  <!-- app bar -->
+  <rect x="0" y="44" width="390" height="52" fill="#0F0D17" stroke="#2E2A44"/>
+  <text x="20" y="62" font-family="Arial" font-size="16" fill="#F5F3FF">‹</text>
+  <text x="195" y="62" text-anchor="middle" font-family="Manrope, Arial" font-size="11" font-weight="800" fill="#C9A227" letter-spacing="1.1">CHOOSE YOUR RACE</text>
+  <text x="370" y="62" text-anchor="end" font-family="Manrope, Arial" font-size="11" fill="#7C7892">2/6</text>
+  <!-- progress -->
+  <text x="20" y="118" font-family="Manrope, Arial" font-size="10" font-weight="800" fill="#7C7892" letter-spacing="0.8">STEP 1 OF 6</text>
+  <text x="370" y="118" text-anchor="end" font-family="Manrope, Arial" font-size="11" fill="#B8B2D0">Human • Fighter • Acolyte</text>
+  <rect x="20" y="128" width="350" height="4" rx="999" fill="#24203A"/>
+  <rect x="20" y="128" width="58" height="4" rx="999" fill="#8B5CF6"/>
+  <!-- title -->
+  <text x="20" y="164" font-family="Playfair Display, serif" font-size="20" font-weight="800" fill="white">Choose your lineage.</text>
+  <text x="20" y="184" font-family="Manrope, Arial" font-size="12" fill="#B8B2D0">Your ancestry shapes your story — pick the blood that calls to you.</text>
+
+  <!-- selected card - Elf -->
+  <rect x="20" y="206" width="350" height="92" rx="14" fill="#1E1B2E" stroke="#8B5CF6" stroke-width="1.4"/>
+  <rect x="20" y="206" width="350" height="92" rx="14" fill="none" stroke="rgba(139,92,246,0.15)" stroke-width="8"/>
+  <rect x="36" y="222" width="60" height="60" rx="12" fill="#24203A" stroke="#2E2A44"/>
+  <text x="66" y="258" text-anchor="middle" font-size="24">🧝</text>
+  <text x="110" y="240" font-family="Manrope, Arial" font-size="14" font-weight="800" fill="white">Elf</text>
+  <text x="110" y="256" font-family="Manrope, Arial" font-size="11" fill="#B8B2D0">Keen Senses • Fey Ancestry • Trance</text>
+  <text x="110" y="272" font-family="Manrope, Arial" font-size="11" fill="#7C7892">+2 DEX • Darkvision 60ft</text>
+  <circle cx="344" cy="252" r="10" fill="#8B5CF6"/>
+  <text x="344" y="256" text-anchor="middle" font-family="Arial" font-size="10" fill="white">✓</text>
+
+  <!-- other cards -->
+  <rect x="20" y="310" width="350" height="84" rx="14" fill="#1E1B2E" stroke="#2E2A44"/>
+  <rect x="36" y="326" width="56" height="56" rx="12" fill="#24203A" stroke="#2E2A44"/>
+  <text x="64" y="360" text-anchor="middle" font-size="22">🧙</text>
+  <text x="108" y="346" font-family="Manrope, Arial" font-size="13" font-weight="700" fill="white">Human</text>
+  <text x="108" y="362" font-family="Manrope, Arial" font-size="11" fill="#B8B2D0">Versatile • Extra Skill • Anywhere</text>
+  <text x="108" y="378" font-family="Manrope, Arial" font-size="11" fill="#7C7892">+1 All Abilities</text>
+
+  <rect x="20" y="406" width="350" height="84" rx="14" fill="#1E1B2E" stroke="#2E2A44"/>
+  <rect x="36" y="422" width="56" height="56" rx="12" fill="#24203A" stroke="#2E2A44"/>
+  <text x="64" y="456" text-anchor="middle" font-size="22">⛏️</text>
+  <text x="108" y="442" font-family="Manrope, Arial" font-size="13" font-weight="700" fill="white">Dwarf</text>
+  <text x="108" y="458" font-family="Manrope, Arial" font-size="11" fill="#B8B2D0">Resilient • Stonecunning • Hardy</text>
+  <text x="108" y="474" font-family="Manrope, Arial" font-size="11" fill="#7C7892">+2 CON • Poison Resistant</text>
+
+  <rect x="20" y="502" width="350" height="84" rx="14" fill="#1E1B2E" stroke="#2E2A44"/>
+  <rect x="36" y="518" width="56" height="56" rx="12" fill="#24203A" stroke="#2E2A44"/>
+  <text x="64" y="552" text-anchor="middle" font-size="22">👹</text>
+  <text x="108" y="538" font-family="Manrope, Arial" font-size="13" font-weight="700" fill="white">Orc</text>
+  <text x="108" y="554" font-family="Manrope, Arial" font-size="11" fill="#B8B2D0">Relentless • Savage • Intimidating</text>
+  <text x="108" y="570" font-family="Manrope, Arial" font-size="11" fill="#7C7892">+2 STR • Aggressive</text>
+
+  <rect x="20" y="598" width="350" height="84" rx="14" fill="#1E1B2E" stroke="#2E2A44" opacity="0.7"/>
+  <rect x="36" y="614" width="56" height="56" rx="12" fill="#24203A" stroke="#2E2A44"/>
+  <text x="64" y="648" text-anchor="middle" font-size="22">😈</text>
+  <text x="108" y="634" font-family="Manrope, Arial" font-size="13" font-weight="700" fill="white">Tiefling</text>
+  <text x="108" y="650" font-family="Manrope, Arial" font-size="11" fill="#B8B2D0">Infernal • Hellish Resistance</text>
+  <text x="108" y="666" font-family="Manrope, Arial" font-size="11" fill="#7C7892">+2 CHA • Fire Resistant</text>
+
+  <!-- bottom bar -->
+  <rect x="0" y="740" width="390" height="104" fill="#0F0D17" stroke="#2E2A44"/>
+  <rect x="20" y="760" width="108" height="44" rx="12" fill="none" stroke="#2E2A44"/>
+  <text x="74" y="786" text-anchor="middle" font-family="Manrope, Arial" font-size="13" font-weight="700" fill="#B8B2D0">Back</text>
+  <rect x="140" y="760" width="230" height="44" rx="12" fill="#8B5CF6"/>
+  <text x="255" y="786" text-anchor="middle" font-family="Manrope, Arial" font-size="13" font-weight="800" fill="white">Continue</text>
+  <rect x="135" y="832" width="120" height="5" rx="999" fill="white"/>
+</svg>
