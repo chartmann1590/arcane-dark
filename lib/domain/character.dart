@@ -1,0 +1,180 @@
+import 'ability_scores.dart';
+
+enum Race {
+  human('Human', '+1 to all abilities', 'Versatile and ambitious, humans adapt to any path.'),
+  elf('Elf', '+2 DEX', 'Graceful and long-lived, attuned to magic and the wilds.'),
+  dwarf('Dwarf', '+2 CON', 'Stout and steadfast, masters of stone and steel.'),
+  halfling('Halfling', '+2 DEX', 'Small, brave, and lucky beyond reason.'),
+  orc('Orc', '+2 STR, +1 CON', 'Fierce warriors with indomitable strength.'),
+  tiefling('Tiefling', '+2 CHA, +1 INT', 'Marked by infernal heritage, charismatic and cunning.'),
+  dragonborn('Dragonborn', '+2 STR, +1 CHA', 'Draconic blood, breath weapon, noble presence.');
+
+  final String label;
+  final String bonus;
+  final String flavor;
+  const Race(this.label, this.bonus, this.flavor);
+}
+
+enum CharClass {
+  fighter('Fighter', 'd10', 'Master of weapons and armor, frontline bulwark.'),
+  wizard('Wizard', 'd6', 'Arcane scholar, wielder of world-bending spells.'),
+  rogue('Rogue', 'd8', 'Stealth, precision, and cunning — strike from shadows.'),
+  cleric('Cleric', 'd8', 'Divine conduit, healer and holy warrior.'),
+  ranger('Ranger', 'd8', 'Warden of the wilds, tracker and archer.'),
+  bard('Bard', 'd8', 'Charismatic performer, magic through art.'),
+  barbarian('Barbarian', 'd12', 'Unbridled fury, unstoppable resilience.'),
+  paladin('Paladin', 'd10', 'Oath-bound champion, radiant protector.');
+
+  final String label;
+  final String hitDie;
+  final String flavor;
+  const CharClass(this.label, this.hitDie, this.flavor);
+}
+
+enum Background {
+  soldier('Soldier', 'Military rank, tactical insight.'),
+  sage('Sage', 'Researcher, keeper of forgotten lore.'),
+  criminal('Criminal', 'Underworld contacts, nimble fingers.'),
+  folkHero('Folk Hero', 'Loved by common folk, rustic hospitality.'),
+  acolyte('Acolyte', 'Temple service, divine insight.'),
+  noble('Noble', 'Position of privilege, refined bearing.'),
+  hermit('Hermit', 'Discovery, secluded revelation.'),
+  outlander('Outlander', 'Wanderer, keen survivalist.');
+
+  final String label;
+  final String flavor;
+  const Background(this.label, this.flavor);
+}
+
+class AvatarConfig {
+  final String body;
+  final String face;
+  final String hair;
+  final String outfit;
+  final String accessory;
+  final String eyeColor;
+
+  const AvatarConfig({
+    this.body = 'body_1',
+    this.face = 'face_1',
+    this.hair = 'hair_1',
+    this.outfit = 'outfit_1',
+    this.accessory = 'none',
+    this.eyeColor = '#8B5CF6',
+  });
+
+  AvatarConfig copyWith({String? body, String? face, String? hair, String? outfit, String? accessory, String? eyeColor}) =>
+      AvatarConfig(
+        body: body ?? this.body,
+        face: face ?? this.face,
+        hair: hair ?? this.hair,
+        outfit: outfit ?? this.outfit,
+        accessory: accessory ?? this.accessory,
+        eyeColor: eyeColor ?? this.eyeColor,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'body': body,
+        'face': face,
+        'hair': hair,
+        'outfit': outfit,
+        'accessory': accessory,
+        'eyeColor': eyeColor,
+      };
+  factory AvatarConfig.fromJson(Map<String, dynamic> j) => AvatarConfig(
+        body: j['body'] as String? ?? 'body_1',
+        face: j['face'] as String? ?? 'face_1',
+        hair: j['hair'] as String? ?? 'hair_1',
+        outfit: j['outfit'] as String? ?? 'outfit_1',
+        accessory: j['accessory'] as String? ?? 'none',
+        eyeColor: j['eyeColor'] as String? ?? '#8B5CF6',
+      );
+}
+
+class Character {
+  final String id;
+  final String name;
+  final Race race;
+  final CharClass charClass;
+  final Background background;
+  final AbilityScores abilities;
+  final int hp;
+  final int armorClass;
+  final int level;
+  final List<String> inventory;
+  final AvatarConfig avatar;
+
+  Character({
+    required this.id,
+    required this.name,
+    required this.race,
+    required this.charClass,
+    required this.background,
+    required this.abilities,
+    required this.hp,
+    required this.armorClass,
+    this.level = 1,
+    this.inventory = const [],
+    this.avatar = const AvatarConfig(),
+  });
+
+  static int computeHp(CharClass c, int conMod) {
+    final die = {'d6': 6, 'd8': 8, 'd10': 10, 'd12': 12}[c.hitDie] ?? 8;
+    return die + conMod;
+  }
+
+  static int computeAc(int dexMod) => 10 + dexMod;
+
+  Character copyWith({
+    String? name,
+    Race? race,
+    CharClass? charClass,
+    Background? background,
+    AbilityScores? abilities,
+    int? hp,
+    int? armorClass,
+    AvatarConfig? avatar,
+    List<String>? inventory,
+  }) =>
+      Character(
+        id: id,
+        name: name ?? this.name,
+        race: race ?? this.race,
+        charClass: charClass ?? this.charClass,
+        background: background ?? this.background,
+        abilities: abilities ?? this.abilities,
+        hp: hp ?? this.hp,
+        armorClass: armorClass ?? this.armorClass,
+        inventory: inventory ?? this.inventory,
+        avatar: avatar ?? this.avatar,
+        level: level,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'race': race.name,
+        'charClass': charClass.name,
+        'background': background.name,
+        'abilities': abilities.toJson(),
+        'hp': hp,
+        'armorClass': armorClass,
+        'level': level,
+        'inventory': inventory,
+        'avatar': avatar.toJson(),
+      };
+
+  factory Character.fromJson(Map<String, dynamic> j) => Character(
+        id: j['id'] as String,
+        name: j['name'] as String,
+        race: Race.values.firstWhere((e) => e.name == j['race'], orElse: () => Race.human),
+        charClass: CharClass.values.firstWhere((e) => e.name == j['charClass'], orElse: () => CharClass.fighter),
+        background: Background.values.firstWhere((e) => e.name == j['background'], orElse: () => Background.soldier),
+        abilities: AbilityScores.fromJson(j['abilities'] as Map<String, dynamic>? ?? {}),
+        hp: j['hp'] as int? ?? 10,
+        armorClass: j['armorClass'] as int? ?? 10,
+        level: j['level'] as int? ?? 1,
+        inventory: (j['inventory'] as List?)?.cast<String>() ?? [],
+        avatar: j['avatar'] != null ? AvatarConfig.fromJson(j['avatar'] as Map<String, dynamic>) : const AvatarConfig(),
+      );
+}
