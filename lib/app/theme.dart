@@ -5,26 +5,30 @@ import 'package:google_fonts/google_fonts.dart';
 /// Dark fantasy tavern-table aesthetic. Do not retune colors by eye;
 /// use these locked tokens verbatim.
 class ArcaneTheme {
-  // Locked tokens from Stitch — see plan/07
-  static const Color background = Color(0xFF0F0D17);
-  static const Color surface = Color(0xFF1A162B);
-  static const Color surfaceElevated = Color(0xFF24203A);
-  static const Color surfaceCard = Color(0xFF1E1B2E);
-  static const Color primary = Color(0xFF8B5CF6); // violet / magic / AI state
-  static const Color secondary = Color(0xFFC9A227); // aged gold / treasure
-  static const Color tertiary = Color(0xFFB0263A); // blood red / danger
-  static const Color border = Color(0xFF2E2A44);
-  static const Color borderGold = Color(0x33C9A227);
-  static const Color textPrimary = Color(0xFFF5F3FF);
-  static const Color textSecondary = Color(0xFFB8B2D0);
-  static const Color textMuted = Color(0xFF7C7892);
+  // "Ember & Void" — a torch-lit dungeon rather than a violet AI-app tint.
+  // Warm near-black grounds, a hot ember-orange as the everyday accent, aged
+  // brass instead of storybook gold, and violet demoted to a rare "arcane
+  // magic" highlight instead of the dominant color on every button.
+  static const Color background = Color(0xFF0A0806);
+  static const Color surface = Color(0xFF17110C);
+  static const Color surfaceElevated = Color(0xFF221A12);
+  static const Color surfaceCard = Color(0xFF1C150F);
+  static const Color primary = Color(0xFFE0793F); // ember orange / everyday accent
+  static const Color secondary = Color(0xFFB68A46); // aged brass / treasure
+  static const Color tertiary = Color(0xFFA6394A); // blood red / danger
+  static const Color arcane = Color(0xFF8C6BFF); // reserved: magic/AI-specific moments only
+  static const Color border = Color(0xFF352A1E);
+  static const Color borderGold = Color(0x33B68A46);
+  static const Color textPrimary = Color(0xFFF6EDE2);
+  static const Color textSecondary = Color(0xFFC9B9A6);
+  static const Color textMuted = Color(0xFF8C7B68);
 
   static const double radius = 12.0;
 
   static ThemeData get dark {
     final base = ThemeData.dark(useMaterial3: true);
-    final manrope = GoogleFonts.manropeTextTheme(base.textTheme);
-    final playfair = GoogleFonts.playfairDisplayTextTheme(base.textTheme);
+    final manrope = GoogleFonts.ibmPlexSansTextTheme(base.textTheme);
+    final playfair = GoogleFonts.cinzelTextTheme(base.textTheme);
 
     return base.copyWith(
       scaffoldBackgroundColor: background,
@@ -81,7 +85,7 @@ class ArcaneTheme {
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: true,
-        titleTextStyle: GoogleFonts.playfairDisplay(
+        titleTextStyle: GoogleFonts.cinzel(
           fontSize: 18,
           fontWeight: FontWeight.w700,
           color: secondary,
@@ -107,7 +111,7 @@ class ArcaneTheme {
             borderRadius: BorderRadius.circular(radius),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-          textStyle: GoogleFonts.manrope(
+          textStyle: GoogleFonts.ibmPlexSans(
             fontWeight: FontWeight.w700,
             letterSpacing: 0.6,
             fontSize: 14,
@@ -140,11 +144,11 @@ class ArcaneTheme {
           borderRadius: BorderRadius.circular(radius),
           borderSide: const BorderSide(color: primary, width: 1.5),
         ),
-        hintStyle: GoogleFonts.manrope(color: textMuted, fontSize: 14),
-        labelStyle: GoogleFonts.manrope(color: textSecondary, fontSize: 14),
+        hintStyle: GoogleFonts.ibmPlexSans(color: textMuted, fontSize: 14),
+        labelStyle: GoogleFonts.ibmPlexSans(color: textSecondary, fontSize: 14),
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        backgroundColor: Color(0xFF0F0D17),
+        backgroundColor: background,
         selectedItemColor: primary,
         unselectedItemColor: textMuted,
         type: BottomNavigationBarType.fixed,
@@ -155,7 +159,7 @@ class ArcaneTheme {
         backgroundColor: surfaceElevated,
         selectedColor: primary.withOpacity(0.2),
         secondarySelectedColor: primary,
-        labelStyle: GoogleFonts.manrope(
+        labelStyle: GoogleFonts.ibmPlexSans(
           color: textPrimary,
           fontSize: 12,
           fontWeight: FontWeight.w600,
@@ -174,10 +178,17 @@ class ArcaneTheme {
     );
   }
 
-  // Reusable decorations that match Stitch screens
+  // Reusable decorations. A flat single-color fill on every card is what
+  // made the whole app read as flat — a faint top-to-bottom gradient (a hair
+  // lighter at the top, as if catching torchlight) gives every card real
+  // depth for free, everywhere it's used, with no per-screen changes needed.
   static BoxDecoration cardDecoration({bool selected = false, bool goldBorder = false}) {
     return BoxDecoration(
-      color: surfaceCard,
+      gradient: LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [Color.lerp(surfaceCard, Colors.white, 0.035)!, surfaceCard],
+      ),
       borderRadius: BorderRadius.circular(radius),
       border: Border.all(
         color: selected
@@ -206,8 +217,24 @@ class ArcaneTheme {
   );
 
   static BoxDecoration violetGlow = BoxDecoration(
-    color: primary.withOpacity(0.12),
+    color: arcane.withOpacity(0.12),
     borderRadius: BorderRadius.circular(radius),
-    border: Border.all(color: primary.withOpacity(0.3)),
+    border: Border.all(color: arcane.withOpacity(0.3)),
   );
+
+  /// A more ornate card for hero moments (campaign banner, character sheet
+  /// header): a warm radial glow behind a gold-bordered panel, instead of
+  /// just another flat rectangle.
+  static BoxDecoration ornateDecoration({Color glow = secondary}) {
+    return BoxDecoration(
+      gradient: RadialGradient(
+        center: Alignment.topCenter,
+        radius: 1.4,
+        colors: [Color.lerp(surfaceCard, glow, 0.10)!, surfaceCard],
+      ),
+      borderRadius: BorderRadius.circular(radius + 2),
+      border: Border.all(color: glow.withOpacity(0.45), width: 1.2),
+      boxShadow: [BoxShadow(color: glow.withOpacity(0.12), blurRadius: 20, spreadRadius: -4)],
+    );
+  }
 }

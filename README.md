@@ -51,21 +51,54 @@ Full policy: **[chartmann1590.github.io/arcane-dark/privacy.html](https://chartm
 
 ---
 
-### 👀 Peek inside
+### 📺 Watch the trailer
+
+<p align="center">
+  <a href="https://chartmann1590.github.io/arcane-dark/#promo"><img src="docs/assets/img/promo-thumbnail.png" alt="Arcane Dark promo video thumbnail — Your AI Dungeon Master lives on your phone" width="600"/></a>
+</p>
+
+> **Promo video (60s)** — the same cut that appears on **Google Play** and **YouTube** lives on the [website #promo](https://chartmann1590.github.io/arcane-dark/#promo) and as [`docs/assets/img/promo-thumbnail.png`](docs/assets/img/promo-thumbnail.png) (1280×720). Replace `YOUTUBE_VIDEO_ID` in `docs/index.html` with the uploaded YouTube ID before store submission. Also available as [`docs/store/promo-thumbnail.png`](docs/store/promo-thumbnail.png).
+
+### 🖼️ Feature graphic
+
+<p align="center">
+  <a href="https://chartmann1590.github.io/arcane-dark/#promo"><img src="docs/assets/img/feature-graphic.png" alt="Arcane Dark feature graphic 1024×500 — ARCANE DARK Your AI Dungeon Master lives on your phone" width="600"/></a>
+</p>
+
+> **Feature graphic (1024×500)** — the Play Store banner. Source at [`docs/assets/img/feature-graphic.png`](docs/assets/img/feature-graphic.png), also copied to [`docs/store/feature-graphic.png`](docs/store/feature-graphic.png) and [`fastlane/metadata/android/en-US/images/featureGraphic.png`](fastlane/metadata/android/en-US/images/featureGraphic.png).
+
+### 👀 Peek inside — phone, 7″ & 10″ tablets
 
 <p align="center"><em>From the app’s own dark-fantasy design — deep violet, warm gold, soft tavern light. Tap to enlarge on the website.</em></p>
 
 <table>
   <tr>
-    <td align="center" width="20%"><a href="https://chartmann1590.github.io/arcane-dark/screenshots/01-onboarding.svg"><img src="docs/screenshots/01-onboarding.svg" alt="Welcome screen — quick setup then offline solo" width="160"/></a><br/><sub><strong>Welcome</strong><br/>Quick setup, then offline</sub></td>
-    <td align="center" width="20%"><a href="https://chartmann1590.github.io/arcane-dark/screenshots/02-character-creation.svg"><img src="docs/screenshots/02-character-creation.svg" alt="Character creation — ancestry, class, looks" width="160"/></a><br/><sub><strong>Your Hero</strong><br/>Ancestry, calling, looks</sub></td>
-    <td align="center" width="20%"><a href="https://chartmann1590.github.io/arcane-dark/screenshots/03-campaign-hub.svg"><img src="docs/screenshots/03-campaign-hub.svg" alt="Home — current campaign and heroes" width="160"/></a><br/><sub><strong>Home</strong><br/>Campaigns & heroes</sub></td>
-    <td align="center" width="20%"><a href="https://chartmann1590.github.io/arcane-dark/screenshots/04-gameplay.svg"><img src="docs/screenshots/04-gameplay.svg" alt="At the table — map, dice, living story" width="160"/></a><br/><sub><strong>At the Table</strong><br/>Map, dice, story</sub></td>
-    <td align="center" width="20%"><a href="https://chartmann1590.github.io/arcane-dark/screenshots/05-multiplayer.svg"><img src="docs/screenshots/05-multiplayer.svg" alt="With friends — QR and party up to 6" width="160"/></a><br/><sub><strong>With Friends</strong><br/>QR invite, up to 6</sub></td>
+    <td align="center" width="20%"><a href="https://chartmann1590.github.io/arcane-dark/store/phone/01-onboarding.png"><img src="docs/store/phone/01-onboarding.png" alt="Welcome screen — quick setup then offline solo" width="160"/></a><br/><sub><strong>Welcome</strong><br/>Quick setup, then offline</sub></td>
+    <td align="center" width="20%"><a href="https://chartmann1590.github.io/arcane-dark/store/phone/02-character-creation.png"><img src="docs/store/phone/02-character-creation.png" alt="Character creation — ancestry, class, looks" width="160"/></a><br/><sub><strong>Your Hero</strong><br/>Ancestry, calling, looks</sub></td>
+    <td align="center" width="20%"><a href="https://chartmann1590.github.io/arcane-dark/store/phone/03-campaign-hub.png"><img src="docs/store/phone/03-campaign-hub.png" alt="Home — current campaign and heroes" width="160"/></a><br/><sub><strong>Home</strong><br/>Campaigns & heroes</sub></td>
+    <td align="center" width="20%"><a href="https://chartmann1590.github.io/arcane-dark/store/phone/04-gameplay.png"><img src="docs/store/phone/04-gameplay.png" alt="At the table — map, dice, living story" width="160"/></a><br/><sub><strong>At the Table</strong><br/>Map, dice, story</sub></td>
+    <td align="center" width="20%"><a href="https://chartmann1590.github.io/arcane-dark/store/phone/05-multiplayer.png"><img src="docs/store/phone/05-multiplayer.png" alt="With friends — QR and party up to 6" width="160"/></a><br/><sub><strong>With Friends</strong><br/>QR invite, up to 6</sub></td>
   </tr>
 </table>
 
-> All screenshots are high-fidelity mockups from the app’s design system. Real device captures will replace them after the Play Store launch. Files live in [`docs/screenshots/`](docs/screenshots/) and on the [website #screenshots](https://chartmann1590.github.io/arcane-dark/#screenshots).
+> **Store-ready screenshots — 5 screens × 3 sizes = 15 PNGs** within Play Store specs:
+> - 📱 **Phone** 1080×1920 — [`docs/store/phone/`](docs/store/phone/) → [`fastlane/.../phoneScreenshots/`](../../fastlane/metadata/android/en-US/images/phoneScreenshots/) and [`store/screenshots/phone/`](store/screenshots/phone/)
+> - 📲 **7″ tablet** 1200×1920 — [`docs/store/7in/`](docs/store/7in/) → [`fastlane/.../sevenInchScreenshots/`](../../fastlane/metadata/android/en-US/images/sevenInchScreenshots/)
+> - 📲 **10″ tablet** 1600×2560 — [`docs/store/10in/`](docs/store/10in/) → [`fastlane/.../tenInchScreenshots/`](../../fastlane/metadata/android/en-US/images/tenInchScreenshots/)
+>
+> SVGs remain in [`docs/screenshots/`](docs/screenshots/) for the web gallery. All are also on the [website #screenshots](https://chartmann1590.github.io/arcane-dark/#screenshots) with the promo video and feature graphic. Real device captures will replace the rendered mocks after launch if needed, but these already meet listing requirements.
+
+### 🎨 App icon — shows correctly on the phone
+
+<p align="center">
+  <img src="docs/assets/img/icon-512.png" alt="Arcane Dark app icon 512×512 — dark background, violet square, white sparkle" width="120"/>
+  <img src="docs/assets/img/icon-1024.png" alt="Arcane Dark app icon 1024×1024" width="120"/>
+</p>
+
+> **App name on device: `Arcane Dark`** (Android `android:label` and iOS `CFBundleDisplayName`/`CFBundleName` both set). The launcher icon is the dark → violet sparkle (see [`docs/assets/img/icon-512.png`](docs/assets/img/icon-512.png) / [`icon-1024.png`](docs/assets/img/icon-1024.png)), installed via:
+> - Android: `android/app/src/main/res/mipmap-*/ic_launcher.png` (mdpi 48, hdpi 72, xhdpi 96, xxhdpi 144, xxxhdpi 192)
+> - iOS: `ios/Runner/Assets.xcassets/AppIcon.appiconset/` (all required sizes, 1024 marketing icon flattened to RGB)
+> - Store: [`store/icon-512.png`](store/icon-512.png) / [`fastlane/.../icon.png`](fastlane/metadata/android/en-US/images/icon.png)
 
 ---
 

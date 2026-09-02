@@ -20,19 +20,21 @@
   <meta property="og:url" content="https://chartmann1590.github.io/arcane-dark/"/>
   <meta property="og:site_name" content="Arcane Dark"/>
   <meta property="og:locale" content="en_US"/>
-  <meta property="og:image" content="https://chartmann1590.github.io/arcane-dark/screenshots/04-gameplay.svg"/>
-  <meta property="og:image:width" content="1200"/>
-  <meta property="og:image:height" content="630"/>
-  <meta property="og:image:alt" content="Arcane Dark gameplay — dungeon map and AI narration on a phone"/>
+  <meta property="og:image" content="https://chartmann1590.github.io/arcane-dark/assets/img/feature-graphic.png"/>
+  <meta property="og:image:width" content="1024"/>
+  <meta property="og:image:height" content="500"/>
+  <meta property="og:image:alt" content="Arcane Dark — feature graphic: icon and Your AI Dungeon Master lives on your phone"/>
 
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image"/>
   <meta name="twitter:title" content="Arcane Dark — Your AI Dungeon Master"/>
   <meta name="twitter:description" content="A cozy, torch-lit D&D adventure for your phone. Solo offline & private — or bring 5 friends. Coming soon to Google Play."/>
-  <meta name="twitter:image" content="https://chartmann1590.github.io/arcane-dark/screenshots/04-gameplay.svg"/>
+  <meta name="twitter:image" content="https://chartmann1590.github.io/arcane-dark/assets/img/feature-graphic.png"/>
 
+  <link rel="icon" type="image/png" sizes="512x512" href="assets/img/icon-512.png"/>
+  <link rel="icon" type="image/png" sizes="1024x1024" href="assets/img/icon-1024.png"/>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%230F0D17'/><rect x='6' y='6' width='20' height='20' rx='6' fill='%238B5CF6'/><text x='16' y='21' text-anchor='middle' font-size='14' fill='white'>✦</text></svg>"/>
-  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='16' fill='%230F0D17'/><rect x='14' y='14' width='36' height='36' rx='10' fill='%238B5CF6'/><text x='32' y='40' text-anchor='middle' font-size='24' fill='white'>✦</text></svg>"/>
+  <link rel="apple-touch-icon" href="assets/img/icon-512.png"/>
   <link rel="sitemap" type="application/xml" href="sitemap.xml"/>
   <link rel="stylesheet" href="assets/css/style.css"/>
 
@@ -50,7 +52,7 @@
     "publisher": {"@type": "Organization", "name": "Arcane Dark"},
     "isAccessibleForFree": true,
     "inLanguage": "en",
-    "image": "https://chartmann1590.github.io/arcane-dark/screenshots/04-gameplay.svg",
+    "image": "https://chartmann1590.github.io/arcane-dark/assets/img/feature-graphic.png",
     "url": "https://chartmann1590.github.io/arcane-dark/",
     "sameAs": ["https://github.com/chartmann1590/arcane-dark"]
   }
@@ -81,6 +83,7 @@
         <span class="brand-name">ARCANE DARK</span>
       </a>
       <div class="nav-links">
+        <a href="#promo" class="hide-sm">Trailer</a>
         <a href="#features" class="hide-sm">Why it’s different</a>
         <a href="#screenshots" class="hide-sm">Screenshots</a>
         <a href="#faq" class="hide-sm">FAQ</a>
@@ -185,6 +188,49 @@
     </div>
   </header>
 
+  <!-- PROMO VIDEO + FEATURE GRAPHIC -->
+  <section id="promo" class="section alt" style="padding-top:28px;padding-bottom:28px">
+    <div class="container reveal">
+      <div class="section-head" style="margin-bottom:18px">
+        <div class="kicker-label">Watch the 60-sec trailer</div>
+        <h2>The tavern doors are <em>open.</em></h2>
+        <p>Solo & private or with friends — see how a story answers you line by line. The same promo video that appears on Google Play and YouTube lives here too.</p>
+      </div>
+      <div style="max-width:900px;margin:0 auto;display:grid;gap:16px">
+        <!-- YouTube + self-hosted fallback — replace YOUTUBE_VIDEO_ID before launch -->
+        <div style="position:relative;aspect-ratio:16/9;background:#0F0D17;border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:0 18px 40px rgba(0,0,0,0.35)">
+          <a href="https://www.youtube.com/watch?v=arcane-dark-promo" target="_blank" rel="noopener" aria-label="Watch Arcane Dark promo video on YouTube" style="display:block;width:100%;height:100%;text-decoration:none">
+            <img src="assets/img/promo-thumbnail.png" alt="Arcane Dark promo video thumbnail — Your AI Dungeon Master lives on your phone" style="width:100%;height:100%;object-fit:cover;display:block"/>
+            <span style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:84px;height:84px;border-radius:999px;background:white;display:grid;place-items:center;box-shadow:0 10px 28px rgba(0,0,0,0.45);border:3px solid #8B5CF6"><span style="margin-left:4px;color:#8B5CF6;font-size:30px;line-height:1">▶</span></span>
+            <span style="position:absolute;bottom:12px;left:12px;padding:7px 10px;border-radius:999px;background:rgba(0,0,0,0.72);border:1px solid rgba(255,255,255,0.12);color:white;font-size:11px;font-weight:800;letter-spacing:0.6px">▶ Watch on YouTube — 0:60</span>
+          </a>
+          <!-- When video is live, replace anchor+img with:
+          <iframe width=\"100%\" height=\"100%\" src=\"https://www.youtube-nocookie.com/embed/YOUTUBE_VIDEO_ID?rel=0\" title=\"Arcane Dark — promo video\" frameborder=\"0\" allow=\"accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture\" allowfullscreen style=\"position:absolute;inset:0;width:100%;height:100%\"></iframe>
+          -->
+        </div>
+        <div style="display:grid;grid-template-columns:1fr auto;gap:16px;align-items:center;background:var(--surface-card);border:1px solid var(--border);border-radius:14px;padding:14px">
+          <div>
+            <div style="font-weight:800;font-size:13px;color:white;display:flex;gap:8px;align-items:center"><span style="width:28px;height:28px;border-radius:8px;background:#FF0000;color:white;display:grid;place-items:center;font-size:12px">▶</span> Promo video — also on the Play Store listing & YouTube</div>
+            <div style="margin-top:4px;color:var(--text-secondary);font-size:13px;line-height:1.5">Replace <code style="background:rgba(255,255,255,0.08);padding:2px 6px;border-radius:6px">YOUTUBE_VIDEO_ID</code> in this file with the uploaded YouTube ID before submission. The thumbnail at <code style="background:rgba(255,255,255,0.08);padding:2px 6px;border-radius:6px">assets/img/promo-thumbnail.png</code> (1280×720) is already used for the Play Store promo graphic.</div>
+          </div>
+          <a class="btn btn-ghost" href="https://www.youtube.com/watch?v=arcane-dark-promo" target="_blank" rel="noopener">Open YouTube →</a>
+        </div>
+        <!-- Feature graphic showcase -->
+        <div style="background:var(--surface-card);border:1px solid var(--border);border-radius:14px;padding:14px">
+          <div style="font-weight:800;font-size:12px;letter-spacing:0.7px;color:var(--text-muted)">FEATURE GRAPHIC — 1024×500 (Google Play)</div>
+          <div style="margin-top:10px;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:#0F0D17">
+            <img src="assets/img/feature-graphic.png" alt="Arcane Dark feature graphic 1024×500 — ARCANE DARK Your AI Dungeon Master lives on your phone" style="width:100%;height:auto;display:block"/>
+          </div>
+          <div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;color:var(--text-secondary);font-size:12px">
+            <span>Hi-res icon: <a href="assets/img/icon-512.png" style="color:var(--violet);text-decoration:underline">512×512</a> • <a href="assets/img/icon-1024.png" style="color:var(--violet);text-decoration:underline">1024×1024</a></span>
+            <span style="opacity:0.4">|</span>
+            <span>Also in <code style="background:rgba(255,255,255,0.08);padding:2px 6px;border-radius:6px">docs/store/</code> and <code style="background:rgba(255,255,255,0.08);padding:2px 6px;border-radius:6px">fastlane/</code> for automated uploads</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- FEATURES — customer facing -->
   <section id="features" class="section">
     <div class="container">
@@ -247,20 +293,21 @@
     </div>
   </section>
 
-  <!-- SCREENSHOTS -->
+  <!-- SCREENSHOTS — phone, 7in, 10in -->
   <section id="screenshots" class="section alt">
     <div class="container">
       <div class="section-head reveal">
-        <div class="kicker-label">A peek inside</div>
+        <div class="kicker-label">A peek inside — on every screen</div>
         <h2>Step into the <em>tavern light.</em></h2>
-        <p>Deep purple, warm gold, soft shadows — a cozy dungeon that feels like a favorite table. Tap any image to enlarge.</p>
+        <p>Deep purple, warm gold, soft shadows — a cozy dungeon that feels like a favorite table. Tap any image to enlarge. Shown here at phone size; the same story is re-laid for 7″ and 10″ tablets for the Play Store.</p>
+        <p style="margin-top:8px;color:var(--text-muted);font-size:12px">PNG sets for upload live in <code style="background:rgba(255,255,255,0.08);padding:2px 6px;border-radius:6px">docs/store/phone/</code> (1080×1920) • <code style="background:rgba(255,255,255,0.08);padding:2px 6px;border-radius:6px">docs/store/7in/</code> (1200×1920) • <code style="background:rgba(255,255,255,0.08);padding:2px 6px;border-radius:6px">docs/store/10in/</code> (1600×2560). Fastlane copies are in <code style="background:rgba(255,255,255,0.08);padding:2px 6px;border-radius:6px">fastlane/metadata/android/</code>. SVGs remain in <code style="background:rgba(255,255,255,0.08);padding:2px 6px;border-radius:6px">docs/screenshots/</code> for the web gallery.</p>
       </div>
 
       <div class="screenshots reveal">
-        <a class="screenshot" href="screenshots/01-onboarding.svg" data-lightbox data-title="First time — quick setup, then offline">
+        <a class="screenshot" href="store/phone/01-onboarding.png" data-lightbox data-title="First time — quick setup, then offline (also on 7in/10in)">
           <div class="shot-frame">
             <span class="badge">01 • Welcome</span>
-            <img src="screenshots/01-onboarding.svg" alt="Welcome screen showing quick setup and offline solo play" loading="lazy" width="390" height="844"/>
+            <img src="store/phone/01-onboarding.png" alt="Welcome screen showing quick setup and offline solo play — phone 1080×1920, also for 7in and 10in" loading="lazy" width="390" height="844"/>
           </div>
           <div class="shot-caption">
             <h4>Welcome & quick setup</h4>
@@ -268,10 +315,10 @@
           </div>
         </a>
 
-        <a class="screenshot" href="screenshots/02-character-creation.svg" data-lightbox data-title="Make a hero — ancestry, calling, and looks">
+        <a class="screenshot" href="store/phone/02-character-creation.png" data-lightbox data-title="Make a hero — ancestry, calling, and looks">
           <div class="shot-frame">
             <span class="badge">02 • Your Hero</span>
-            <img src="screenshots/02-character-creation.svg" alt="Character creation showing ancestry choices like Elf, Human, Dwarf" loading="lazy" width="390" height="844"/>
+            <img src="store/phone/02-character-creation.png" alt="Character creation showing ancestry choices like Elf, Human, Dwarf" loading="lazy" width="390" height="844"/>
           </div>
           <div class="shot-caption">
             <h4>Make your hero</h4>
@@ -279,10 +326,10 @@
           </div>
         </a>
 
-        <a class="screenshot" href="screenshots/03-campaign-hub.svg" data-lightbox data-title="Home — resume, heroes, or gather friends">
+        <a class="screenshot" href="store/phone/03-campaign-hub.png" data-lightbox data-title="Home — resume, heroes, or gather friends">
           <div class="shot-frame">
             <span class="badge">03 • Home</span>
-            <img src="screenshots/03-campaign-hub.svg" alt="Home screen showing current campaign Whispers of the Forgotten Crypt and hero roster" loading="lazy" width="390" height="844"/>
+            <img src="store/phone/03-campaign-hub.png" alt="Home screen showing current campaign Whispers of the Forgotten Crypt and hero roster" loading="lazy" width="390" height="844"/>
           </div>
           <div class="shot-caption">
             <h4>Home — your campaigns</h4>
@@ -290,10 +337,10 @@
           </div>
         </a>
 
-        <a class="screenshot" href="screenshots/04-gameplay.svg" data-lightbox data-title="At the table — map, dice, and living story">
+        <a class="screenshot" href="store/phone/04-gameplay.png" data-lightbox data-title="At the table — map, dice, and living story">
           <div class="shot-frame">
             <span class="badge">04 • At the Table</span>
-            <img src="screenshots/04-gameplay.svg" alt="Gameplay with dungeon map, narration, dice roll and quick actions Attack, Talk, Inspect" loading="lazy" width="390" height="844"/>
+            <img src="store/phone/04-gameplay.png" alt="Gameplay with dungeon map, narration, dice roll and quick actions Attack, Talk, Inspect" loading="lazy" width="390" height="844"/>
           </div>
           <div class="shot-caption">
             <h4>At the table</h4>
@@ -303,10 +350,10 @@
       </div>
 
       <div style="margin-top:18px;display:grid;grid-template-columns:1fr 1fr;gap:16px" class="reveal">
-        <a class="screenshot" href="screenshots/05-multiplayer.svg" data-lightbox data-title="Gather your party — QR or code, up to 6" style="display:flex;flex-direction:column">
-          <div class="shot-frame" style="aspect-ratio:9/12">
+        <a class="screenshot" href="store/phone/05-multiplayer.png" data-lightbox data-title="Gather your party — QR or code, up to 6" style="display:flex;flex-direction:column">
+          <div class="shot-frame" style="aspect-ratio:9/16">
             <span class="badge">05 • With Friends</span>
-            <img src="screenshots/05-multiplayer.svg" alt="Multiplayer lobby with QR code and party of up to 6" loading="lazy" width="390" height="520" style="object-position:top"/>
+            <img src="store/phone/05-multiplayer.png" alt="Multiplayer lobby with QR code and party of up to 6" loading="lazy" width="390" height="694" style="object-position:top"/>
           </div>
           <div class="shot-caption">
             <h4>Gather your party</h4>
@@ -314,13 +361,28 @@
           </div>
         </a>
         <div class="feature" style="display:flex;flex-direction:column;justify-content:center;min-height:260px">
-          <div class="docs-badge">📱 Android first — iOS later</div>
-          <h3 style="margin-top:12px">Coming soon to Google Play</h3>
-          <p>Be first through the tavern doors. Follow the project on GitHub for the launch day note — we’ll post the store link here the moment it’s live.</p>
+          <div class="docs-badge">📱 Phone • 7″ Tablet • 10″ Tablet</div>
+          <h3 style="margin-top:12px">Every screen, same warmth</h3>
+          <p>The gallery above is the phone set (1080×1920). Matching 7″ (1200×1920) and 10″ (1600×2560) sets are already exported for the Play Store — same 5 screens, re-laid for bigger canvases.</p>
+          <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+            <a class="btn btn-ghost" href="store/phone/01-onboarding.png" target="_blank" rel="noopener">Phone PNG</a>
+            <a class="btn btn-ghost" href="store/7in/01-onboarding.png" target="_blank" rel="noopener">7in PNG</a>
+            <a class="btn btn-ghost" href="store/10in/01-onboarding.png" target="_blank" rel="noopener">10in PNG</a>
+          </div>
           <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
             <a class="btn btn-primary" href="https://github.com/chartmann1590/arcane-dark" target="_blank" rel="noopener">Follow on GitHub</a>
             <a class="btn btn-ghost" href="privacy.html">How privacy works</a>
           </div>
+        </div>
+      </div>
+
+      <div style="margin-top:18px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px" class="reveal">
+        <a href="store/7in/01-onboarding.png" data-lightbox data-title="7in tablet — 01 Welcome (1200×1920)" style="display:block;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:#0F0D17"><img src="store/7in/01-onboarding.png" alt="7in tablet screenshot" style="width:100%;height:auto;display:block"/><span style="display:block;padding:8px;font-size:11px;font-weight:700;color:var(--text-secondary);text-align:center">7″ • 1200×1920</span></a>
+        <a href="store/10in/01-onboarding.png" data-lightbox data-title="10in tablet — 01 Welcome (1600×2560)" style="display:block;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:#0F0D17"><img src="store/10in/01-onboarding.png" alt="10in tablet screenshot" style="width:100%;height:auto;display:block"/><span style="display:block;padding:8px;font-size:11px;font-weight:700;color:var(--text-secondary);text-align:center">10″ • 1600×2560</span></a>
+        <div style="background:var(--surface-card);border:1px solid var(--border);border-radius:12px;padding:14px;display:flex;flex-direction:column;justify-content:center">
+          <div style="font-weight:800;font-size:12px">Tablet-ready uploads</div>
+          <p style="margin:6px 0 0;color:var(--text-secondary);font-size:12px;line-height:1.5">All 5 screens × 3 sizes = 15 PNGs, each within Play Store specs. Swap the placeholder YouTube ID before launch and you’re store-ready.</p>
+          <a href="#promo" style="margin-top:10px;color:var(--violet);font-size:12px;font-weight:700;text-decoration:underline">Watch trailer ↑</a>
         </div>
       </div>
     </div>

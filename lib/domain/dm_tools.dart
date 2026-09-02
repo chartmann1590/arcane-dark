@@ -129,6 +129,19 @@ class DmTools {
     state.visitedTiles.add('${destination.x},${destination.y}');
   }
 
+  /// Places one named companion at their own tile, independent of the
+  /// party's shared position — for when the DM narrates someone stepping
+  /// away on their own (guarding a door, scouting ahead, fleeing danger).
+  void moveCompanion(CampaignState state, String characterNameOrId, Point destination) {
+    for (final m in state.party) {
+      if (m.characterId == characterNameOrId || m.name.toLowerCase() == characterNameOrId.toLowerCase()) {
+        m.position = destination;
+        state.visitedTiles.add('${destination.x},${destination.y}');
+        return;
+      }
+    }
+  }
+
   void triggerEncounter(CampaignState state, String encounterId) {
     state.worldFlags['encounter:$encounterId'] = true;
     state.worldFlags['lastEncounter'] = encounterId;

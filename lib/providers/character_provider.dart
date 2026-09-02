@@ -14,6 +14,8 @@ class CharacterDraft {
   Background background;
   AbilityScores abilities;
   AvatarConfig avatar;
+  String? voiceName;
+  String? voiceLocale;
   CharacterDraft({
     this.name = '',
     this.race = Race.human,
@@ -21,6 +23,8 @@ class CharacterDraft {
     this.background = Background.soldier,
     this.abilities = const AbilityScores(),
     this.avatar = const AvatarConfig(),
+    this.voiceName,
+    this.voiceLocale,
   });
 
   Character toCharacter() {
@@ -37,18 +41,21 @@ class CharacterDraft {
       armorClass: ac,
       avatar: avatar,
       inventory: const [],
+      voiceName: voiceName,
+      voiceLocale: voiceLocale,
     );
   }
 }
 
 class CharacterDraftNotifier extends StateNotifier<CharacterDraft> {
   CharacterDraftNotifier() : super(CharacterDraft());
-  void setRace(Race r) => state = CharacterDraft(name: state.name, race: r, charClass: state.charClass, background: state.background, abilities: state.abilities, avatar: state.avatar);
-  void setClass(CharClass c) => state = CharacterDraft(name: state.name, race: state.race, charClass: c, background: state.background, abilities: state.abilities, avatar: state.avatar);
-  void setBackground(Background b) => state = CharacterDraft(name: state.name, race: state.race, charClass: state.charClass, background: b, abilities: state.abilities, avatar: state.avatar);
-  void setName(String n) => state = CharacterDraft(name: n, race: state.race, charClass: state.charClass, background: state.background, abilities: state.abilities, avatar: state.avatar);
-  void setAbilities(AbilityScores a) => state = CharacterDraft(name: state.name, race: state.race, charClass: state.charClass, background: state.background, abilities: a, avatar: state.avatar);
-  void setAvatar(AvatarConfig av) => state = CharacterDraft(name: state.name, race: state.race, charClass: state.charClass, background: state.background, abilities: state.abilities, avatar: av);
+  void setRace(Race r) => state = CharacterDraft(name: state.name, race: r, charClass: state.charClass, background: state.background, abilities: state.abilities, avatar: state.avatar, voiceName: state.voiceName, voiceLocale: state.voiceLocale);
+  void setClass(CharClass c) => state = CharacterDraft(name: state.name, race: state.race, charClass: c, background: state.background, abilities: state.abilities, avatar: state.avatar, voiceName: state.voiceName, voiceLocale: state.voiceLocale);
+  void setBackground(Background b) => state = CharacterDraft(name: state.name, race: state.race, charClass: state.charClass, background: b, abilities: state.abilities, avatar: state.avatar, voiceName: state.voiceName, voiceLocale: state.voiceLocale);
+  void setName(String n) => state = CharacterDraft(name: n, race: state.race, charClass: state.charClass, background: state.background, abilities: state.abilities, avatar: state.avatar, voiceName: state.voiceName, voiceLocale: state.voiceLocale);
+  void setAbilities(AbilityScores a) => state = CharacterDraft(name: state.name, race: state.race, charClass: state.charClass, background: state.background, abilities: a, avatar: state.avatar, voiceName: state.voiceName, voiceLocale: state.voiceLocale);
+  void setAvatar(AvatarConfig av) => state = CharacterDraft(name: state.name, race: state.race, charClass: state.charClass, background: state.background, abilities: state.abilities, avatar: av, voiceName: state.voiceName, voiceLocale: state.voiceLocale);
+  void setVoice(String? name, String? locale) => state = CharacterDraft(name: state.name, race: state.race, charClass: state.charClass, background: state.background, abilities: state.abilities, avatar: state.avatar, voiceName: name, voiceLocale: locale);
   void reset() => state = CharacterDraft();
 }
 
@@ -90,6 +97,13 @@ class SavedCharactersNotifier extends StateNotifier<List<Character>> {
     state = [...state, c];
     await _persist();
     await _cloudCollection()?.doc(c.id).set(c.toJson()).catchError((_) {});
+  }
+
+  Future<void> updateVoice(String id, String? voiceName, String? voiceLocale) async {
+    state = state.map((c) => c.id == id ? c.copyWith(voiceName: voiceName ?? '', voiceLocale: voiceLocale ?? '') : c).toList();
+    await _persist();
+    final updated = state.firstWhere((c) => c.id == id);
+    await _cloudCollection()?.doc(id).set(updated.toJson()).catchError((_) {});
   }
 
   Future<void> remove(String id) async {

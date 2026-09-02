@@ -13,7 +13,7 @@ class ClassStep extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       children: [
-        Text('Your class defines how you face danger — steel, spell, or shadow.', style: GoogleFonts.manrope(fontSize: 13, color: ArcaneTheme.textSecondary)),
+        Text('Your class defines how you face danger — steel, spell, or shadow.', style: GoogleFonts.ibmPlexSans(fontSize: 13, color: ArcaneTheme.textSecondary)),
         const SizedBox(height: 14),
         ...CharClass.values.map((cls) {
           final selected = draft.charClass == cls;
@@ -31,12 +31,12 @@ class ClassStep extends ConsumerWidget {
                   Expanded(
                       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Row(children: [
-                      Text(cls.label, style: GoogleFonts.manrope(fontWeight: FontWeight.w700, color: Colors.white, fontSize: 15)),
+                      Text(cls.label, style: GoogleFonts.ibmPlexSans(fontWeight: FontWeight.w700, color: Colors.white, fontSize: 15)),
                       const SizedBox(width: 8),
-                      Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), decoration: BoxDecoration(color: ArcaneTheme.surfaceElevated, borderRadius: BorderRadius.circular(6), border: Border.all(color: ArcaneTheme.border)), child: Text(cls.hitDie, style: GoogleFonts.manrope(fontSize: 11, color: ArcaneTheme.textMuted, fontWeight: FontWeight.w700))),
+                      Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), decoration: BoxDecoration(color: ArcaneTheme.surfaceElevated, borderRadius: BorderRadius.circular(6), border: Border.all(color: ArcaneTheme.border)), child: Text(cls.hitDie, style: GoogleFonts.ibmPlexSans(fontSize: 11, color: ArcaneTheme.textMuted, fontWeight: FontWeight.w700))),
                     ]),
                     const SizedBox(height: 4),
-                    Text(cls.flavor, style: GoogleFonts.manrope(fontSize: 12, color: ArcaneTheme.textSecondary, height: 1.3)),
+                    Text(cls.flavor, style: GoogleFonts.ibmPlexSans(fontSize: 12, color: ArcaneTheme.textSecondary, height: 1.3)),
                   ])),
                   if (selected) const Icon(Icons.check_circle_rounded, color: ArcaneTheme.primary, size: 20),
                 ]),

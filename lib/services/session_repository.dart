@@ -29,11 +29,18 @@ class SessionInfo {
   final String hostUid;
   final String joinCode;
   final String status; // lobby | active | paused | ended
-  SessionInfo({required this.id, required this.hostUid, required this.joinCode, required this.status});
+  final Map<String, dynamic>? campaignSeedJson;
+  SessionInfo({required this.id, required this.hostUid, required this.joinCode, required this.status, this.campaignSeedJson});
 
   factory SessionInfo.fromDoc(DocumentSnapshot<Map<String, dynamic>> d) {
     final j = d.data() ?? {};
-    return SessionInfo(id: d.id, hostUid: j['hostUid'] as String? ?? '', joinCode: j['joinCode'] as String? ?? '', status: j['status'] as String? ?? 'lobby');
+    return SessionInfo(
+      id: d.id,
+      hostUid: j['hostUid'] as String? ?? '',
+      joinCode: j['joinCode'] as String? ?? '',
+      status: j['status'] as String? ?? 'lobby',
+      campaignSeedJson: (j['campaignSeed'] as Map?)?.cast<String, dynamic>(),
+    );
   }
 }
 
@@ -84,7 +91,10 @@ class SessionRepository {
 
   Future<SessionInfo> joinSessionByCode(String code, {required String displayName, String? characterId}) async {
     final user = await AuthService.instance.ensureSignedIn();
-    final query = await _sessions.where('joinCode', isEqualTo: code.toUpperCase()).where('status', isEqualTo: 'lobby').limit(1).get();
+    // Allow joining a lobby that hasn't started yet OR one already underway
+    // (a friend catching up mid-adventure) — only a session the host has
+    // explicitly ended is off-limits.
+    final query = await _sessions.where('joinCode', isEqualTo: code.toUpperCase()).where('status', whereIn: ['lobby', 'active']).limit(1).get();
     if (query.docs.isEmpty) {
       throw SessionNotFoundException('No open lobby found for code $code. Double-check the code or ask your host for a new one.');
     }
@@ -113,10 +123,21 @@ class SessionRepository {
 
   Stream<SessionInfo> watchSession(String sessionId) => _sessions.doc(sessionId).snapshots().map(SessionInfo.fromDoc);
 
+  Future<SessionInfo> getSession(String sessionId) async => SessionInfo.fromDoc(await _sessions.doc(sessionId).get());
+
   Stream<List<SessionPlayer>> watchPlayers(String sessionId) =>
       _sessions.doc(sessionId).collection('players').snapshots().map((s) => s.docs.map(SessionPlayer.fromDoc).toList());
 
   Future<void> startSession(String sessionId) => _sessions.doc(sessionId).update({'status': 'active'});
+
+  /// Whether the signed-in user on this device is this session's host —
+  /// only the host's device runs the real on-device DM engine; everyone
+  /// else submits actions via [submitAction] and reads back via [watchState].
+  Future<bool> isHost(String sessionId) async {
+    final doc = await _sessions.doc(sessionId).get();
+    final hostUid = doc.data()?['hostUid'] as String?;
+    return hostUid != null && hostUid == AuthService.instance.currentUser?.uid;
+  }
 
   Future<void> leaveSession(String sessionId) async {
     stopHeartbeat();

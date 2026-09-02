@@ -79,7 +79,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     try {
       await AuthService.instance.sendPasswordReset(email);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Password reset email sent to $email', style: GoogleFonts.manrope())));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Password reset email sent to $email', style: GoogleFonts.ibmPlexSans())));
       }
     } catch (e) {
       setState(() => _error = AuthService.instance.friendlyError(e));
@@ -90,47 +90,47 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: ArcaneTheme.background,
-      appBar: AppBar(title: Text(_isRegister ? 'CREATE ACCOUNT' : 'SIGN IN', style: GoogleFonts.manrope(fontWeight: FontWeight.w800, fontSize: 13, letterSpacing: 1))),
+      appBar: AppBar(title: Text(_isRegister ? 'CREATE ACCOUNT' : 'SIGN IN', style: GoogleFonts.ibmPlexSans(fontWeight: FontWeight.w800, fontSize: 13, letterSpacing: 1))),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
         children: [
-          Text('Take your party online', style: GoogleFonts.playfairDisplay(fontSize: 24, fontWeight: FontWeight.w800, color: Colors.white)),
+          Text('Take your party online', style: GoogleFonts.cinzel(fontSize: 24, fontWeight: FontWeight.w800, color: Colors.white)),
           const SizedBox(height: 8),
-          Text('Sign in to host or join multiplayer sessions and back your characters up to the cloud. Solo play never requires this.', style: GoogleFonts.manrope(fontSize: 13, color: ArcaneTheme.textSecondary, height: 1.5)),
+          Text('Sign in to host or join multiplayer sessions and back your characters up to the cloud. Solo play never requires this.', style: GoogleFonts.ibmPlexSans(fontSize: 13, color: ArcaneTheme.textSecondary, height: 1.5)),
           const SizedBox(height: 28),
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
               onPressed: _busy ? null : _google,
               icon: const Icon(Icons.g_mobiledata_rounded, size: 26),
-              label: Text('Continue with Google', style: GoogleFonts.manrope(fontWeight: FontWeight.w700)),
+              label: Text('Continue with Google', style: GoogleFonts.ibmPlexSans(fontWeight: FontWeight.w700)),
               style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14), side: const BorderSide(color: ArcaneTheme.border)),
             ),
           ),
           const SizedBox(height: 18),
           Row(children: [
             const Expanded(child: Divider(color: ArcaneTheme.border)),
-            Padding(padding: const EdgeInsets.symmetric(horizontal: 10), child: Text('OR', style: GoogleFonts.manrope(fontSize: 11, color: ArcaneTheme.textMuted))),
+            Padding(padding: const EdgeInsets.symmetric(horizontal: 10), child: Text('OR', style: GoogleFonts.ibmPlexSans(fontSize: 11, color: ArcaneTheme.textMuted))),
             const Expanded(child: Divider(color: ArcaneTheme.border)),
           ]),
           const SizedBox(height: 18),
           TextField(
             controller: _emailCtrl,
             keyboardType: TextInputType.emailAddress,
-            style: GoogleFonts.manrope(color: Colors.white),
+            style: GoogleFonts.ibmPlexSans(color: Colors.white),
             decoration: const InputDecoration(labelText: 'Email', prefixIcon: Icon(Icons.mail_outline_rounded, color: ArcaneTheme.textMuted)),
           ),
           const SizedBox(height: 12),
           TextField(
             controller: _passwordCtrl,
             obscureText: true,
-            style: GoogleFonts.manrope(color: Colors.white),
+            style: GoogleFonts.ibmPlexSans(color: Colors.white),
             decoration: const InputDecoration(labelText: 'Password', prefixIcon: Icon(Icons.lock_outline_rounded, color: ArcaneTheme.textMuted)),
             onSubmitted: (_) => _emailSubmit(),
           ),
           if (!_isRegister) ...[
             const SizedBox(height: 6),
-            Align(alignment: Alignment.centerRight, child: TextButton(onPressed: _busy ? null : _forgotPassword, child: Text('Forgot password?', style: GoogleFonts.manrope(fontSize: 12, color: ArcaneTheme.textSecondary)))),
+            Align(alignment: Alignment.centerRight, child: TextButton(onPressed: _busy ? null : _forgotPassword, child: Text('Forgot password?', style: GoogleFonts.ibmPlexSans(fontSize: 12, color: ArcaneTheme.textSecondary)))),
           ],
           if (_error != null) ...[
             const SizedBox(height: 8),
@@ -140,7 +140,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
               child: Row(children: [
                 const Icon(Icons.error_outline_rounded, color: ArcaneTheme.tertiary, size: 16),
                 const SizedBox(width: 8),
-                Expanded(child: Text(_error!, style: GoogleFonts.manrope(fontSize: 12, color: ArcaneTheme.tertiary))),
+                Expanded(child: Text(_error!, style: GoogleFonts.ibmPlexSans(fontSize: 12, color: ArcaneTheme.tertiary))),
               ]),
             ),
           ],
@@ -152,7 +152,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
               style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
               child: _busy
                   ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                  : Text(_isRegister ? 'Create Account' : 'Sign In', style: GoogleFonts.manrope(fontWeight: FontWeight.w800)),
+                  : Text(_isRegister ? 'Create Account' : 'Sign In', style: GoogleFonts.ibmPlexSans(fontWeight: FontWeight.w800)),
             ),
           ),
           const SizedBox(height: 14),
@@ -161,7 +161,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
               onPressed: _busy ? null : () => setState(() => _isRegister = !_isRegister),
               child: Text(
                 _isRegister ? 'Already have an account? Sign in' : 'New here? Create an account',
-                style: GoogleFonts.manrope(fontSize: 13, color: ArcaneTheme.primary, fontWeight: FontWeight.w600),
+                style: GoogleFonts.ibmPlexSans(fontSize: 13, color: ArcaneTheme.primary, fontWeight: FontWeight.w600),
               ),
             ),
           ),

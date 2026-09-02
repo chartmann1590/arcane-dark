@@ -18,7 +18,7 @@ class AppearanceStep extends ConsumerWidget {
         TextField(
           controller: nameController,
           onChanged: (v) => ref.read(characterDraftProvider.notifier).setName(v),
-          style: GoogleFonts.manrope(color: Colors.white, fontWeight: FontWeight.w600),
+          style: GoogleFonts.ibmPlexSans(color: Colors.white, fontWeight: FontWeight.w600),
           decoration: InputDecoration(
             labelText: 'Hero Name',
             hintText: 'e.g. Lyra Nightwhisper',

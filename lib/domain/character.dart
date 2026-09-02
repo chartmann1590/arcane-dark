@@ -103,6 +103,10 @@ class Character {
   final int level;
   final List<String> inventory;
   final AvatarConfig avatar;
+  // On-device TTS voice assigned to this character (see TtsService) — null
+  // means "no voice picked yet", falling back to the platform's default.
+  final String? voiceName;
+  final String? voiceLocale;
 
   Character({
     required this.id,
@@ -116,6 +120,8 @@ class Character {
     this.level = 1,
     this.inventory = const [],
     this.avatar = const AvatarConfig(),
+    this.voiceName,
+    this.voiceLocale,
   });
 
   static int computeHp(CharClass c, int conMod) {
@@ -135,6 +141,8 @@ class Character {
     int? armorClass,
     AvatarConfig? avatar,
     List<String>? inventory,
+    String? voiceName,
+    String? voiceLocale,
   }) =>
       Character(
         id: id,
@@ -148,6 +156,8 @@ class Character {
         inventory: inventory ?? this.inventory,
         avatar: avatar ?? this.avatar,
         level: level,
+        voiceName: voiceName ?? this.voiceName,
+        voiceLocale: voiceLocale ?? this.voiceLocale,
       );
 
   Map<String, dynamic> toJson() => {
@@ -162,6 +172,8 @@ class Character {
         'level': level,
         'inventory': inventory,
         'avatar': avatar.toJson(),
+        'voiceName': voiceName,
+        'voiceLocale': voiceLocale,
       };
 
   factory Character.fromJson(Map<String, dynamic> j) => Character(
@@ -176,5 +188,7 @@ class Character {
         level: j['level'] as int? ?? 1,
         inventory: (j['inventory'] as List?)?.cast<String>() ?? [],
         avatar: j['avatar'] != null ? AvatarConfig.fromJson(j['avatar'] as Map<String, dynamic>) : const AvatarConfig(),
+        voiceName: j['voiceName'] as String?,
+        voiceLocale: j['voiceLocale'] as String?,
       );
 }

@@ -9,6 +9,7 @@ import '../../domain/campaign_seed.dart';
 import '../../domain/campaign_state.dart';
 import '../../domain/character.dart';
 import '../../services/ad_service.dart';
+import '../../widgets/fx.dart';
 
 class CampaignHubScreen extends ConsumerWidget {
   const CampaignHubScreen({super.key});
@@ -20,7 +21,7 @@ class CampaignHubScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: ArcaneTheme.background,
       appBar: AppBar(
-        title: Text('ARCANE DARK', style: GoogleFonts.playfairDisplay(color: ArcaneTheme.secondary, letterSpacing: 2, fontSize: 16, fontWeight: FontWeight.w700)),
+        title: Text('ARCANE DARK', style: GoogleFonts.cinzel(color: ArcaneTheme.secondary, letterSpacing: 2, fontSize: 16, fontWeight: FontWeight.w700)),
         centerTitle: true,
       ),
       body: ListView(
@@ -28,8 +29,8 @@ class CampaignHubScreen extends ConsumerWidget {
         children: [
           // Current Campaign card — matches Stitch Campaign Hub screenshot
           if (campaign != null) ...[
-            Container(
-              decoration: ArcaneTheme.cardDecoration(goldBorder: true),
+            PopIn(child: Container(
+              decoration: ArcaneTheme.ornateDecoration(),
               padding: const EdgeInsets.all(16),
               child: Stack(
                 children: [
@@ -45,7 +46,7 @@ class CampaignHubScreen extends ConsumerWidget {
                               borderRadius: BorderRadius.circular(6),
                               border: Border.all(color: ArcaneTheme.primary.withOpacity(0.3)),
                             ),
-                            child: Text('CURRENT CAMPAIGN', style: GoogleFonts.manrope(fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1, color: ArcaneTheme.primary)),
+                            child: Text('CURRENT CAMPAIGN', style: GoogleFonts.ibmPlexSans(fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1, color: ArcaneTheme.primary)),
                           ),
                           const Spacer(),
                           Container(
@@ -64,16 +65,16 @@ class CampaignHubScreen extends ConsumerWidget {
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                 decoration: BoxDecoration(color: ArcaneTheme.secondary, borderRadius: BorderRadius.circular(4)),
-                                child: Text('LVL ${campaign.party.length}', style: GoogleFonts.manrope(fontSize: 9, fontWeight: FontWeight.w800, color: Colors.black)),
+                                child: Text('LVL ${campaign.party.length}', style: GoogleFonts.ibmPlexSans(fontSize: 9, fontWeight: FontWeight.w800, color: Colors.black)),
                               ),
                             ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 12),
-                      Text(campaign.seed.title, style: GoogleFonts.playfairDisplay(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white, height: 1.1)),
+                      Text(campaign.seed.title, style: GoogleFonts.cinzel(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white, height: 1.1)),
                       const SizedBox(height: 6),
-                      Text(campaign.seed.hook, style: GoogleFonts.manrope(fontSize: 13, color: ArcaneTheme.textSecondary, height: 1.4)),
+                      Text(campaign.seed.hook, style: GoogleFonts.ibmPlexSans(fontSize: 13, color: ArcaneTheme.textSecondary, height: 1.4)),
                       const SizedBox(height: 16),
                       SizedBox(
                         width: double.infinity,
@@ -81,7 +82,7 @@ class CampaignHubScreen extends ConsumerWidget {
                           onPressed: () => context.go('/play'),
                           style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2A2440), foregroundColor: ArcaneTheme.secondary, side: BorderSide(color: ArcaneTheme.secondary.withOpacity(0.5))),
                           child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                            Text('RESUME', style: GoogleFonts.manrope(fontWeight: FontWeight.w800, letterSpacing: 1)),
+                            Text('RESUME', style: GoogleFonts.ibmPlexSans(fontWeight: FontWeight.w800, letterSpacing: 1)),
                             const SizedBox(width: 6),
                             const Icon(Icons.arrow_forward, size: 16),
                           ]),
@@ -91,28 +92,30 @@ class CampaignHubScreen extends ConsumerWidget {
                   ),
                 ],
               ),
-            ),
+            )),
             const SizedBox(height: 16),
           ] else ...[
-            Container(
-              decoration: BoxDecoration(
-                color: ArcaneTheme.surfaceCard,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: ArcaneTheme.border),
-              ),
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(color: ArcaneTheme.primary.withOpacity(0.12), shape: BoxShape.circle),
-                    child: const Icon(Icons.auto_stories_rounded, color: ArcaneTheme.primary, size: 28),
-                  ),
-                  const SizedBox(height: 12),
-                  Text('No Active Campaign', style: GoogleFonts.playfairDisplay(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white)),
-                  const SizedBox(height: 6),
-                  Text('Create a hero and forge your first legend. The AI Dungeon Master awaits.', textAlign: TextAlign.center, style: GoogleFonts.manrope(fontSize: 13, color: ArcaneTheme.textSecondary)),
-                ],
+            PopIn(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: ArcaneTheme.surfaceCard,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: ArcaneTheme.border),
+                ),
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(color: ArcaneTheme.primary.withOpacity(0.12), shape: BoxShape.circle),
+                      child: const Icon(Icons.auto_stories_rounded, color: ArcaneTheme.primary, size: 28),
+                    ),
+                    const SizedBox(height: 12),
+                    Text('No Active Campaign', style: GoogleFonts.cinzel(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white)),
+                    const SizedBox(height: 6),
+                    Text('Create a hero and forge your first legend. The AI Dungeon Master awaits.', textAlign: TextAlign.center, style: GoogleFonts.ibmPlexSans(fontSize: 13, color: ArcaneTheme.textSecondary)),
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 16),
@@ -126,7 +129,7 @@ class CampaignHubScreen extends ConsumerWidget {
             subtitle: chars.isEmpty ? 'Create a hero first' : 'Start a fresh journey',
             onTap: () {
               if (chars.isEmpty) {
-                context.go('/heroes');
+                context.push('/create');
               } else {
                 _showCampaignPicker(context, ref, chars);
               }
@@ -145,7 +148,7 @@ class CampaignHubScreen extends ConsumerWidget {
 
           // Quick party preview
           if (chars.isNotEmpty) ...[
-            Text('YOUR HEROES', style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.2, color: ArcaneTheme.textMuted)),
+            Text('YOUR HEROES', style: GoogleFonts.ibmPlexSans(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.2, color: ArcaneTheme.textMuted)),
             const SizedBox(height: 10),
             SizedBox(
               height: 108,
@@ -155,25 +158,30 @@ class CampaignHubScreen extends ConsumerWidget {
                 separatorBuilder: (_, __) => const SizedBox(width: 12),
                 itemBuilder: (c, i) {
                   final ch = chars[i];
-                  return Container(
-                    width: 140,
-                    padding: const EdgeInsets.all(12),
-                    decoration: ArcaneTheme.cardDecoration(),
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Row(children: [
-                        CircleAvatar(radius: 16, backgroundColor: ArcaneTheme.primary.withOpacity(0.2), backgroundImage: AssetImage('assets/avatar/portraits/${ch.race.name}.png')),
-                        const SizedBox(width: 8),
-                        Expanded(child: Text(ch.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white))),
+                  return PopIn(
+                    delay: Duration(milliseconds: 60 * i),
+                    child: PressableScale(
+                      onTap: () => context.push('/heroes/${ch.id}'),
+                      child: Container(
+                      width: 140,
+                      padding: const EdgeInsets.all(12),
+                      decoration: ArcaneTheme.cardDecoration(),
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Row(children: [
+                          CircleAvatar(radius: 16, backgroundColor: ArcaneTheme.primary.withOpacity(0.2), backgroundImage: AssetImage('assets/avatar/portraits/${ch.race.name}.png')),
+                          const SizedBox(width: 8),
+                          Expanded(child: Text(ch.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.ibmPlexSans(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white))),
+                        ]),
+                        const SizedBox(height: 6),
+                        Text('${ch.race.label} • ${ch.charClass.label}', style: GoogleFonts.ibmPlexSans(fontSize: 11, color: ArcaneTheme.textSecondary)),
+                        const SizedBox(height: 4),
+                        Row(children: [
+                          _StatChip('HP ${ch.hp}'),
+                          const SizedBox(width: 6),
+                          _StatChip('AC ${ch.armorClass}'),
+                        ]),
                       ]),
-                      const SizedBox(height: 6),
-                      Text('${ch.race.label} • ${ch.charClass.label}', style: GoogleFonts.manrope(fontSize: 11, color: ArcaneTheme.textSecondary)),
-                      const SizedBox(height: 4),
-                      Row(children: [
-                        _StatChip('HP ${ch.hp}'),
-                        const SizedBox(width: 6),
-                        _StatChip('AC ${ch.armorClass}'),
-                      ]),
-                    ]),
+                    )),
                   );
                 },
               ),
@@ -189,7 +197,7 @@ class CampaignHubScreen extends ConsumerWidget {
               child: Row(children: [
                 const Icon(Icons.lightbulb_rounded, color: ArcaneTheme.primary, size: 20),
                 const SizedBox(width: 10),
-                Expanded(child: Text('Tip: Head to Heroes to build your first character — race, class, abilities & a live portrait editor.', style: GoogleFonts.manrope(fontSize: 12, color: ArcaneTheme.textSecondary))),
+                Expanded(child: Text('Tip: Head to Heroes to build your first character — race, class, abilities & a live portrait editor.', style: GoogleFonts.ibmPlexSans(fontSize: 12, color: ArcaneTheme.textSecondary))),
               ]),
             ),
         ],
@@ -205,7 +213,7 @@ class CampaignHubScreen extends ConsumerWidget {
       builder: (c) => Padding(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
         child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Choose a Legend', style: GoogleFonts.playfairDisplay(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white)),
+          Text('Choose a Legend', style: GoogleFonts.cinzel(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white)),
           const SizedBox(height: 12),
           ...CampaignSeed.presets.map((seed) => Padding(
                 padding: const EdgeInsets.only(bottom: 10),
@@ -225,10 +233,10 @@ class CampaignHubScreen extends ConsumerWidget {
                       const SizedBox(width: 12),
                       Expanded(
                           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text(seed.title, style: GoogleFonts.manrope(fontWeight: FontWeight.w700, color: Colors.white)),
-                        Text(seed.hook, maxLines: 2, overflow: TextOverflow.ellipsis, style: GoogleFonts.manrope(fontSize: 12, color: ArcaneTheme.textSecondary)),
+                        Text(seed.title, style: GoogleFonts.ibmPlexSans(fontWeight: FontWeight.w700, color: Colors.white)),
+                        Text(seed.hook, maxLines: 2, overflow: TextOverflow.ellipsis, style: GoogleFonts.ibmPlexSans(fontSize: 12, color: ArcaneTheme.textSecondary)),
                         const SizedBox(height: 4),
-                        Text(seed.tone, style: GoogleFonts.manrope(fontSize: 11, color: ArcaneTheme.secondary, fontWeight: FontWeight.w600)),
+                        Text(seed.tone, style: GoogleFonts.ibmPlexSans(fontSize: 11, color: ArcaneTheme.secondary, fontWeight: FontWeight.w600)),
                       ])),
                     ]),
                   ),
@@ -259,9 +267,8 @@ class _ActionCard extends StatelessWidget {
   const _ActionCard({required this.icon, required this.iconBg, required this.iconColor, required this.title, required this.subtitle, required this.onTap});
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    return PressableScale(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         decoration: BoxDecoration(color: ArcaneTheme.surfaceElevated, borderRadius: BorderRadius.circular(12), border: Border.all(color: ArcaneTheme.border)),
@@ -270,8 +277,8 @@ class _ActionCard extends StatelessWidget {
           const SizedBox(width: 14),
           Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(title, style: GoogleFonts.manrope(fontWeight: FontWeight.w700, color: Colors.white, fontSize: 14)),
-            Text(subtitle, style: GoogleFonts.manrope(fontSize: 12, color: ArcaneTheme.textSecondary)),
+            Text(title, style: GoogleFonts.ibmPlexSans(fontWeight: FontWeight.w700, color: Colors.white, fontSize: 14)),
+            Text(subtitle, style: GoogleFonts.ibmPlexSans(fontSize: 12, color: ArcaneTheme.textSecondary)),
           ])),
           const Icon(Icons.chevron_right_rounded, color: ArcaneTheme.textMuted),
         ]),
@@ -288,7 +295,7 @@ class _StatChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(color: ArcaneTheme.surfaceElevated, borderRadius: BorderRadius.circular(6), border: Border.all(color: ArcaneTheme.border)),
-      child: Text(label, style: GoogleFonts.manrope(fontSize: 10, fontWeight: FontWeight.w700, color: ArcaneTheme.textMuted)),
+      child: Text(label, style: GoogleFonts.ibmPlexSans(fontSize: 10, fontWeight: FontWeight.w700, color: ArcaneTheme.textMuted)),
     );
   }
 }

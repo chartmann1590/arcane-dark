@@ -63,7 +63,7 @@ class _CharacterCreationFlowState extends ConsumerState<CharacterCreationFlow> {
       backgroundColor: ArcaneTheme.background,
       appBar: AppBar(
         leading: IconButton(icon: const Icon(Icons.arrow_back_rounded), onPressed: _back),
-        title: Text(titles[_index].toUpperCase(), style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.w800, letterSpacing: 1.1, color: ArcaneTheme.secondary)),
+        title: Text(titles[_index].toUpperCase(), style: GoogleFonts.ibmPlexSans(fontSize: 13, fontWeight: FontWeight.w800, letterSpacing: 1.1, color: ArcaneTheme.secondary)),
         centerTitle: true,
       ),
       body: Column(
@@ -74,9 +74,9 @@ class _CharacterCreationFlowState extends ConsumerState<CharacterCreationFlow> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                  Text('STEP ${_index + 1} OF 6', style: GoogleFonts.manrope(fontSize: 11, color: ArcaneTheme.textMuted, fontWeight: FontWeight.w700, letterSpacing: 0.8)),
+                  Text('STEP ${_index + 1} OF 6', style: GoogleFonts.ibmPlexSans(fontSize: 11, color: ArcaneTheme.textMuted, fontWeight: FontWeight.w700, letterSpacing: 0.8)),
                   if (_index >= 4)
-                    Text(draft.name.isEmpty ? 'Final Details' : draft.name, style: GoogleFonts.manrope(fontSize: 11, color: ArcaneTheme.textSecondary)),
+                    Text(draft.name.isEmpty ? 'Final Details' : draft.name, style: GoogleFonts.ibmPlexSans(fontSize: 11, color: ArcaneTheme.textSecondary)),
                 ]),
                 const SizedBox(height: 8),
                 ClipRRect(

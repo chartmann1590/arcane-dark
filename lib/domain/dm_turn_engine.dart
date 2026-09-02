@@ -25,7 +25,7 @@ class DmTurnEngine {
   // Approximate token count: char/4
   int _approxTokens(String text) => (text.length / 4).ceil();
 
-  String _assemblePrompt(CampaignState state, String playerInput) {
+  String _assemblePrompt(CampaignState state, String playerInput, {String? addressedTo}) {
     final sb = StringBuffer();
     sb.writeln('You are an expert Dungeon Master running a Dungeons & Dragons style game. Narrate in second person, in-character, and never break the fourth wall.');
     sb.writeln('Campaign: ${state.seed.title} | Tone: ${state.seed.tone}');
@@ -39,6 +39,12 @@ class DmTurnEngine {
     for (final m in state.party) {
       sb.writeln('- ${m.name} (${m.raceLabel} ${m.classLabel}, HP ${m.hp}/${m.maxHp}): ${m.persona}');
     }
+    if (state.party.length > 1) {
+      sb.writeln('\nOnly the first character listed above is directly controlled by the player. Every other party member is an AI-controlled companion — they are not silent followers: have them act on their own initiative each turn where it fits (a quip, a warning, drawing a weapon, covering a flank, disagreeing with the plan), in their own persona\'s voice, without waiting to be told what to do.');
+    }
+    if (addressedTo != null) {
+      sb.writeln('\nThe player is speaking directly and specifically to $addressedTo, not to the whole party. Have $addressedTo respond personally, in their own voice, as the centerpiece of this reply. Other party members may still react briefly if it truly fits, but this exchange belongs to $addressedTo.');
+    }
 
     sb.writeln('\nRecent turns:');
     for (final t in state.recentTurns.take(6)) {
@@ -50,7 +56,7 @@ class DmTurnEngine {
     sb.writeln('  ability_check(character, ability, dc) — character is one of the party names above (or omit for the acting player); ability is STR/DEX/CON/INT/WIS/CHA; dc is the difficulty (10=easy, 15=moderate, 20=hard).');
     sb.writeln('  attack(character, target_ac, ability=STR|DEX, damage_die=6, damage_modifier=0) — target_ac is your best estimate of the target\'s armor class (10-18 typical).');
     sb.writeln('  roll_dice(sides, count, modifier) — for flavor rolls not tied to a character\'s stats.');
-    sb.writeln('  update_hp(target, delta), add_item(target, item), move_party(x, y), trigger_encounter(id), advance_quest(id, stage).');
+    sb.writeln('  update_hp(target, delta), add_item(target, item), move_party(x, y), move_companion(character, x, y) — moves one named companion on their own, separate from the party\'s shared position, trigger_encounter(id), advance_quest(id, stage).');
     sb.writeln('Emit exactly one <<ACTION: name key=val key2=val2>> line when the moment calls for a check, attack, or state change — the real dice will be rolled for you and the true result given back into the story. Otherwise, just narrate.');
     sb.writeln('\nPlayer now says: $playerInput');
     sb.writeln('\nRespond as DM:');
@@ -76,8 +82,8 @@ class DmTurnEngine {
     return null;
   }
 
-  Future<DmTurnResult> takeTurn({required String playerInput, required CampaignState state, void Function(String chunk)? onToken}) async {
-    final prompt = _assemblePrompt(state, playerInput);
+  Future<DmTurnResult> takeTurn({required String playerInput, required CampaignState state, void Function(String chunk)? onToken, String? addressedTo}) async {
+    final prompt = _assemblePrompt(state, playerInput, addressedTo: addressedTo);
     final buffer = StringBuffer();
     await for (final chunk in model.generate(prompt, maxTokens: 512)) {
       buffer.write(chunk);
@@ -146,6 +152,15 @@ class DmTurnEngine {
             final x = int.tryParse(action['x'] ?? action['destination'] ?? '0') ?? state.partyPosition.x;
             final y = int.tryParse(action['y'] ?? '1') ?? state.partyPosition.y + 1;
             tools.moveParty(state, Point(x, y));
+            narration = DmTools.stripActionBlocks(raw);
+            break;
+          case 'move_companion':
+            final who = action['character'];
+            if (who != null) {
+              final x = int.tryParse(action['x'] ?? '0') ?? state.partyPosition.x;
+              final y = int.tryParse(action['y'] ?? '0') ?? state.partyPosition.y;
+              tools.moveCompanion(state, who, Point(x, y));
+            }
             narration = DmTools.stripActionBlocks(raw);
             break;
           case 'trigger_encounter':

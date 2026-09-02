@@ -13,7 +13,7 @@ class RaceStep extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       children: [
-        Text('Choose your lineage — it shapes your abilities and story.', style: GoogleFonts.manrope(fontSize: 13, color: ArcaneTheme.textSecondary)),
+        Text('Choose your lineage — it shapes your abilities and story.', style: GoogleFonts.ibmPlexSans(fontSize: 13, color: ArcaneTheme.textSecondary)),
         const SizedBox(height: 14),
         GridView.builder(
           shrinkWrap: true,
@@ -41,11 +41,11 @@ class RaceStep extends ConsumerWidget {
                     if (selected) const Icon(Icons.check_circle_rounded, color: ArcaneTheme.primary, size: 18),
                   ]),
                   const SizedBox(height: 10),
-                  Text(race.label, style: GoogleFonts.manrope(fontWeight: FontWeight.w700, color: Colors.white, fontSize: 14)),
+                  Text(race.label, style: GoogleFonts.ibmPlexSans(fontWeight: FontWeight.w700, color: Colors.white, fontSize: 14)),
                   const SizedBox(height: 4),
-                  Text(race.bonus, style: GoogleFonts.manrope(fontSize: 11, color: ArcaneTheme.secondary, fontWeight: FontWeight.w600)),
+                  Text(race.bonus, style: GoogleFonts.ibmPlexSans(fontSize: 11, color: ArcaneTheme.secondary, fontWeight: FontWeight.w600)),
                   const SizedBox(height: 6),
-                  Expanded(child: Text(race.flavor, maxLines: 3, overflow: TextOverflow.ellipsis, style: GoogleFonts.manrope(fontSize: 11, color: ArcaneTheme.textSecondary, height: 1.3))),
+                  Expanded(child: Text(race.flavor, maxLines: 3, overflow: TextOverflow.ellipsis, style: GoogleFonts.ibmPlexSans(fontSize: 11, color: ArcaneTheme.textSecondary, height: 1.3))),
                 ]),
               ),
             );

@@ -17,6 +17,19 @@ class CampaignNotifier extends StateNotifier<CampaignState?> {
 
   void load(CampaignState s) => state = s;
 
+  /// Adds a character to the party of whatever campaign is currently active
+  /// — used when recruiting an AI companion mid-adventure, so they join the
+  /// story immediately instead of only appearing in campaigns started later.
+  /// No-ops if there's no active campaign or the character's already in it.
+  void addPartyMember(Character c) {
+    final cur = state;
+    if (cur == null) return;
+    if (cur.party.any((m) => m.characterId == c.id)) return;
+    cur.party = [...cur.party, PartyMemberStatus.fromCharacter(c)];
+    state = cur;
+    _persist();
+  }
+
   Future<void> takeTurn(String input, DmTurnEngine engine) async {
     final cur = state;
     if (cur == null) return;
@@ -29,6 +42,10 @@ class CampaignNotifier extends StateNotifier<CampaignState?> {
     if (state == null) return;
     state!.partyPosition = p;
     state!.visitedTiles.add('${p.x},${p.y}');
+    // The lead (the player) always tracks the player's own moves exactly;
+    // companions wander independently between turns instead of teleporting
+    // in lockstep (see GamePlayScreen._wanderCompanions).
+    if (state!.party.isNotEmpty) state!.party.first.position = p;
     state = state; // trigger notify
     _persist();
   }
@@ -45,23 +62,7 @@ class CampaignNotifier extends StateNotifier<CampaignState?> {
     final raw = p.getString('last_campaign');
     if (raw != null) {
       try {
-        final j = jsonDecode(raw) as Map<String, dynamic>;
-        final seed = CampaignSeed.fromJson(j['seed'] as Map<String, dynamic>);
-        // Reconstruct minimal CampaignState
-        final cs = CampaignState(
-          campaignId: j['campaignId'],
-          seed: seed,
-          currentSceneDescription: j['currentSceneDescription'],
-          party: (j['party'] as List).map((e) => PartyMemberStatus.fromJson(e as Map<String, dynamic>)).toList(),
-          questLog: (j['questLog'] as List).map((e) => QuestEntry.fromJson(e as Map<String, dynamic>)).toList(),
-          worldFlags: Map<String, dynamic>.from(j['worldFlags'] ?? {}),
-          runningSummary: j['runningSummary'] ?? '',
-          recentTurns: (j['recentTurns'] as List? ?? []).map((e) => TurnLogEntry.fromJson(e as Map<String, dynamic>)).toList(),
-          currentMapId: j['currentMapId'] ?? 'dungeon_0',
-          partyPosition: Point(j['partyPosition']['x'], j['partyPosition']['y']),
-          visitedTiles: Set<String>.from(j['visitedTiles'] ?? []),
-        );
-        state = cs;
+        state = CampaignState.fromJson(jsonDecode(raw) as Map<String, dynamic>);
       } catch (_) {}
     }
   }

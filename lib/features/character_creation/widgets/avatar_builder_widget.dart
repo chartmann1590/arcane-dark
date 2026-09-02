@@ -38,7 +38,7 @@ class AvatarBuilderWidget extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(color: Colors.black.withOpacity(0.55), borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.white.withOpacity(0.15))),
-                child: Text(race.label.toUpperCase(), style: GoogleFonts.manrope(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w700, letterSpacing: 0.6)),
+                child: Text(race.label.toUpperCase(), style: GoogleFonts.ibmPlexSans(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w700, letterSpacing: 0.6)),
               ),
               const Spacer(),
               Container(
@@ -51,9 +51,9 @@ class AvatarBuilderWidget extends StatelessWidget {
         ]),
       ),
       const SizedBox(height: 16),
-      Text('ACCENT COLOR', style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1, color: ArcaneTheme.textMuted)),
+      Text('ACCENT COLOR', style: GoogleFonts.ibmPlexSans(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1, color: ArcaneTheme.textMuted)),
       const SizedBox(height: 4),
-      Text('Tints your portrait frame and in-game highlight color.', style: GoogleFonts.manrope(fontSize: 11, color: ArcaneTheme.textMuted)),
+      Text('Tints your portrait frame and in-game highlight color.', style: GoogleFonts.ibmPlexSans(fontSize: 11, color: ArcaneTheme.textMuted)),
       const SizedBox(height: 10),
       Row(mainAxisAlignment: MainAxisAlignment.center, children: [
         for (final c in ['#8B5CF6', '#C9A227', '#B0263A', '#3DD68C', '#4EA1F5', '#F5F3FF'])

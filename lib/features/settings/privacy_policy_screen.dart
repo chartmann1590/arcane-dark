@@ -9,13 +9,13 @@ class PrivacyPolicyScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: ArcaneTheme.background,
-      appBar: AppBar(title: Text('Privacy Policy', style: GoogleFonts.manrope(fontWeight: FontWeight.w800, fontSize: 14))),
+      appBar: AppBar(title: Text('Privacy Policy', style: GoogleFonts.ibmPlexSans(fontWeight: FontWeight.w800, fontSize: 14))),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
         children: [
-          Text('Arcane Dark Privacy Policy', style: GoogleFonts.playfairDisplay(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white)),
+          Text('Arcane Dark Privacy Policy', style: GoogleFonts.cinzel(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white)),
           const SizedBox(height: 4),
-          Text('Last updated: August 29, 2026', style: GoogleFonts.manrope(fontSize: 12, color: ArcaneTheme.textMuted, fontStyle: FontStyle.italic)),
+          Text('Last updated: August 29, 2026', style: GoogleFonts.ibmPlexSans(fontSize: 12, color: ArcaneTheme.textMuted, fontStyle: FontStyle.italic)),
           const SizedBox(height: 20),
           const _Section(
             title: 'The short version',
@@ -102,9 +102,9 @@ class _Section extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 20),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(title, style: GoogleFonts.playfairDisplay(fontSize: 16, fontWeight: FontWeight.w700, color: ArcaneTheme.secondary)),
+        Text(title, style: GoogleFonts.cinzel(fontSize: 16, fontWeight: FontWeight.w700, color: ArcaneTheme.secondary)),
         const SizedBox(height: 8),
-        Text(body, style: GoogleFonts.manrope(fontSize: 13.5, color: ArcaneTheme.textSecondary, height: 1.6)),
+        Text(body, style: GoogleFonts.ibmPlexSans(fontSize: 13.5, color: ArcaneTheme.textSecondary, height: 1.6)),
       ]),
     );
   }

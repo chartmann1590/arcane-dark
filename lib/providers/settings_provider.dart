@@ -9,6 +9,7 @@ class AppSettings {
   final bool haptics;
   final bool musicEnabled;
   final bool sfxEnabled;
+  final bool voiceNarrationEnabled;
   final double textScale;
   const AppSettings({
     this.hasDownloadedModel = false,
@@ -17,6 +18,7 @@ class AppSettings {
     this.haptics = true,
     this.musicEnabled = true,
     this.sfxEnabled = true,
+    this.voiceNarrationEnabled = false,
     this.textScale = 1.0,
   });
   AppSettings copyWith({
@@ -26,6 +28,7 @@ class AppSettings {
     bool? haptics,
     bool? musicEnabled,
     bool? sfxEnabled,
+    bool? voiceNarrationEnabled,
     double? textScale,
   }) =>
       AppSettings(
@@ -35,6 +38,7 @@ class AppSettings {
         haptics: haptics ?? this.haptics,
         musicEnabled: musicEnabled ?? this.musicEnabled,
         sfxEnabled: sfxEnabled ?? this.sfxEnabled,
+        voiceNarrationEnabled: voiceNarrationEnabled ?? this.voiceNarrationEnabled,
         textScale: textScale ?? this.textScale,
       );
 }
@@ -62,6 +66,7 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
       haptics: p.getBool('haptics') ?? true,
       musicEnabled: p.getBool('musicEnabled') ?? true,
       sfxEnabled: p.getBool('sfxEnabled') ?? true,
+      voiceNarrationEnabled: p.getBool('voiceNarrationEnabled') ?? false,
       textScale: p.getDouble('textScale') ?? 1.0,
     );
     await AudioService.instance.init(musicEnabled: state.musicEnabled, sfxEnabled: state.sfxEnabled);
@@ -92,6 +97,11 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
     state = state.copyWith(sfxEnabled: v);
     (await SharedPreferences.getInstance()).setBool('sfxEnabled', v);
     AudioService.instance.setSfxEnabled(v);
+  }
+
+  Future<void> setVoiceNarrationEnabled(bool v) async {
+    state = state.copyWith(voiceNarrationEnabled: v);
+    (await SharedPreferences.getInstance()).setBool('voiceNarrationEnabled', v);
   }
 }
 

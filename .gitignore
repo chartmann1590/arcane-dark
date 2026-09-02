@@ -62,3 +62,9 @@ ios/Runner/GoogleService-Info.plist
 android/app/google-services.json
 *.output
 scratch_*.png
+
+# Local tooling / scratch work — not part of the repo
+.claude/
+scratchpad_assets/
+store/tmp/
+.tmp/

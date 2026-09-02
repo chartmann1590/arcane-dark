@@ -13,7 +13,7 @@ class BackgroundStep extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       children: [
-        Text('Where you came from colors every bond and flaw.', style: GoogleFonts.manrope(fontSize: 13, color: ArcaneTheme.textSecondary)),
+        Text('Where you came from colors every bond and flaw.', style: GoogleFonts.ibmPlexSans(fontSize: 13, color: ArcaneTheme.textSecondary)),
         const SizedBox(height: 14),
         ...Background.values.map((bg) {
           final selected = draft.background == bg;
@@ -27,9 +27,9 @@ class BackgroundStep extends ConsumerWidget {
                 decoration: ArcaneTheme.cardDecoration(selected: selected),
                 child: Row(children: [
                   Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(bg.label, style: GoogleFonts.manrope(fontWeight: FontWeight.w700, color: Colors.white, fontSize: 14)),
+                    Text(bg.label, style: GoogleFonts.ibmPlexSans(fontWeight: FontWeight.w700, color: Colors.white, fontSize: 14)),
                     const SizedBox(height: 4),
-                    Text(bg.flavor, style: GoogleFonts.manrope(fontSize: 12, color: ArcaneTheme.textSecondary)),
+                    Text(bg.flavor, style: GoogleFonts.ibmPlexSans(fontSize: 12, color: ArcaneTheme.textSecondary)),
                   ])),
                   if (selected) const Icon(Icons.check_circle_rounded, color: ArcaneTheme.primary),
                 ]),

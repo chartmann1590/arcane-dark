@@ -2,7 +2,7 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://chartmann1590.github.io/arcane-dark/</loc>
-    <lastmod>2026-08-30</lastmod>
+    <lastmod>2026-09-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
@@ -11,6 +11,46 @@
     <lastmod>2026-08-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://chartmann1590.github.io/arcane-dark/assets/img/feature-graphic.png</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://chartmann1590.github.io/arcane-dark/assets/img/icon-512.png</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://chartmann1590.github.io/arcane-dark/assets/img/promo-thumbnail.png</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://chartmann1590.github.io/arcane-dark/store/phone/01-onboarding.png</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://chartmann1590.github.io/arcane-dark/store/phone/02-character-creation.png</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://chartmann1590.github.io/arcane-dark/store/phone/03-campaign-hub.png</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://chartmann1590.github.io/arcane-dark/store/phone/04-gameplay.png</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://chartmann1590.github.io/arcane-dark/store/phone/05-multiplayer.png</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
   </url>
   <url>
     <loc>https://chartmann1590.github.io/arcane-dark/screenshots/01-onboarding.svg</loc>

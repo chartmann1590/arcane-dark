@@ -19,7 +19,7 @@ class AbilitiesStep extends ConsumerWidget {
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       children: [
         Row(children: [
-          Expanded(child: Text('27-point buy — raise scores before racial bonuses. Scores 8–15.', style: GoogleFonts.manrope(fontSize: 12, color: ArcaneTheme.textSecondary))),
+          Expanded(child: Text('27-point buy — raise scores before racial bonuses. Scores 8–15.', style: GoogleFonts.ibmPlexSans(fontSize: 12, color: ArcaneTheme.textSecondary))),
           const SizedBox(width: 12),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -27,7 +27,7 @@ class AbilitiesStep extends ConsumerWidget {
             child: Row(children: [
               Icon(over ? Icons.error_rounded : Icons.stars_rounded, size: 14, color: over ? ArcaneTheme.tertiary : ArcaneTheme.primary),
               const SizedBox(width: 6),
-              Text('$remaining pts', style: GoogleFonts.manrope(fontWeight: FontWeight.w800, fontSize: 12, color: over ? ArcaneTheme.tertiary : ArcaneTheme.primary)),
+              Text('$remaining pts', style: GoogleFonts.ibmPlexSans(fontWeight: FontWeight.w800, fontSize: 12, color: over ? ArcaneTheme.tertiary : ArcaneTheme.primary)),
             ]),
           ),
         ]),
@@ -45,8 +45,8 @@ class AbilitiesStep extends ConsumerWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 decoration: ArcaneTheme.cardDecoration(),
                 child: Row(children: [
-                  SizedBox(width: 44, child: Text(e.$1, style: GoogleFonts.manrope(fontWeight: FontWeight.w800, color: Colors.white, fontSize: 15))),
-                  SizedBox(width: 48, child: Text(e.$5, style: GoogleFonts.manrope(fontSize: 11, color: ArcaneTheme.textMuted))),
+                  SizedBox(width: 44, child: Text(e.$1, style: GoogleFonts.ibmPlexSans(fontWeight: FontWeight.w800, color: Colors.white, fontSize: 15))),
+                  SizedBox(width: 48, child: Text(e.$5, style: GoogleFonts.ibmPlexSans(fontSize: 11, color: ArcaneTheme.textMuted))),
                   const Spacer(),
                   IconButton(
                     icon: const Icon(Icons.remove_circle_outline_rounded, size: 22),
@@ -65,8 +65,8 @@ class AbilitiesStep extends ConsumerWidget {
                     padding: const EdgeInsets.symmetric(vertical: 6),
                     decoration: BoxDecoration(color: ArcaneTheme.surfaceElevated, borderRadius: BorderRadius.circular(8), border: Border.all(color: ArcaneTheme.border)),
                     child: Column(children: [
-                      Text('${e.$2}', style: GoogleFonts.manrope(fontWeight: FontWeight.w800, fontSize: 16, color: Colors.white)),
-                      Text('${e.$4 >= 0 ? '+' : ''}${e.$4}', style: GoogleFonts.manrope(fontSize: 11, color: ArcaneTheme.textSecondary)),
+                      Text('${e.$2}', style: GoogleFonts.ibmPlexSans(fontWeight: FontWeight.w800, fontSize: 16, color: Colors.white)),
+                      Text('${e.$4 >= 0 ? '+' : ''}${e.$4}', style: GoogleFonts.ibmPlexSans(fontSize: 11, color: ArcaneTheme.textSecondary)),
                     ]),
                   ),
                   IconButton(
@@ -78,7 +78,7 @@ class AbilitiesStep extends ConsumerWidget {
                             if (attempted.totalCost() <= 27) {
                               ref.read(characterDraftProvider.notifier).setAbilities(attempted);
                             } else {
-                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Not enough points — ${attempted.totalCost()} / 27', style: GoogleFonts.manrope()), backgroundColor: ArcaneTheme.tertiary, duration: const Duration(seconds: 1)));
+                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Not enough points — ${attempted.totalCost()} / 27', style: GoogleFonts.ibmPlexSans()), backgroundColor: ArcaneTheme.tertiary, duration: const Duration(seconds: 1)));
                             }
                           }
                         : null,
@@ -97,7 +97,7 @@ class AbilitiesStep extends ConsumerWidget {
           ]),
         ),
         const SizedBox(height: 10),
-        Text('Racial bonuses (+1/+2) apply after this allocation and may push a score to 16–17.', style: GoogleFonts.manrope(fontSize: 11, color: ArcaneTheme.textMuted, fontStyle: FontStyle.italic)),
+        Text('Racial bonuses (+1/+2) apply after this allocation and may push a score to 16–17.', style: GoogleFonts.ibmPlexSans(fontSize: 11, color: ArcaneTheme.textMuted, fontStyle: FontStyle.italic)),
       ],
     );
   }
@@ -120,8 +120,8 @@ class _DerivedStat extends StatelessWidget {
     return Column(children: [
       Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: color.withOpacity(0.12), shape: BoxShape.circle), child: Icon(icon, size: 16, color: color)),
       const SizedBox(height: 6),
-      Text(value, style: GoogleFonts.manrope(fontWeight: FontWeight.w800, fontSize: 15, color: Colors.white)),
-      Text(label, style: GoogleFonts.manrope(fontSize: 11, color: ArcaneTheme.textMuted, fontWeight: FontWeight.w600, letterSpacing: 0.6)),
+      Text(value, style: GoogleFonts.ibmPlexSans(fontWeight: FontWeight.w800, fontSize: 15, color: Colors.white)),
+      Text(label, style: GoogleFonts.ibmPlexSans(fontSize: 11, color: ArcaneTheme.textMuted, fontWeight: FontWeight.w600, letterSpacing: 0.6)),
     ]);
   }
 }

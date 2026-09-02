@@ -6,6 +6,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../app/theme.dart';
 import '../../providers/character_provider.dart';
+import '../../domain/campaign_seed.dart';
 import '../../services/auth_service.dart';
 import '../../services/session_repository.dart';
 
@@ -24,7 +25,11 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
   String? _error;
   bool _creating = false;
 
-  bool get isHost => _session != null && _session!.hostUid == AuthService.instance.currentUser?.uid;
+  // Deliberately takes the live session (from the watch stream in build(),
+  // not the `_session` field — which is only ever set once, by
+  // _hostNewSession(), and would otherwise report stale host status if this
+  // same screen instance is later reused for a different joined session).
+  bool _isHostOf(SessionInfo? session) => session != null && session.hostUid == AuthService.instance.currentUser?.uid;
 
   @override
   void initState() {
@@ -48,9 +53,8 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
       // Google/email sign-in separately, for players who want their
       // characters to follow them across devices.
       final chars = ref.read(savedCharactersProvider);
-      final seedJson = {'title': 'A Shared Adventure', 'tone': 'classic fantasy', 'setting': 'A forgotten dungeon', 'hook': 'The party gathers at the mouth of the ruins.', 'startingLocation': 'The Ruined Gate', 'beats': <String>[]};
       final info = await SessionRepository.instance.createSession(
-        campaignSeedJson: seedJson,
+        campaignSeedJson: CampaignSeed.presets.first.toJson(),
         displayName: chars.isNotEmpty ? chars.first.name : 'Host',
         characterId: chars.isNotEmpty ? chars.first.id : null,
       );
@@ -68,17 +72,17 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
     }
   }
 
-  String get _shareText {
-    final code = _session?.joinCode ?? widget.sessionId ?? '';
+  String _shareText(String code) {
     return 'Join my Arcane Dark party! Open the app, tap Multiplayer → Join with Code, and enter: $code\n\nOr scan the QR code I\'m showing you.';
   }
 
-  @override
-  void dispose() {
-    final id = _session?.id ?? widget.sessionId;
-    if (id != null) SessionRepository.instance.leaveSession(id);
-    super.dispose();
-  }
+  // Note: deliberately no leaveSession() call in dispose(). This screen is
+  // left both when a player backs out of the party AND when the host/guest
+  // navigates into Play once the adventure begins — removing the player's
+  // Firestore doc here would silently drop the host out of their own party
+  // list the moment they tapped "Begin Adventure" (and drop a guest the
+  // moment they entered Play). A stale heartbeat (see lastSeen) is a safer
+  // future signal for "actually left" than a screen-dispose side effect.
 
   @override
   Widget build(BuildContext context) {
@@ -86,7 +90,7 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
 
     return Scaffold(
       backgroundColor: ArcaneTheme.background,
-      appBar: AppBar(title: Text('PARTY LOBBY', style: GoogleFonts.manrope(fontWeight: FontWeight.w800, letterSpacing: 1.1, fontSize: 13, color: Colors.white)), centerTitle: true),
+      appBar: AppBar(title: Text('PARTY LOBBY', style: GoogleFonts.ibmPlexSans(fontWeight: FontWeight.w800, letterSpacing: 1.1, fontSize: 13, color: Colors.white)), centerTitle: true),
       body: _creating
           ? const Center(child: CircularProgressIndicator())
           : _error != null
@@ -96,7 +100,7 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                     child: Column(mainAxisSize: MainAxisSize.min, children: [
                       const Icon(Icons.error_outline_rounded, color: ArcaneTheme.tertiary, size: 32),
                       const SizedBox(height: 12),
-                      Text(_error!, textAlign: TextAlign.center, style: GoogleFonts.manrope(color: ArcaneTheme.textSecondary)),
+                      Text(_error!, textAlign: TextAlign.center, style: GoogleFonts.ibmPlexSans(color: ArcaneTheme.textSecondary)),
                       const SizedBox(height: 16),
                       ElevatedButton(onPressed: _hostNewSession, child: const Text('Retry')),
                     ]),
@@ -118,11 +122,11 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                               children: [
                                 Container(
                                   padding: const EdgeInsets.all(18),
-                                  decoration: ArcaneTheme.cardDecoration(goldBorder: true),
+                                  decoration: ArcaneTheme.ornateDecoration(),
                                   child: Column(children: [
-                                    Text('JOIN CODE', style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.2, color: ArcaneTheme.textMuted)),
+                                    Text('JOIN CODE', style: GoogleFonts.ibmPlexSans(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.2, color: ArcaneTheme.textMuted)),
                                     const SizedBox(height: 8),
-                                    Row(mainAxisAlignment: MainAxisAlignment.center, children: joinCode.split('').map((c) => Container(margin: const EdgeInsets.symmetric(horizontal: 4), padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8), decoration: BoxDecoration(color: ArcaneTheme.surfaceElevated, borderRadius: BorderRadius.circular(8), border: Border.all(color: ArcaneTheme.secondary.withOpacity(0.35))), child: Text(c, style: GoogleFonts.manrope(fontSize: 20, fontWeight: FontWeight.w800, letterSpacing: 1, color: Colors.white)))).toList()),
+                                    Row(mainAxisAlignment: MainAxisAlignment.center, children: joinCode.split('').map((c) => Container(margin: const EdgeInsets.symmetric(horizontal: 4), padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8), decoration: BoxDecoration(color: ArcaneTheme.surfaceElevated, borderRadius: BorderRadius.circular(8), border: Border.all(color: ArcaneTheme.secondary.withOpacity(0.35))), child: Text(c, style: GoogleFonts.ibmPlexSans(fontSize: 20, fontWeight: FontWeight.w800, letterSpacing: 1, color: Colors.white)))).toList()),
                                     if (joinCode.isNotEmpty) ...[
                                       const SizedBox(height: 16),
                                       Container(
@@ -134,9 +138,9 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                                       SizedBox(
                                         width: double.infinity,
                                         child: OutlinedButton.icon(
-                                          onPressed: () => Share.share(_shareText),
+                                          onPressed: () => Share.share(_shareText(joinCode)),
                                           icon: const Icon(Icons.ios_share_rounded, size: 16),
-                                          label: Text('Share Invite', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w700)),
+                                          label: Text('Share Invite', style: GoogleFonts.ibmPlexSans(fontSize: 12, fontWeight: FontWeight.w700)),
                                         ),
                                       ),
                                     ],
@@ -144,15 +148,15 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                                     Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                                       Container(width: 8, height: 8, decoration: BoxDecoration(color: (session?.status == 'active') ? ArcaneTheme.primary : const Color(0xFF3DD68C), shape: BoxShape.circle)),
                                       const SizedBox(width: 6),
-                                      Text(session?.status == 'active' ? 'Adventure in progress' : 'Lobby open — waiting for party', style: GoogleFonts.manrope(fontSize: 12, color: ArcaneTheme.textSecondary)),
+                                      Text(session?.status == 'active' ? 'Adventure in progress' : 'Lobby open — waiting for party', style: GoogleFonts.ibmPlexSans(fontSize: 12, color: ArcaneTheme.textSecondary)),
                                     ]),
                                   ]),
                                 ),
                                 const SizedBox(height: 16),
                                 Row(children: [
-                                  Text('PARTY  •  ${players.length}/6', style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1, color: ArcaneTheme.textMuted)),
+                                  Text('PARTY  •  ${players.length}/6', style: GoogleFonts.ibmPlexSans(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1, color: ArcaneTheme.textMuted)),
                                   const Spacer(),
-                                  Text('Host • Spark Free', style: GoogleFonts.manrope(fontSize: 11, color: ArcaneTheme.secondary, fontWeight: FontWeight.w600)),
+                                  Text('Host • Spark Free', style: GoogleFonts.ibmPlexSans(fontSize: 11, color: ArcaneTheme.secondary, fontWeight: FontWeight.w600)),
                                 ]),
                                 const SizedBox(height: 10),
                                 ...players.map((p) => Padding(
@@ -161,13 +165,13 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                                         padding: const EdgeInsets.all(14),
                                         decoration: BoxDecoration(color: ArcaneTheme.surfaceCard, borderRadius: BorderRadius.circular(12), border: Border.all(color: ArcaneTheme.primary.withOpacity(0.3))),
                                         child: Row(children: [
-                                          Container(width: 44, height: 44, decoration: BoxDecoration(color: ArcaneTheme.primary.withOpacity(0.15), shape: BoxShape.circle), child: Center(child: Text(p.displayName.isNotEmpty ? p.displayName[0].toUpperCase() : '?', style: GoogleFonts.playfairDisplay(color: ArcaneTheme.primary, fontWeight: FontWeight.w800)))),
+                                          Container(width: 44, height: 44, decoration: BoxDecoration(color: ArcaneTheme.primary.withOpacity(0.15), shape: BoxShape.circle), child: Center(child: Text(p.displayName.isNotEmpty ? p.displayName[0].toUpperCase() : '?', style: GoogleFonts.cinzel(color: ArcaneTheme.primary, fontWeight: FontWeight.w800)))),
                                           const SizedBox(width: 12),
                                           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                                            Text('${p.displayName}${p.uid == session?.hostUid ? " (Host)" : ""}', style: GoogleFonts.manrope(fontWeight: FontWeight.w700, color: Colors.white)),
-                                            Text(p.ready ? 'Ready' : 'Joining…', style: GoogleFonts.manrope(fontSize: 12, color: const Color(0xFF3DD68C))),
+                                            Text('${p.displayName}${p.uid == session?.hostUid ? " (Host)" : ""}', style: GoogleFonts.ibmPlexSans(fontWeight: FontWeight.w700, color: Colors.white)),
+                                            Text(p.ready ? 'Ready' : 'Joining…', style: GoogleFonts.ibmPlexSans(fontSize: 12, color: const Color(0xFF3DD68C))),
                                           ])),
-                                          Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: const Color(0xFF3DD68C).withOpacity(0.15), borderRadius: BorderRadius.circular(6)), child: Text('Ready', style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w700, color: const Color(0xFF3DD68C)))),
+                                          Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: const Color(0xFF3DD68C).withOpacity(0.15), borderRadius: BorderRadius.circular(6)), child: Text('Ready', style: GoogleFonts.ibmPlexSans(fontSize: 11, fontWeight: FontWeight.w700, color: const Color(0xFF3DD68C)))),
                                         ]),
                                       ),
                                     )),
@@ -180,12 +184,12 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                                       child: Row(children: [
                                         Container(width: 44, height: 44, decoration: const BoxDecoration(color: ArcaneTheme.surfaceElevated, shape: BoxShape.circle), child: const Center(child: Text('—'))),
                                         const SizedBox(width: 12),
-                                        Expanded(child: Text('Waiting for player…', style: GoogleFonts.manrope(color: ArcaneTheme.textMuted))),
+                                        Expanded(child: Text('Waiting for player…', style: GoogleFonts.ibmPlexSans(color: ArcaneTheme.textMuted))),
                                       ]),
                                     ),
                                   ),
                                 const SizedBox(height: 16),
-                                if (isHost)
+                                if (_isHostOf(session))
                                   SizedBox(
                                     width: double.infinity,
                                     child: ElevatedButton(
@@ -194,24 +198,32 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                                           : () async {
                                               await SessionRepository.instance.startSession(sessionId);
                                               if (context.mounted) {
-                                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Starting adventure — host begins narration!', style: GoogleFonts.manrope()), backgroundColor: ArcaneTheme.primary));
-                                                context.go('/play');
+                                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Starting adventure — host begins narration!', style: GoogleFonts.ibmPlexSans()), backgroundColor: ArcaneTheme.primary));
+                                                context.go('/play?session=$sessionId');
                                               }
                                             },
-                                      child: Text('Begin Adventure', style: GoogleFonts.manrope(fontWeight: FontWeight.w800)),
+                                      child: Text('Begin Adventure', style: GoogleFonts.ibmPlexSans(fontWeight: FontWeight.w800)),
+                                    ),
+                                  )
+                                else if (session?.status == 'active')
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: ElevatedButton(
+                                      onPressed: () => context.go('/play?session=$sessionId'),
+                                      child: Text('Enter Adventure', style: GoogleFonts.ibmPlexSans(fontWeight: FontWeight.w800)),
                                     ),
                                   )
                                 else
                                   Container(
                                     padding: const EdgeInsets.all(14),
                                     decoration: BoxDecoration(color: ArcaneTheme.surfaceElevated, borderRadius: BorderRadius.circular(10)),
-                                    child: Text(session?.status == 'active' ? 'The host has begun — rejoin from Play.' : 'Waiting for the host to begin…', textAlign: TextAlign.center, style: GoogleFonts.manrope(fontSize: 12, color: ArcaneTheme.textSecondary)),
+                                    child: Text('Waiting for the host to begin…', textAlign: TextAlign.center, style: GoogleFonts.ibmPlexSans(fontSize: 12, color: ArcaneTheme.textSecondary)),
                                   ),
                                 const SizedBox(height: 10),
                                 if (widget.sessionId == null)
                                   SizedBox(
                                     width: double.infinity,
-                                    child: OutlinedButton(onPressed: () => context.push('/join'), child: Text('Join a Different Party', style: GoogleFonts.manrope())),
+                                    child: OutlinedButton(onPressed: () => context.push('/join'), child: Text('Join a Different Party', style: GoogleFonts.ibmPlexSans())),
                                   ),
                                 const SizedBox(height: 16),
                                 Container(
@@ -220,7 +232,7 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                                   child: Row(children: [
                                     const Icon(Icons.info_outline_rounded, size: 16, color: ArcaneTheme.textMuted),
                                     const SizedBox(width: 8),
-                                    Expanded(child: Text('On Spark (free) plan: host runs the AI Dungeon Master locally. If the host disconnects, the party waits in "paused". No Cloud Functions required.', style: GoogleFonts.manrope(fontSize: 11, color: ArcaneTheme.textMuted))),
+                                    Expanded(child: Text('On Spark (free) plan: host runs the AI Dungeon Master locally. If the host disconnects, the party waits in "paused". No Cloud Functions required.', style: GoogleFonts.ibmPlexSans(fontSize: 11, color: ArcaneTheme.textMuted))),
                                   ]),
                                 ),
                               ],
