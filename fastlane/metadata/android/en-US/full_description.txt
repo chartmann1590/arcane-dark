@@ -1,4 +1,4 @@
-﻿Your AI Dungeon Master lives on your phone.
+Your AI Dungeon Master lives on your phone.
 
 Arcane Dark is a cozy, torch-lit D&D adventure you can play anywhere — solo and private, or with up to 5 friends around one table. No subscriptions. No waiting. Your story, your way.
 
@@ -30,4 +30,4 @@ Jump in for free — no paywalls on your story. Ads help keep the lights on, and
 
 Coming soon to Google Play — Android first, iOS planned for later. Follow the website chartmann1590.github.io/arcane-dark for the launch day link.
 
-Support the tavern: buymeacoffee.com/charleshartmann
+Support the tavern: buymeacoffee.com/charleshartmann
