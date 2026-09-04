@@ -24,8 +24,12 @@ class PartyMemberStatus {
   final AbilityScores abilities;
   int hp;
   int maxHp;
+  int armorClass;
   List<String> conditions;
   List<String> inventory;
+  // Item names (a subset of inventory) the member currently has equipped —
+  // purely a UI/roleplay flag since items are free-text, not stat blocks.
+  List<String> equippedItems;
   // Where this specific member currently stands on the map — null means
   // "hasn't moved independently yet, render at the shared party position."
   // The lead always tracks the player's own moves; companions wander on
@@ -41,8 +45,10 @@ class PartyMemberStatus {
     required this.abilities,
     required this.hp,
     required this.maxHp,
+    this.armorClass = 10,
     this.conditions = const [],
     this.inventory = const [],
+    this.equippedItems = const [],
     this.position,
   });
   Map<String, dynamic> toJson() => {
@@ -54,8 +60,10 @@ class PartyMemberStatus {
         'abilities': abilities.toJson(),
         'hp': hp,
         'maxHp': maxHp,
+        'armorClass': armorClass,
         'conditions': conditions,
         'inventory': inventory,
+        'equippedItems': equippedItems,
         if (position != null) 'position': {'x': position!.x, 'y': position!.y},
       };
   factory PartyMemberStatus.fromCharacter(Character c) => PartyMemberStatus(
@@ -67,6 +75,7 @@ class PartyMemberStatus {
         abilities: c.abilities,
         hp: c.hp,
         maxHp: c.hp,
+        armorClass: c.armorClass,
         inventory: List.from(c.inventory),
       );
   factory PartyMemberStatus.fromJson(Map<String, dynamic> j) => PartyMemberStatus(
@@ -78,8 +87,10 @@ class PartyMemberStatus {
         abilities: j['abilities'] != null ? AbilityScores.fromJson(j['abilities'] as Map<String, dynamic>) : const AbilityScores(),
         hp: j['hp'],
         maxHp: j['maxHp'],
+        armorClass: j['armorClass'] as int? ?? 10,
         conditions: (j['conditions'] as List?)?.cast<String>() ?? [],
         inventory: (j['inventory'] as List?)?.cast<String>() ?? [],
+        equippedItems: (j['equippedItems'] as List?)?.cast<String>() ?? [],
         position: j['position'] != null ? Point(j['position']['x'], j['position']['y']) : null,
       );
 }

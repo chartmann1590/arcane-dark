@@ -118,7 +118,7 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                             final players = playersSnap.data ?? const <SessionPlayer>[];
                             final joinCode = session?.joinCode ?? '';
                             return ListView(
-                              padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                              padding: const EdgeInsets.fromLTRB(16, 12, 16, 60),
                               children: [
                                 Container(
                                   padding: const EdgeInsets.all(18),

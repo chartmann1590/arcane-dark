@@ -53,4 +53,56 @@ class DungeonMap {
 class Point {
   final int x, y;
   const Point(this.x, this.y);
+
+  @override
+  bool operator ==(Object other) => identical(this, other) || other is Point && runtimeType == other.runtimeType && x == other.x && y == other.y;
+
+  @override
+  int get hashCode => x.hashCode ^ y.hashCode;
+
+  int manhattanDistance(Point other) => (x - other.x).abs() + (y - other.y).abs();
+}
+
+/// Computes the shortest walkable path between two points on the dungeon map via BFS.
+/// Respects [closedDoors] as passage blockers unless the door tile itself is the destination.
+/// Returns null if unreachable or if the target is non-walkable.
+List<Point>? findPath(DungeonMap map, Point start, Point target, {Set<String> closedDoors = const {}}) {
+  if (start == target) return [];
+  if (target.x < 0 || target.y < 0 || target.x >= map.width || target.y >= map.height) return null;
+  if (!map.tileAt(target.x, target.y).walkable) return null;
+
+  final queue = <Point>[start];
+  final cameFrom = <Point, Point>{};
+  final visited = <Point>{start};
+
+  const deltas = [Point(0, -1), Point(0, 1), Point(-1, 0), Point(1, 0)];
+
+  while (queue.isNotEmpty) {
+    final cur = queue.removeAt(0);
+    if (cur == target) {
+      final path = <Point>[];
+      var curr = cur;
+      while (curr != start) {
+        path.add(curr);
+        curr = cameFrom[curr]!;
+      }
+      return path.reversed.toList();
+    }
+
+    // A closed door blocks passage onward, but can be the final destination to interact with it
+    if (cur != start && closedDoors.contains('${cur.x},${cur.y}')) {
+      continue;
+    }
+
+    for (final d in deltas) {
+      final next = Point(cur.x + d.x, cur.y + d.y);
+      if (next.x >= 0 && next.y >= 0 && next.x < map.width && next.y < map.height &&
+          !visited.contains(next) && map.tileAt(next.x, next.y).walkable) {
+        visited.add(next);
+        cameFrom[next] = cur;
+        queue.add(next);
+      }
+    }
+  }
+  return null;
 }

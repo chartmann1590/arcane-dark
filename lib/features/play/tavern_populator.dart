@@ -11,7 +11,49 @@ class MapNpc {
   final String role;
   final Point pos;
   final String portraitAsset;
-  const MapNpc({required this.id, required this.name, required this.role, required this.pos, required this.portraitAsset});
+  final bool isHostile;
+  final int maxHp;
+  final int currentHp;
+  final int armorClass;
+  final int attackBonus;
+  final int damageDice;
+  final String attackName;
+
+  const MapNpc({
+    required this.id,
+    required this.name,
+    required this.role,
+    required this.pos,
+    required this.portraitAsset,
+    this.isHostile = false,
+    this.maxHp = 12,
+    this.currentHp = 12,
+    this.armorClass = 12,
+    this.attackBonus = 3,
+    this.damageDice = 6,
+    this.attackName = 'Strike',
+  });
+
+  MapNpc copyWith({
+    int? currentHp,
+    Point? pos,
+    bool? isHostile,
+  }) {
+    return MapNpc(
+      id: id,
+      name: name,
+      role: role,
+      pos: pos ?? this.pos,
+      portraitAsset: portraitAsset,
+      isHostile: isHostile ?? this.isHostile,
+      maxHp: maxHp,
+      currentHp: currentHp ?? this.currentHp,
+      armorClass: armorClass,
+      attackBonus: attackBonus,
+      damageDice: damageDice,
+      attackName: attackName,
+    );
+  }
 }
 
 /// A purely decorative prop (table, barrel, bar counter) placed on a floor
@@ -42,8 +84,8 @@ const _patronNames = [
 
 const _propAssets = ['assets/tiles/prop_bar_counter.png', 'assets/tiles/prop_table.png', 'assets/tiles/prop_barrel.png'];
 
-/// One to three tavern-goers so an indoor scene never feels like a blank
-/// stage. Which names/roles appear, how many, and where — all deterministic
+/// Three to seven tavern-goers so a bigger indoor scene never feels like a
+/// blank stage. Which names/roles appear, how many, and where — all deterministic
 /// from the dungeon's own seed (so revisiting the same building shows the
 /// same people), but genuinely different from one building to the next
 /// since every building gets its own seed (see CampaignState.seedForEnvironment).
@@ -54,12 +96,20 @@ List<MapNpc> generateTavernNpcs(DungeonMap dungeon) {
   spots.shuffle(rng);
 
   final staffPick = (_staffNames.toList()..shuffle(rng)).first;
-  final patronPicks = (_patronNames.toList()..shuffle(rng));
-  final count = 1 + rng.nextInt(3); // 1-3 NPCs total
+  // Patron names repeat (with a numeral suffix past the first pass) once the
+  // pool is exhausted — bigger rooms call for a bigger crowd than four named
+  // strangers can cover on their own.
+  final patronPool = (_patronNames.toList()..shuffle(rng));
+  final count = (3 + rng.nextInt(5)).clamp(1, spots.length); // 3-7 NPCs total
 
   final chosen = <(String, String, String)>[
     (staffPick.$1, staffPick.$2, 'assets/tiles/npc_barkeep.png'),
-    for (final p in patronPicks.take(count - 1)) (p.$1, p.$2, 'assets/tiles/npc_patron.png'),
+    for (var i = 0; i < count - 1; i++)
+      (
+        i < patronPool.length ? patronPool[i].$1 : '${patronPool[i % patronPool.length].$1} (${i ~/ patronPool.length + 1})',
+        patronPool[i % patronPool.length].$2,
+        'assets/tiles/npc_patron.png',
+      ),
   ];
 
   final npcs = <MapNpc>[];
@@ -70,7 +120,7 @@ List<MapNpc> generateTavernNpcs(DungeonMap dungeon) {
   return npcs;
 }
 
-/// Two to five furniture pieces scattered around the room — count and
+/// Five to twelve furniture pieces scattered around the room — count and
 /// exact placement vary by seed so no two buildings feel identically staged.
 List<MapProp> generateTavernProps(DungeonMap dungeon, List<MapNpc> npcs) {
   final taken = {'${dungeon.entryPoint.x},${dungeon.entryPoint.y}', ...npcs.map((n) => '${n.pos.x},${n.pos.y}')};
@@ -78,7 +128,7 @@ List<MapProp> generateTavernProps(DungeonMap dungeon, List<MapNpc> npcs) {
   if (spots.isEmpty) return [];
   final rng = Random(dungeon.seed ^ 0x50524F50);
   spots.shuffle(rng);
-  final count = (2 + rng.nextInt(4)).clamp(0, spots.length); // 2-5 props
+  final count = (5 + rng.nextInt(8)).clamp(0, spots.length); // 5-12 props
   final props = <MapProp>[];
   for (var i = 0; i < count; i++) {
     props.add(MapProp(pos: spots[i], asset: _propAssets[rng.nextInt(_propAssets.length)]));

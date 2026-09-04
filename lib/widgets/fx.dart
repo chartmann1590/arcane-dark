@@ -7,8 +7,9 @@ import 'package:flutter/services.dart';
 class PressableScale extends StatefulWidget {
   final Widget child;
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
   final double downScale;
-  const PressableScale({super.key, required this.child, this.onTap, this.downScale = 0.93});
+  const PressableScale({super.key, required this.child, this.onTap, this.onLongPress, this.downScale = 0.93});
 
   @override
   State<PressableScale> createState() => _PressableScaleState();
@@ -40,6 +41,12 @@ class _PressableScaleState extends State<PressableScale> with SingleTickerProvid
               widget.onTap!();
             },
       onTapCancel: widget.onTap == null ? null : () => _c.reverse(),
+      onLongPress: widget.onLongPress == null
+          ? null
+          : () {
+              HapticFeedback.mediumImpact();
+              widget.onLongPress!();
+            },
       child: AnimatedBuilder(
         animation: _c,
         builder: (context, child) => Transform.scale(scale: 1 - _c.value * (1 - widget.downScale), child: child),

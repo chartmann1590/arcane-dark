@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../app/theme.dart';
 import '../../providers/character_provider.dart';
+import '../../services/ad_service.dart';
+import '../../services/audio_service.dart';
 import 'steps/race_step.dart';
 import 'steps/class_step.dart';
 import 'steps/background_step.dart';
@@ -113,9 +115,19 @@ class _CharacterCreationFlowState extends ConsumerState<CharacterCreationFlow> {
               Expanded(
                 child: ElevatedButton(
                   onPressed: canProceed
-                      ? () {
+                      ? () async {
                           if (_index < 5) {
                             _next();
+                          } else {
+                            final char = draft.toCharacter();
+                            await ref.read(savedCharactersProvider.notifier).add(char);
+                            ref.read(characterDraftProvider.notifier).reset();
+                            AudioService.instance.playSuccess();
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${char.name} created — ready for adventure!', style: GoogleFonts.ibmPlexSans()), backgroundColor: ArcaneTheme.primary));
+                              context.go('/home');
+                            }
+                            InterstitialAdManager.instance.showIfReady();
                           }
                         }
                       : null,

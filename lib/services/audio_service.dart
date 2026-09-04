@@ -47,13 +47,21 @@ class AudioService {
       MusicTrack.tavern => 'audio/ambient_tavern.ogg',
       MusicTrack.dungeon => 'audio/ambient_dungeon.ogg',
     };
-    await _music.stop();
-    await _music.play(AssetSource(path));
+    try {
+      await _music.stop();
+      if (_musicEnabled) {
+        await _music.play(AssetSource(path));
+      }
+    } catch (_) {
+      // Safely ignore transitional Android MediaPlayer errors (-38)
+    }
   }
 
   Future<void> stopMusic() async {
     _currentTrack = null;
-    await _music.stop();
+    try {
+      await _music.stop();
+    } catch (_) {}
   }
 
   Future<void> playTap() => _playSfx('audio/ui_tap.ogg');

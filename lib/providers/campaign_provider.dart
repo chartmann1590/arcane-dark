@@ -5,6 +5,7 @@ import '../domain/campaign_state.dart';
 import '../domain/campaign_seed.dart';
 import '../domain/character.dart';
 import '../domain/dm_turn_engine.dart';
+import '../domain/item.dart';
 import '../services/model_inference_service.dart';
 
 class CampaignNotifier extends StateNotifier<CampaignState?> {
@@ -15,7 +16,20 @@ class CampaignNotifier extends StateNotifier<CampaignState?> {
     _persist();
   }
 
-  void load(CampaignState s) => state = s;
+  // GamePlayScreen calls engine.takeTurn()/companionBeat() directly (it needs
+  // the token-streaming callback the simple takeTurn() wrapper below doesn't
+  // expose) and then pushes the resulting CampaignState back in through here
+  // — so this is actually where the vast majority of real gameplay mutations
+  // (turns, companion beats, wandering, HP/inventory/quest changes) arrive.
+  // It used to only update in-memory state, never writing to disk, so a full
+  // app restart (or process death) would silently revert to whatever was
+  // last saved by startNew/moveTo/etc — losing real play progress even
+  // though everything looked fine as long as the app stayed alive. Persist
+  // every time, same as every other mutating method here.
+  void load(CampaignState s) {
+    state = s;
+    _persist();
+  }
 
   /// Adds a character to the party of whatever campaign is currently active
   /// — used when recruiting an AI companion mid-adventure, so they join the
@@ -26,6 +40,72 @@ class CampaignNotifier extends StateNotifier<CampaignState?> {
     if (cur == null) return;
     if (cur.party.any((m) => m.characterId == c.id)) return;
     cur.party = [...cur.party, PartyMemberStatus.fromCharacter(c)];
+    state = cur;
+    _persist();
+  }
+
+  void equipItem(String characterId, String item) {
+    final cur = state;
+    if (cur == null) return;
+    for (final m in cur.party) {
+      if (m.characterId == characterId && m.inventory.contains(item) && !m.equippedItems.contains(item)) {
+        m.equippedItems = [...m.equippedItems, item];
+      }
+    }
+    state = cur;
+    _persist();
+  }
+
+  void unequipItem(String characterId, String item) {
+    final cur = state;
+    if (cur == null) return;
+    for (final m in cur.party) {
+      if (m.characterId == characterId) {
+        m.equippedItems = m.equippedItems.where((e) => e != item).toList();
+      }
+    }
+    state = cur;
+    _persist();
+  }
+
+  /// Consumes a usable item (a potion/elixir/etc.) — heals the member by its
+  /// rough flavor-driven amount (see ItemCatalog.healAmount) and removes it
+  /// from inventory. No-op for non-consumable items.
+  void useItem(String characterId, String item) {
+    final cur = state;
+    if (cur == null) return;
+    for (final m in cur.party) {
+      if (m.characterId == characterId && m.inventory.contains(item)) {
+        final heal = ItemCatalog.healAmount(item);
+        if (heal > 0) m.hp = (m.hp + heal).clamp(0, m.maxHp);
+        m.inventory = List.from(m.inventory)..remove(item);
+        m.equippedItems = m.equippedItems.where((e) => e != item).toList();
+      }
+    }
+    state = cur;
+    _persist();
+  }
+
+  void addItem(String characterId, String item) {
+    final cur = state;
+    if (cur == null) return;
+    for (final m in cur.party) {
+      if (m.characterId == characterId) {
+        m.inventory = [...m.inventory, item];
+      }
+    }
+    state = cur;
+    _persist();
+  }
+
+  void updateHp(String characterId, int delta) {
+    final cur = state;
+    if (cur == null) return;
+    for (final m in cur.party) {
+      if (m.characterId == characterId) {
+        m.hp = (m.hp + delta).clamp(0, m.maxHp);
+      }
+    }
     state = cur;
     _persist();
   }

@@ -8,13 +8,17 @@ class DungeonGenerator {
     final tiles = List.generate(height, (_) => List.generate(width, (_) => TileType.wall));
 
     final rooms = <Room>[];
-    // BSP: generate 6-10 rooms random non-overlapping via rejection sampling (simple, deterministic, reliable)
+    // BSP: generate a bigger, more varied room count via rejection sampling
+    // (simple, deterministic, reliable) — randomized per-seed so different
+    // buildings/dungeons feel like genuinely different-sized spaces, not a
+    // fixed template stamped out every time.
+    final targetRooms = 11 + rng.nextInt(6); // 11..16
     int attempts = 0;
     int roomId = 0;
-    while (rooms.length < 8 && attempts < 200) {
+    while (rooms.length < targetRooms && attempts < 500) {
       attempts++;
-      final w = 4 + rng.nextInt(6); // 4..9
-      final h = 4 + rng.nextInt(6);
+      final w = 5 + rng.nextInt(8); // 5..12
+      final h = 5 + rng.nextInt(8);
       final x = 1 + rng.nextInt(width - w - 2);
       final y = 1 + rng.nextInt(height - h - 2);
       final candidate = Room(roomId, x, y, w, h);
@@ -53,9 +57,32 @@ class DungeonGenerator {
       _carveCorridor(tiles, a.centerX, a.centerY, b.centerX, b.centerY);
     }
 
-    // Place doors at corridor-room intersections (heuristic: tile between floor and wall)
+    // Place doors at corridor-room intersections
     for (final r in rooms) {
-      // doors not strictly needed — leave openings as floor
+      // Check horizontal boundary (top & bottom edges)
+      for (final y in [r.y, r.y + r.h - 1]) {
+        for (var x = r.x + 1; x < r.x + r.w - 1; x++) {
+          if (tiles[y][x] == TileType.floor) {
+            final leftWall = x > 0 && tiles[y][x - 1] == TileType.wall;
+            final rightWall = x < width - 1 && tiles[y][x + 1] == TileType.wall;
+            if (leftWall && rightWall) {
+              tiles[y][x] = TileType.door;
+            }
+          }
+        }
+      }
+      // Check vertical boundary (left & right edges)
+      for (final x in [r.x, r.x + r.w - 1]) {
+        for (var y = r.y + 1; y < r.y + r.h - 1; y++) {
+          if (tiles[y][x] == TileType.floor) {
+            final topWall = y > 0 && tiles[y - 1][x] == TileType.wall;
+            final bottomWall = y < height - 1 && tiles[y + 1][x] == TileType.wall;
+            if (topWall && bottomWall) {
+              tiles[y][x] = TileType.door;
+            }
+          }
+        }
+      }
     }
 
     // Ensure entry at first room center

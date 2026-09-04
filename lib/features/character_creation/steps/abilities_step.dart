@@ -46,8 +46,9 @@ class AbilitiesStep extends ConsumerWidget {
                 decoration: ArcaneTheme.cardDecoration(),
                 child: Row(children: [
                   SizedBox(width: 44, child: Text(e.$1, style: GoogleFonts.ibmPlexSans(fontWeight: FontWeight.w800, color: Colors.white, fontSize: 15))),
-                  SizedBox(width: 48, child: Text(e.$5, style: GoogleFonts.ibmPlexSans(fontSize: 11, color: ArcaneTheme.textMuted))),
-                  const Spacer(),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(e.$5, style: GoogleFonts.ibmPlexSans(fontSize: 11, color: ArcaneTheme.textMuted), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                  const SizedBox(width: 8),
                   IconButton(
                     icon: const Icon(Icons.remove_circle_outline_rounded, size: 22),
                     color: e.$2 > 8 ? ArcaneTheme.primary : ArcaneTheme.textMuted.withOpacity(0.4),

@@ -10,6 +10,7 @@ import '../../domain/campaign_state.dart';
 import '../../domain/character.dart';
 import '../../services/ad_service.dart';
 import '../../widgets/fx.dart';
+import '../../widgets/party_assembler_sheet.dart';
 
 class CampaignHubScreen extends ConsumerWidget {
   const CampaignHubScreen({super.key});
@@ -122,11 +123,11 @@ class CampaignHubScreen extends ConsumerWidget {
           ],
 
           _ActionCard(
-            icon: Icons.add_rounded,
+            icon: Icons.shield_moon_rounded,
             iconBg: ArcaneTheme.primary.withOpacity(0.15),
             iconColor: ArcaneTheme.primary,
-            title: 'New Solo Campaign',
-            subtitle: chars.isEmpty ? 'Create a hero first' : 'Start a fresh journey',
+            title: 'New Offline Campaign',
+            subtitle: chars.isEmpty ? 'Create a hero first' : 'Assemble party with AI companions',
             onTap: () {
               if (chars.isEmpty) {
                 context.push('/create');
@@ -205,7 +206,7 @@ class CampaignHubScreen extends ConsumerWidget {
     );
   }
 
-  void _showCampaignPicker(BuildContext context, WidgetRef ref, chars) {
+  void _showCampaignPicker(BuildContext context, WidgetRef ref, List<Character> chars) {
     showModalBottomSheet(
       context: context,
       backgroundColor: ArcaneTheme.surface,
@@ -214,15 +215,20 @@ class CampaignHubScreen extends ConsumerWidget {
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
         child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text('Choose a Legend', style: GoogleFonts.cinzel(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white)),
+          const SizedBox(height: 4),
+          Text('Select a setting, then assemble your party of heroes.', style: GoogleFonts.ibmPlexSans(fontSize: 12, color: ArcaneTheme.textSecondary)),
           const SizedBox(height: 12),
           ...CampaignSeed.presets.map((seed) => Padding(
                 padding: const EdgeInsets.only(bottom: 10),
                 child: InkWell(
                   onTap: () {
                     Navigator.pop(c);
-                    ref.read(campaignProvider.notifier).startNew(seed, chars);
-                    context.go('/play');
-                    InterstitialAdManager.instance.showIfReady();
+                    showPartyAssembler(
+                      context: context,
+                      ref: ref,
+                      seed: seed,
+                      playerCharacters: chars,
+                    );
                   },
                   borderRadius: BorderRadius.circular(12),
                   child: Container(

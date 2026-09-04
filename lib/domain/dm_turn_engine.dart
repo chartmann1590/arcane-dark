@@ -82,15 +82,13 @@ class DmTurnEngine {
     return null;
   }
 
-  Future<DmTurnResult> takeTurn({required String playerInput, required CampaignState state, void Function(String chunk)? onToken, String? addressedTo}) async {
-    final prompt = _assemblePrompt(state, playerInput, addressedTo: addressedTo);
-    final buffer = StringBuffer();
-    await for (final chunk in model.generate(prompt, maxTokens: 512)) {
-      buffer.write(chunk);
-      onToken?.call(chunk);
-    }
-    final raw = buffer.toString();
-
+  /// Parses and applies whatever <<ACTION: ...>> the model emitted (if any),
+  /// rolling the real dice via [tools] and returning the cleaned-up
+  /// narration alongside whatever roll result happened — shared by both a
+  /// normal player turn and a companion's own independent beat, so
+  /// companions can genuinely roll checks, attack, pick things up, or
+  /// advance a quest on their own, not just narrate flavor text.
+  ({String narration, DiceResult? dice, CheckResult? check, AttackResult? attack}) _applyAction(String raw, CampaignState state, {String? fallbackInputForImpliedRoll}) {
     var narration = raw;
     DiceResult? diceResult;
     CheckResult? checkResult;
@@ -180,12 +178,13 @@ class DmTurnEngine {
       } catch (_) {
         narration = DmTools.stripActionBlocks(raw);
       }
-    } else {
-      // No action block from the model — if the player's own words clearly called
-      // for a check or attack, resolve one anyway using the real character sheet
-      // rather than leaving the moment un-rolled. Uses the acting player's (first
-      // party member's) actual ability modifiers, never an invented number.
-      final lower = playerInput.toLowerCase();
+    } else if (fallbackInputForImpliedRoll != null) {
+      // No action block from the model — if the input clearly called for a
+      // check or attack, resolve one anyway using the real character sheet
+      // rather than leaving the moment un-rolled. Uses the acting party
+      // member's (first party member's) actual ability modifiers, never an
+      // invented number.
+      final lower = fallbackInputForImpliedRoll.toLowerCase();
       if (lower.contains('attack') || lower.contains('strike') || lower.contains('hit')) {
         attackResult = tools.attackRoll(state, ability: 'STR', targetAc: 13);
       } else if (lower.contains('roll') || lower.contains('check') || lower.contains('perception') || lower.contains('sneak') || lower.contains('persuade')) {
@@ -197,6 +196,19 @@ class DmTurnEngine {
 
     // Strip any leaked action fragments just in case (safety filter from Phase 09)
     narration = narration.replaceAll(RegExp(r'<<ACTION:[^>]*>>?'), '').trim();
+    return (narration: narration, dice: diceResult, check: checkResult, attack: attackResult);
+  }
+
+  Future<DmTurnResult> takeTurn({required String playerInput, required CampaignState state, void Function(String chunk)? onToken, String? addressedTo}) async {
+    final prompt = _assemblePrompt(state, playerInput, addressedTo: addressedTo);
+    final buffer = StringBuffer();
+    await for (final chunk in model.generate(prompt, maxTokens: 512)) {
+      buffer.write(chunk);
+      onToken?.call(chunk);
+    }
+    final raw = buffer.toString();
+    final applied = _applyAction(raw, state, fallbackInputForImpliedRoll: playerInput);
+    var narration = applied.narration;
     if (narration.isEmpty) narration = 'The air hangs heavy as you consider your next move...';
 
     state.recentTurns = [
@@ -208,6 +220,43 @@ class DmTurnEngine {
     }
     _maybeSummarize(state);
 
-    return DmTurnResult(narration: narration, updatedState: state, dice: diceResult, check: checkResult, attack: attackResult);
+    return DmTurnResult(narration: narration, updatedState: state, dice: applied.dice, check: applied.check, attack: applied.attack);
+  }
+
+  String _companionBeatPrompt(CampaignState state, PartyMemberStatus companion) {
+    final sb = StringBuffer();
+    sb.writeln('You are the Dungeon Master. This is NOT a reply to the player — it is an independent beat for one AI-controlled companion, acting entirely on their own initiative, completely unprompted.');
+    sb.writeln('Campaign: ${state.seed.title} | Tone: ${state.seed.tone}');
+    sb.writeln('Current scene: ${state.currentSceneDescription}');
+    final activeQuest = state.questLog.where((q) => q.status == 'active').cast<QuestEntry?>().firstWhere((q) => true, orElse: () => null);
+    if (activeQuest != null) sb.writeln('Active quest: ${activeQuest.title} (${activeQuest.stage})');
+    sb.writeln('This companion: ${companion.name} (${companion.raceLabel} ${companion.classLabel}, HP ${companion.hp}/${companion.maxHp}): ${companion.persona}');
+    sb.writeln('\n${companion.name} acts entirely on their own initiative right now — driven by their own persona and the active quest, not the player\'s input. This can be a real, mechanical action (searching something — emit ability_check; striking a nearby threat — emit attack; picking something up — emit add_item; pressing the quest forward — emit advance_quest) using the SAME action syntax the DM uses: exactly one <<ACTION: name key=val key2=val2>> line, using ${companion.name} as the character. Or it can be a smaller unprompted moment — a comment, a worry, investigating something — with no action line at all. Either way, write 1-2 short sentences in third person about ${companion.name} only. Never address the player directly, never narrate for anyone else, never break character.');
+    sb.writeln('\nAvailable actions: ability_check(character, ability, dc), attack(character, target_ac, ability, damage_die, damage_modifier), add_item(character, item), advance_quest(quest_id, stage), move_companion(character, x, y).');
+    sb.writeln('\n${companion.name}:');
+    return sb.toString();
+  }
+
+  /// A companion acting entirely on their own, unprompted by any player
+  /// input — a short, separate generation focused on just this one
+  /// character's own persona (and the active quest), so the party doesn't
+  /// feel like it's all waiting silently on the player between turns. Can
+  /// emit a real action (a check, an attack, picking something up, pushing
+  /// the quest forward) exactly like a normal turn, rolling real dice — not
+  /// just flavor text. Returns null if nothing worth narrating came out.
+  Future<DmTurnResult?> companionBeat({required CampaignState state, required PartyMemberStatus companion}) async {
+    final prompt = _companionBeatPrompt(state, companion);
+    final buffer = StringBuffer();
+    await for (final chunk in model.generate(prompt, maxTokens: 140)) {
+      buffer.write(chunk);
+    }
+    final raw = buffer.toString();
+    final applied = _applyAction(raw, state);
+    if (applied.narration.isEmpty) return null;
+    state.recentTurns = [
+      ...state.recentTurns,
+      TurnLogEntry(playerInput: '(${companion.name} acts independently)', dmResponse: applied.narration),
+    ];
+    return DmTurnResult(narration: applied.narration, updatedState: state, dice: applied.dice, check: applied.check, attack: applied.attack);
   }
 }
