@@ -9,7 +9,11 @@ import '../domain/item.dart';
 import '../services/model_inference_service.dart';
 
 class CampaignNotifier extends StateNotifier<CampaignState?> {
-  CampaignNotifier() : super(null);
+  CampaignNotifier([CampaignState? initial]) : super(initial) {
+    if (initial == null) {
+      loadPersisted();
+    }
+  }
 
   void startNew(CampaignSeed seed, List<Character> characters) {
     state = CampaignState.initial(seed: seed, characters: characters);
@@ -115,6 +119,45 @@ class CampaignNotifier extends StateNotifier<CampaignState?> {
     if (cur == null) return;
     final res = await engine.takeTurn(playerInput: input, state: cur);
     state = res.updatedState;
+    _persist();
+  }
+
+  void openDoor(int x, int y) {
+    final cur = state;
+    if (cur == null) return;
+    final doors = cur.openedDoors;
+    doors.add('$x,$y');
+    cur.openedDoors = doors;
+    state = cur;
+    _persist();
+  }
+
+  void defeatEnemy(String enemyId) {
+    final cur = state;
+    if (cur == null) return;
+    final enemies = cur.defeatedEnemies;
+    enemies.add(enemyId);
+    cur.defeatedEnemies = enemies;
+    state = cur;
+    _persist();
+  }
+
+  void newFloor({required int newSeed, required Point entryPoint, String environment = 'dungeon'}) {
+    final cur = state;
+    if (cur == null) return;
+    final depth = (cur.worldFlags['dungeonDepth'] as int? ?? 0) + 1;
+    cur.worldFlags['dungeonDepth'] = depth;
+    cur.mapEnvironment = environment;
+    cur.locationSeeds['dungeon_$depth'] = newSeed;
+    cur.mapSeed = newSeed;
+    cur.partyPosition = entryPoint;
+    cur.visitedTiles = {'${entryPoint.x},${entryPoint.y}'};
+    cur.openedDoors = {};
+    cur.defeatedEnemies = {};
+    for (final m in cur.party) {
+      m.position = null;
+    }
+    state = cur;
     _persist();
   }
 

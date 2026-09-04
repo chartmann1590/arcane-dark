@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,7 +6,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'app/theme.dart';
 import 'app/router.dart';
 import 'data/local/app_database.dart';
+import 'domain/campaign_state.dart';
 import 'firebase_options.dart';
+import 'providers/campaign_provider.dart';
 import 'providers/settings_provider.dart';
 import 'services/ad_service.dart';
 import 'services/audio_service.dart';
@@ -26,7 +29,23 @@ void main() async {
     musicEnabled: prefs.getBool('musicEnabled') ?? true,
     sfxEnabled: prefs.getBool('sfxEnabled') ?? true,
   );
-  runApp(ProviderScope(child: MyApp(initialLocation: showOnboarding ? '/onboarding' : '/home')));
+
+  // Preload persisted campaign synchronously before rendering first frame
+  final lastCampaignRaw = prefs.getString('last_campaign');
+  CampaignState? preloadedCampaign;
+  if (lastCampaignRaw != null) {
+    try {
+      preloadedCampaign = CampaignState.fromJson(jsonDecode(lastCampaignRaw) as Map<String, dynamic>);
+    } catch (_) {}
+  }
+
+  runApp(ProviderScope(
+    overrides: [
+      if (preloadedCampaign != null)
+        campaignProvider.overrideWith((ref) => CampaignNotifier(preloadedCampaign)),
+    ],
+    child: MyApp(initialLocation: showOnboarding ? '/onboarding' : '/home'),
+  ));
 }
 
 class MyApp extends StatelessWidget {

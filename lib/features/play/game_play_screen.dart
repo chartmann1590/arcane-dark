@@ -125,25 +125,42 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
   /// seed that's persisted on CampaignState (and synced for multiplayer)
   /// means revisiting this screen reconstructs the identical layout.
   void _ensureMapForCampaign(CampaignState? campaign) {
+    if (campaign == null && widget.sessionId != null) return;
     final targetSeed = campaign?.mapSeed ?? _adHocSeed;
-    if (_mapInitialized && _seed == targetSeed) return;
+    if (_mapInitialized && _seed == targetSeed) {
+      if (campaign != null) {
+        _openedDoors.addAll(campaign.openedDoors);
+        _npcs.removeWhere((n) => campaign.defeatedEnemies.contains(n.id));
+      }
+      return;
+    }
     _seed = targetSeed;
     _dungeon = DungeonGenerator().generate(seed: _seed, width: 34, height: 34);
     if (campaign != null) {
       playerPos = m.Point(campaign.partyPosition.x, campaign.partyPosition.y);
       visited = campaign.visitedTiles.isNotEmpty ? Set<String>.from(campaign.visitedTiles) : {'${playerPos.x},${playerPos.y}'};
+      _openedDoors.clear();
+      _openedDoors.addAll(campaign.openedDoors);
     } else {
       playerPos = m.Point(_dungeon.entryPoint.x, _dungeon.entryPoint.y);
       visited = {'${playerPos.x},${playerPos.y}'};
+      _openedDoors.clear();
     }
     if ((campaign?.mapEnvironment ?? 'dungeon') == 'tavern') {
       _npcs = generateTavernNpcs(_dungeon);
       _props = generateTavernProps(_dungeon, _npcs);
     } else {
       _props = generateDungeonProps(_dungeon);
-      _npcs = generateDungeonEnemies(_dungeon, excluding: {
+      final allEnemies = generateDungeonEnemies(_dungeon, excluding: {
         for (final p in _props) '${p.pos.x},${p.pos.y}',
       });
+      final defeated = campaign?.defeatedEnemies ?? const <String>{};
+      _npcs = allEnemies.where((n) => !defeated.contains(n.id)).toList();
+      for (final e in allEnemies) {
+        if (defeated.contains(e.id)) {
+          _props.add(MapProp(pos: e.pos, asset: 'assets/tiles/prop_bones.png'));
+        }
+      }
     }
     _mapInitialized = true;
     _mapCentered = false;
@@ -168,68 +185,7 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
     }
   }
 
-  // Phrases that mean "a brand-new area", not just "still wandering the same
-  // one" — descending, moving on to a new chamber, etc. Checked only while
-  // already in the dungeon environment, so ordinary movement narration
-  // doesn't reroll the map on every single turn.
-  static const _progressionWords = ['descend', 'deeper', 'further in', 'further into', 'next chamber', 'another room', 'another chamber', 'press onward', 'venture further', 'delve deeper', 'new chamber', 'new area', 'new passage', 'leave the crypt', 'exit the dungeon', 'emerge from', 'return to the surface', 'back outside', 'back at'];
 
-  /// Re-derives the environment from the DM's own narration every turn (not
-  /// just once at campaign start) — walking into a shop or out into the
-  /// wilds actually changes what the map looks like. Switching TYPES
-  /// (tavern <-> dungeon) reuses that type's remembered seed if the party's
-  /// been there before in this campaign (same building, same NPCs/furniture).
-  /// Progressing deeper *within* the dungeon type instead rolls a genuinely
-  /// new map each time — a real sequence of distinct areas, not one map
-  /// reused forever — while still remembering the hub (tavern) to return to.
-  // Flavor text constantly REFERENCES the last location in passing ("the
-  // cooler air compared to the smoky tavern you left...") without the party
-  // actually having arrived anywhere new — matching on any keyword mention
-  // anywhere in the text (the old behavior) flipped the whole map out from
-  // under the player on almost every turn: fog-of-war progress wiped, party
-  // repositioned, companions re-clustered, mid-exploration. Requiring an
-  // actual arrival phrase near the keyword keeps the current map "sticky"
-  // until the narration genuinely describes stepping into somewhere new.
-  static const _arrivalPhrases = [
-    'you enter', 'you arrive', 'you step into', 'you step through',
-    'you find yourself in', 'you return to', 'you walk into', 'you head into',
-    'you descend into', 'you push open', 'you make your way into',
-  ];
-
-  void _switchEnvironmentIfNeeded(CampaignState campaign, String narrationText) {
-    final lower = narrationText.toLowerCase();
-    final rawDetected = CampaignState.environmentFor(narrationText);
-    // Leaving the CURRENT environment for a different one requires a real
-    // arrival signal — merely referencing the old place in passing doesn't
-    // count. Staying in the same environment (or the very first turn, where
-    // there's no "current" yet to be sticky about) is always fine.
-    final detected = (rawDetected != campaign.mapEnvironment && !_arrivalPhrases.any(lower.contains)) ? campaign.mapEnvironment : rawDetected;
-    final depth = campaign.worldFlags['dungeonDepth'] as int? ?? 0;
-
-    String newLocationKey;
-    if (detected == 'dungeon' && campaign.mapEnvironment == 'dungeon' && _progressionWords.any(lower.contains)) {
-      final nextDepth = depth + 1;
-      campaign.worldFlags['dungeonDepth'] = nextDepth;
-      newLocationKey = 'dungeon_$nextDepth';
-    } else if (detected == 'dungeon') {
-      newLocationKey = depth > 0 ? 'dungeon_$depth' : 'dungeon';
-    } else {
-      newLocationKey = detected; // 'tavern' — one stable remembered hub
-    }
-
-    final currentKey = campaign.mapEnvironment == 'dungeon' && depth > 0 ? 'dungeon_$depth' : campaign.mapEnvironment;
-    if (newLocationKey == currentKey) return;
-
-    campaign.mapEnvironment = detected;
-    campaign.mapSeed = campaign.seedForEnvironment(newLocationKey);
-    campaign.partyPosition = const Point(5, 5);
-    campaign.visitedTiles = {};
-    // A new map means everyone's independent wandering positions from the
-    // old one are meaningless — reset to re-cluster at the new entry point.
-    for (final member in campaign.party) {
-      member.position = null;
-    }
-  }
 
   /// AI companions have their own mind between turns too: each one might
   /// wander to an adjacent walkable tile near the party rather than
@@ -271,7 +227,7 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
   /// input driving it. Renders as its own DM-narration entry in the log.
   Future<void> _maybeCompanionBeat(CampaignState campaign, DmTurnEngine engine, {bool skip = false}) async {
     if (skip || campaign.party.length <= 1) return;
-    if (Random().nextDouble() > 0.7) return;
+    if (Random().nextDouble() > 0.55) return;
     final companions = campaign.party.skip(1).toList();
     final companion = companions[Random().nextInt(companions.length)];
     try {
@@ -380,15 +336,48 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
   /// prefix of it). Returns the mention-stripped text the model should
   /// actually respond to, plus who (if anyone) it's addressed to.
   ({String? addressedTo, String text}) _parseMention(String raw, CampaignState? campaign) {
-    if (campaign == null || !raw.startsWith('@')) return (addressedTo: null, text: raw);
-    final names = campaign.party.map((m) => m.name).toList()..sort((a, b) => b.length.compareTo(a.length));
-    for (final name in names) {
-      final mention = '@$name';
-      if (raw.toLowerCase().startsWith(mention.toLowerCase())) {
-        final rest = raw.substring(mention.length).trim();
-        return (addressedTo: name, text: rest.isEmpty ? 'Yes? What do you need?' : rest);
+    if (campaign == null) return (addressedTo: null, text: raw);
+    final trimmed = raw.trim();
+
+    // 1. Direct @Mention prefix: "@Thorin attack the skeleton"
+    if (trimmed.startsWith('@')) {
+      final names = campaign.party.map((m) => m.name).toList()..sort((a, b) => b.length.compareTo(a.length));
+      for (final name in names) {
+        final mention = '@$name';
+        if (trimmed.toLowerCase().startsWith(mention.toLowerCase())) {
+          final rest = trimmed.substring(mention.length).trim();
+          return (addressedTo: name, text: rest.isEmpty ? 'Yes? What do you need?' : rest);
+        }
       }
     }
+
+    // 2. Natural language companion command: "Thorin, smash the door" or "Tell Elora to heal me"
+    final companions = campaign.party.skip(1);
+    for (final companion in companions) {
+      final cName = companion.name.toLowerCase();
+      final lower = trimmed.toLowerCase();
+
+      // "Thorin, ...", "Thorin: ..."
+      if (lower.startsWith('$cName,') || lower.startsWith('$cName:')) {
+        final rest = trimmed.substring(cName.length + 1).trim();
+        return (addressedTo: companion.name, text: rest.isEmpty ? 'At your command.' : rest);
+      }
+
+      // "Tell Thorin to ..." or "Ask Thorin to ..."
+      for (final prefix in ['tell $cName to ', 'ask $cName to ', 'order $cName to ', 'have $cName ']) {
+        if (lower.startsWith(prefix)) {
+          final rest = trimmed.substring(prefix.length).trim();
+          return (addressedTo: companion.name, text: rest);
+        }
+      }
+
+      // Starts with companion name: "Thorin attack the goblin"
+      if (lower.startsWith('$cName ')) {
+        final rest = trimmed.substring(cName.length + 1).trim();
+        return (addressedTo: companion.name, text: rest);
+      }
+    }
+
     return (addressedTo: null, text: raw);
   }
 
@@ -484,7 +473,6 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
           },
         );
         if (result.hadRoll) AudioService.instance.playDiceRoll();
-        _switchEnvironmentIfNeeded(campaign, result.narration);
         _wanderCompanions(campaign);
         setState(() {
           chat.add({'role': 'dm', 'text': result.narration, 'roll': _rollBadge(result)});
@@ -750,6 +738,11 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
                       }
                     }
                   });
+                  ref.read(campaignProvider.notifier).openDoor(doorPos.x, doorPos.y);
+                  if (widget.sessionId != null && _isMultiplayerHost == true) {
+                    final c = ref.read(campaignProvider);
+                    if (c != null) SessionRepository.instance.pushState(widget.sessionId!, c);
+                  }
                   AudioService.instance.playSuccess();
                   _send('I turn the rusted iron ring and push open the heavy dungeon door.');
                 },
@@ -793,6 +786,11 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
             _npcs.removeWhere((n) => n.id == defeatedEnemy.id);
             _props.add(MapProp(pos: defeatedEnemy.pos, asset: 'assets/tiles/prop_bones.png'));
           });
+          ref.read(campaignProvider.notifier).defeatEnemy(defeatedEnemy.id);
+          if (widget.sessionId != null && _isMultiplayerHost == true) {
+            final c = ref.read(campaignProvider);
+            if (c != null) SessionRepository.instance.pushState(widget.sessionId!, c);
+          }
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('ENEMY SLAIN: ${defeatedEnemy.name}! The party gains +50 XP and clears the chamber.', style: GoogleFonts.cinzel(fontWeight: FontWeight.w700, color: Colors.white)),
@@ -1226,19 +1224,16 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
     final campaign = ref.read(campaignProvider);
     final newSeed = Random().nextInt(1 << 30);
     final newDungeon = DungeonGenerator().generate(seed: newSeed, width: 34, height: 34);
+    final entry = Point(newDungeon.entryPoint.x, newDungeon.entryPoint.y);
     setState(() {
       _adHocSeed = newSeed;
       _seed = newSeed;
       _dungeon = newDungeon;
-      playerPos = m.Point(newDungeon.entryPoint.x, newDungeon.entryPoint.y);
-      visited = {'${playerPos.x},${playerPos.y}'};
+      playerPos = m.Point(entry.x, entry.y);
+      visited = {'${entry.x},${entry.y}'};
       _mapInitialized = true;
       _mapCentered = false;
       chat.clear();
-      // "New Dungeon" always switches to the dungeon tile set (see
-      // campaign.mapEnvironment = 'dungeon' below) — without clearing these,
-      // whatever tavern NPCs/furniture were on screen before kept rendering
-      // on top of the new stone map instead of disappearing with it.
       _props = generateDungeonProps(newDungeon);
       _npcs = generateDungeonEnemies(newDungeon, excluding: {
         for (final p in _props) '${p.pos.x},${p.pos.y}',
@@ -1247,17 +1242,11 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
       _activePath = null;
     });
     if (campaign != null) {
-      campaign.mapSeed = newSeed;
-      campaign.partyPosition = Point(playerPos.x, playerPos.y);
-      campaign.visitedTiles = Set<String>.from(visited);
-      // "New Dungeon" narratively means moving on to a brand-new area —
-      // advances the remembered dungeon depth just like a real in-story
-      // descent would, so this new map is the one reused if they come back.
-      campaign.mapEnvironment = 'dungeon';
-      final nextDepth = (campaign.worldFlags['dungeonDepth'] as int? ?? 0) + 1;
-      campaign.worldFlags['dungeonDepth'] = nextDepth;
-      campaign.locationSeeds['dungeon_$nextDepth'] = newSeed;
-      ref.read(campaignProvider.notifier).load(campaign);
+      ref.read(campaignProvider.notifier).newFloor(newSeed: newSeed, entryPoint: entry);
+      final updated = ref.read(campaignProvider);
+      if (widget.sessionId != null && _isMultiplayerHost == true && updated != null) {
+        SessionRepository.instance.pushState(widget.sessionId!, updated);
+      }
     }
   }
 

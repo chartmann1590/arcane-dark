@@ -23,6 +23,20 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   void initState() {
     super.initState();
     AudioService.instance.playMusic(MusicTrack.tavern);
+    _checkExistingModel();
+  }
+
+  Future<void> _checkExistingModel() async {
+    final mgr = ModelDownloadManager();
+    if (await mgr.isModelPresent()) {
+      await ref.read(settingsProvider.notifier).setModelDownloaded(true);
+      if (mounted) {
+        setState(() {
+          progress = 1.0;
+          done = true;
+        });
+      }
+    }
   }
 
   Future<void> _skip() async {

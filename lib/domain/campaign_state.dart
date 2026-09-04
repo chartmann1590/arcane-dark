@@ -180,6 +180,22 @@ class CampaignState {
     return 'dungeon';
   }
 
+  /// Opened door coordinates 'x,y' persisted across tab switches and resumes.
+  Set<String> get openedDoors =>
+      worldFlags['openedDoors'] != null ? Set<String>.from(worldFlags['openedDoors'] as List) : <String>{};
+
+  set openedDoors(Set<String> doors) {
+    worldFlags['openedDoors'] = doors.toList();
+  }
+
+  /// Defeated enemy IDs persisted across tab switches and resumes.
+  Set<String> get defeatedEnemies =>
+      worldFlags['defeatedEnemies'] != null ? Set<String>.from(worldFlags['defeatedEnemies'] as List) : <String>{};
+
+  set defeatedEnemies(Set<String> enemies) {
+    worldFlags['defeatedEnemies'] = enemies.toList();
+  }
+
   /// The seed to use for [env] — reuses whatever this campaign already
   /// generated for that environment, or rolls (and remembers) a fresh one.
   int seedForEnvironment(String env) => locationSeeds.putIfAbsent(env, () => Random().nextInt(1 << 30));

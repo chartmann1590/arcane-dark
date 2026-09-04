@@ -64,6 +64,10 @@ class ModelDownloadManager {
   /// network failure or checksum mismatch (the partial/corrupt file is deleted
   /// on checksum failure so a retry starts clean).
   Stream<double> downloadWithProgress() async* {
+    if (await isModelPresent()) {
+      yield 1.0;
+      return;
+    }
     final manifest = await ModelManifest.load();
     final target = await _modelFile();
     final partFile = File('${target.path}.part');
@@ -88,10 +92,14 @@ class ModelDownloadManager {
         final total = manifest.sizeBytes;
         var received = startBytes;
         sink = partFile.openWrite(mode: startBytes > 0 ? FileMode.writeOnlyAppend : FileMode.writeOnly);
+        var lastReported = startBytes;
         await for (final chunk in response.data!.stream) {
           sink.add(chunk);
           received += chunk.length;
-          controller.add((received / total).clamp(0.0, 1.0));
+          if (received - lastReported >= 2 * 1024 * 1024 || received == total) {
+            lastReported = received;
+            controller.add((received / total).clamp(0.0, 1.0));
+          }
         }
         await sink.flush();
         await sink.close();
