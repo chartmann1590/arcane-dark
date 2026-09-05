@@ -5,7 +5,7 @@ import 'model_download_manager.dart';
 /// Abstraction matching plan Phase 02 — ModelInferenceService.
 abstract class ModelInferenceService {
   Future<void> ensureModelReady();
-  Stream<String> generate(String prompt, {int maxTokens = 512});
+  Stream<String> generate(String prompt, {int maxTokens = 160});
   Future<void> unload();
   String get deviceTier; // E2B / E4B
 }
@@ -55,13 +55,37 @@ class LiteRtModelInferenceService implements ModelInferenceService {
   }
 
   @override
-  Stream<String> generate(String prompt, {int maxTokens = 512}) async* {
+  Stream<String> generate(String prompt, {int maxTokens = 160}) async* {
     if (!_ready) await ensureModelReady();
     final controller = StreamController<String>();
     late final StreamSubscription sub;
-    sub = _stream.receiveBroadcastStream({'prompt': prompt}).listen(
-      (event) => controller.add(event as String),
+    Timer? heartbeatTimer;
+    bool hasReceivedFirstToken = false;
+
+    void resetHeartbeat(Duration duration) {
+      heartbeatTimer?.cancel();
+      heartbeatTimer = Timer(duration, () {
+        sub.cancel();
+        _control.invokeMethod('cancelGeneration').catchError((_) => null);
+        controller.addError(ModelLoadException('TIMEOUT', 'Inference timed out after ${duration.inSeconds}s of inactivity'));
+        controller.close();
+      });
+    }
+
+    // Initial prefill allowance (up to 75 seconds for slow mobile CPU prefill)
+    resetHeartbeat(const Duration(seconds: 75));
+
+    sub = _stream.receiveBroadcastStream({'prompt': prompt, 'maxTokens': maxTokens}).listen(
+      (event) {
+        if (!hasReceivedFirstToken) {
+          hasReceivedFirstToken = true;
+        }
+        // Per-token heartbeat: reset to 25 seconds for each generated token
+        resetHeartbeat(const Duration(seconds: 25));
+        controller.add(event as String);
+      },
       onError: (Object e) {
+        heartbeatTimer?.cancel();
         if (e is PlatformException) {
           controller.addError(ModelLoadException(e.code, e.message ?? 'generation error'));
         } else {
@@ -69,18 +93,20 @@ class LiteRtModelInferenceService implements ModelInferenceService {
         }
         controller.close();
       },
-      onDone: () => controller.close(),
+      onDone: () {
+        heartbeatTimer?.cancel();
+        controller.close();
+      },
       cancelOnError: true,
     );
-    controller.onCancel = () => sub.cancel();
-    yield* controller.stream.timeout(
-      const Duration(seconds: 45),
-      onTimeout: (sink) {
-        sub.cancel();
-        sink.addError(ModelLoadException('TIMEOUT', 'No response from on-device model within 45s'));
-        sink.close();
-      },
-    );
+
+    controller.onCancel = () {
+      heartbeatTimer?.cancel();
+      sub.cancel();
+      _control.invokeMethod('cancelGeneration').catchError((_) => null);
+    };
+
+    yield* controller.stream;
   }
 
   @override

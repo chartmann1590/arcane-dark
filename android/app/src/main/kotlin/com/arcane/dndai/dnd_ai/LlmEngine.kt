@@ -8,11 +8,14 @@ import com.google.ai.edge.litertlm.ConversationConfig
 import com.google.ai.edge.litertlm.Engine
 import com.google.ai.edge.litertlm.EngineConfig
 import com.google.ai.edge.litertlm.SamplerConfig
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -36,6 +39,12 @@ import kotlinx.coroutines.withContext
 class LlmEngine(private val appContext: Context) {
     private var engine: Engine? = null
     private val scope = CoroutineScope(Dispatchers.Main + Job())
+    private var currentJob: Job? = null
+
+    fun cancelCurrentGeneration() {
+        currentJob?.cancel()
+        currentJob = null
+    }
 
     companion object {
         private val SYSTEM_INSTRUCTION = Contents.of(
@@ -93,6 +102,7 @@ class LlmEngine(private val appContext: Context) {
      */
     fun generateStream(
         prompt: String,
+        maxTokens: Int = 160,
         onToken: (String) -> Unit,
         onDone: () -> Unit,
         onError: (String) -> Unit
@@ -102,7 +112,9 @@ class LlmEngine(private val appContext: Context) {
             onError("MODEL_NOT_LOADED")
             return
         }
-        scope.launch {
+        cancelCurrentGeneration()
+
+        currentJob = scope.launch {
             try {
                 val convo = withContext(Dispatchers.IO) {
                     eng.createConversation(
@@ -112,13 +124,29 @@ class LlmEngine(private val appContext: Context) {
                         )
                     )
                 }
+                var tokenCount = 0
                 convo.sendMessageAsync(prompt)
                     .flowOn(Dispatchers.IO)
-                    .catch { e -> onError(e.message ?: "GENERATION_ERROR") }
-                    .collect { chunk -> onToken(chunk.toString()) }
+                    .catch { e ->
+                        if (e !is CancellationException) {
+                            onError(e.message ?: "GENERATION_ERROR")
+                        }
+                    }
+                    .collect { chunk ->
+                        if (!isActive) return@collect
+                        tokenCount++
+                        onToken(chunk.toString())
+                        if (tokenCount >= maxTokens) {
+                            cancel()
+                        }
+                    }
+                onDone()
+            } catch (e: CancellationException) {
                 onDone()
             } catch (e: Exception) {
                 onError(e.message ?: "GENERATION_ERROR")
+            } finally {
+                currentJob = null
             }
         }
     }

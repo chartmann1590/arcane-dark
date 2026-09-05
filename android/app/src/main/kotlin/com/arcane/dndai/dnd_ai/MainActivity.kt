@@ -37,6 +37,10 @@ class MainActivity : FlutterActivity() {
                         }
                     }
                 }
+                "cancelGeneration" -> {
+                    llmEngine.cancelCurrentGeneration()
+                    result.success(true)
+                }
                 "unloadModel" -> {
                     mainScope.launch {
                         llmEngine.unload()
@@ -60,12 +64,14 @@ class MainActivity : FlutterActivity() {
                 override fun onListen(arguments: Any?, events: EventChannel.EventSink) {
                     val argsMap = arguments as? Map<*, *>
                     val prompt = argsMap?.get("prompt") as? String
+                    val maxTokens = (argsMap?.get("maxTokens") as? Number)?.toInt() ?: 160
                     if (prompt == null) {
                         events.error("BAD_ARGS", "prompt is required", null)
                         return
                     }
                     llmEngine.generateStream(
                         prompt = prompt,
+                        maxTokens = maxTokens,
                         onToken = { chunk -> runOnUiThread { events.success(chunk) } },
                         onDone = { runOnUiThread { events.endOfStream() } },
                         onError = { message -> runOnUiThread { events.error("GENERATION_ERROR", message, null) } }
@@ -73,9 +79,7 @@ class MainActivity : FlutterActivity() {
                 }
 
                 override fun onCancel(arguments: Any?) {
-                    // Generation for this turn either already completed or the Dart side
-                    // stopped listening (e.g. screen disposed) — nothing to clean up here,
-                    // the underlying Conversation stays loaded for the next turn.
+                    llmEngine.cancelCurrentGeneration()
                 }
             }
         )

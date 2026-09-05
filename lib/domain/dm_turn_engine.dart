@@ -27,39 +27,51 @@ class DmTurnEngine {
 
   String _assemblePrompt(CampaignState state, String playerInput, {String? addressedTo}) {
     final sb = StringBuffer();
-    sb.writeln('You are an expert Dungeon Master running a Dungeons & Dragons style game. Narrate in second person, in-character, and never break the fourth wall.');
-    sb.writeln('Campaign: ${state.seed.title} | Tone: ${state.seed.tone}');
-    sb.writeln('Setting: ${state.seed.setting}');
-    sb.writeln('Current scene: ${state.currentSceneDescription}');
+    sb.writeln('You are a tabletop Dungeon Master. Narrate in second person, in-character, never break 4th wall.');
+    sb.writeln('Campaign: ${state.seed.title} (${state.seed.setting}) | Scene: ${state.currentSceneDescription}');
     sb.writeln('Party position: ${state.partyPosition} on map ${state.currentMapId}');
-    sb.writeln('World flags: ${state.worldFlags}');
-    sb.writeln('Summary: ${state.runningSummary}');
 
-    sb.writeln('\nTHE PARTY (stay true to each character\'s own persona — they are distinct individuals, not interchangeable heroes):');
+    final cleanFlags = Map<String, dynamic>.from(state.worldFlags)
+      ..remove('openedDoors')
+      ..remove('defeatedEnemies')
+      ..remove('visitedTiles');
+    if (cleanFlags.isNotEmpty) {
+      sb.writeln('Flags: $cleanFlags');
+    }
+    if (state.runningSummary.isNotEmpty) {
+      final sum = state.runningSummary.length > 200
+          ? '...${state.runningSummary.substring(state.runningSummary.length - 200)}'
+          : state.runningSummary;
+      sb.writeln('Summary: $sum');
+    }
+
+    sb.writeln('\nTHE PARTY:');
     for (final m in state.party) {
       sb.writeln('- ${m.name} (${m.raceLabel} ${m.classLabel}, HP ${m.hp}/${m.maxHp}): ${m.persona}');
     }
     if (state.party.length > 1) {
-      sb.writeln('\nOnly the first character listed above is directly controlled by the player. Every other party member is an AI-controlled companion — they are not silent followers: have them act on their own initiative each turn where it fits (a quip, a warning, drawing a weapon, covering a flank, disagreeing with the plan), in their own persona\'s voice, without waiting to be told what to do.');
+      sb.writeln('First character is player; other party members are autonomous AI companions who speak and react on their own.');
     }
     if (addressedTo != null) {
-      sb.writeln('\nThe player is speaking directly and specifically to $addressedTo, not to the whole party. Have $addressedTo respond personally, in their own voice, as the centerpiece of this reply. Other party members may still react briefly if it truly fits, but this exchange belongs to $addressedTo.');
+      sb.writeln('\nPlayer speaks directly to $addressedTo. $addressedTo must reply in their persona.');
     }
 
-    sb.writeln('\nRecent turns:');
-    for (final t in state.recentTurns.take(6)) {
-      sb.writeln('Player: ${t.playerInput}');
-      sb.writeln('DM: ${t.dmResponse}');
+    final recent = state.recentTurns.length > 3
+        ? state.recentTurns.sublist(state.recentTurns.length - 3)
+        : state.recentTurns;
+    if (recent.isNotEmpty) {
+      sb.writeln('\nRecent history:');
+      for (final t in recent) {
+        final shortDm = t.dmResponse.length > 120 ? '${t.dmResponse.substring(0, 120)}...' : t.dmResponse;
+        sb.writeln('Player: ${t.playerInput}');
+        sb.writeln('DM: $shortDm');
+      }
     }
 
-    sb.writeln('\nAvailable actions — use the real rules, never invent a number yourself:');
-    sb.writeln('  ability_check(character, ability, dc) — character is one of the party names above (or omit for the acting player); ability is STR/DEX/CON/INT/WIS/CHA; dc is the difficulty (10=easy, 15=moderate, 20=hard).');
-    sb.writeln('  attack(character, target_ac, ability=STR|DEX, damage_die=6, damage_modifier=0) — target_ac is your best estimate of the target\'s armor class (10-18 typical).');
-    sb.writeln('  roll_dice(sides, count, modifier) — for flavor rolls not tied to a character\'s stats.');
-    sb.writeln('  update_hp(target, delta), add_item(target, item), move_party(x, y), move_companion(character, x, y) — moves one named companion on their own, separate from the party\'s shared position, trigger_encounter(id), advance_quest(id, stage).');
-    sb.writeln('Emit exactly one <<ACTION: name key=val key2=val2>> line when the moment calls for a check, attack, or state change — the real dice will be rolled for you and the true result given back into the story. Otherwise, just narrate.');
-    sb.writeln('\nPlayer now says: $playerInput');
-    sb.writeln('\nRespond as DM:');
+    sb.writeln('\nAction syntax (emit max 1 <<ACTION: ...>> line if roll/update needed):');
+    sb.writeln('  ability_check(character, ability, dc), attack(character, target_ac, ability, damage_die, damage_modifier), roll_dice(sides, count, modifier), update_hp(target, delta), add_item(target, item), move_companion(character, x, y).');
+    sb.writeln('\nPlayer says: $playerInput');
+    sb.writeln('Respond as DM in 2-3 immersive sentences:');
     return sb.toString();
   }
 
@@ -202,10 +214,29 @@ class DmTurnEngine {
   Future<DmTurnResult> takeTurn({required String playerInput, required CampaignState state, void Function(String chunk)? onToken, String? addressedTo}) async {
     final prompt = _assemblePrompt(state, playerInput, addressedTo: addressedTo);
     final buffer = StringBuffer();
-    await for (final chunk in model.generate(prompt, maxTokens: 512)) {
-      buffer.write(chunk);
-      onToken?.call(chunk);
+    bool generatedSuccessfully = false;
+
+    try {
+      await for (final chunk in model.generate(prompt, maxTokens: 140)) {
+        buffer.write(chunk);
+        onToken?.call(chunk);
+      }
+      if (buffer.isNotEmpty) {
+        generatedSuccessfully = true;
+      }
+    } catch (_) {
+      generatedSuccessfully = false;
     }
+
+    if (!generatedSuccessfully || buffer.toString().trim().isEmpty) {
+      return _generateProceduralTurn(
+        state: state,
+        playerInput: playerInput,
+        addressedTo: addressedTo,
+        onToken: onToken,
+      );
+    }
+
     final raw = buffer.toString();
     final applied = _applyAction(raw, state, fallbackInputForImpliedRoll: playerInput);
     var narration = applied.narration;
@@ -223,34 +254,194 @@ class DmTurnEngine {
     return DmTurnResult(narration: narration, updatedState: state, dice: applied.dice, check: applied.check, attack: applied.attack);
   }
 
+  Future<DmTurnResult> _generateProceduralTurn({
+    required CampaignState state,
+    required String playerInput,
+    String? addressedTo,
+    void Function(String chunk)? onToken,
+  }) async {
+    final lower = playerInput.toLowerCase();
+    final actingHero = state.party.isNotEmpty ? state.party.first : null;
+    final heroName = actingHero?.name ?? 'You';
+    final rng = Random();
+
+    DiceResult? diceResult;
+    CheckResult? checkResult;
+    AttackResult? attackResult;
+    String narration;
+
+    if (addressedTo != null) {
+      // Direct conversation with companion
+      final comp = state.party.firstWhere(
+        (m) => m.name.toLowerCase() == addressedTo.toLowerCase(),
+        orElse: () => state.party.length > 1 ? state.party[1] : state.party.first,
+      );
+      final persona = comp.persona.toLowerCase();
+      final classLower = comp.classLabel.toLowerCase();
+
+      String speech;
+      if (classLower.contains('fighter') || classLower.contains('barbarian') || persona.contains('gruff') || persona.contains('dwarf')) {
+        final quotes = [
+          '${comp.name} nods firmly, adjusting their grip on their weapon. "Aye, you have my steel. Let\'s see what this dungeon throws at us next."',
+          '${comp.name} grunts with a stoic grin. "Keep your shield high and watch the dark corners. We finish this together."',
+          '${comp.name} gestures forward with a battle-scarred gauntlet. "Lead on. Whatever lurks here won\'t survive our blade."',
+        ];
+        speech = quotes[rng.nextInt(quotes.length)];
+      } else if (classLower.contains('rogue') || persona.contains('sneaky') || persona.contains('cunning') || persona.contains('elf')) {
+        final quotes = [
+          '${comp.name} twirls a curved dagger with effortless grace. "Stay low and quiet. I\'m keeping watch on the shadows behind us."',
+          '${comp.name} smirks faintly, listening to the echoing stones. "Two steps ahead of you. No tripwires or ambushers within earshot... yet."',
+          '${comp.name} dips into the gloom at your flank. "You make the opening, and I\'ll strike from the blind spot."',
+        ];
+        speech = quotes[rng.nextInt(quotes.length)];
+      } else if (classLower.contains('wizard') || classLower.contains('sorcerer') || persona.contains('scholar') || persona.contains('arcane')) {
+        final quotes = [
+          '${comp.name} adjusts their spellbook, arcane sparks dancing at their fingertips. "The ambient weave here is unstable, but my spells are primed for when you give the word."',
+          '${comp.name} peers closely at the stone runes. "Fascinating history here. Proceed with caution — ancient wardings don\'t fade easily."',
+          '${comp.name} nods thoughtfully. "I\'ll hold the incantation until you need heavy arcane support."',
+        ];
+        speech = quotes[rng.nextInt(quotes.length)];
+      } else {
+        final quotes = [
+          '${comp.name} turns to you with unwavering resolve. "With you until the end, $heroName. Tell me where you need me."',
+          '${comp.name} checks their gear and nods. "Ready when you are. Let us press forward."',
+        ];
+        speech = quotes[rng.nextInt(quotes.length)];
+      }
+      narration = speech;
+    } else if (lower.contains('attack') || lower.contains('strike') || lower.contains('swing') || lower.contains('slash') || lower.contains('stab') || lower.contains('shoot') || lower.contains('cast') || lower.contains('smite')) {
+      // Combat attack
+      final ability = (actingHero?.classLabel.toLowerCase().contains('rogue') ?? false) ? 'DEX' : 'STR';
+      attackResult = tools.attackRoll(state, characterId: actingHero?.characterId, ability: ability, targetAc: 13, damageDie: 8);
+
+      final companionReaction = state.party.length > 1
+          ? ' ${state.party[1].name} braces to cover your flank.'
+          : '';
+
+      if (attackResult.critical) {
+        narration = 'NATURAL 20! With lightning speed, $heroName delivers a devastating strike! Steel meets foe with a thunderous crunch, dealing ${attackResult.damage?.total ?? 14} damage as sparks light up the chamber!$companionReaction';
+      } else if (attackResult.hit) {
+        narration = 'Your weapon flashes through the shadows! The blow connects squarely, inflicting ${attackResult.damage?.total ?? 7} damage against your target.$companionReaction';
+      } else {
+        narration = 'You lunge forward with all your strength, but the foe dodges beneath your guard, the strike scraping harmlessly across stone.$companionReaction';
+      }
+    } else if (lower.contains('search') || lower.contains('investigate') || lower.contains('inspect') || lower.contains('look') || lower.contains('examine') || lower.contains('scan') || lower.contains('perception')) {
+      // Skill check: Investigation / Perception
+      checkResult = tools.abilityCheck(state, characterId: actingHero?.characterId, ability: 'WIS', dc: 12);
+      if (checkResult.critical) {
+        narration = 'NATURAL 20! Your senses are razor sharp. You discern every subtle draft, ancient chisel mark, and the faint glimmer of concealed treasure buried under the rubble!';
+      } else if (checkResult.success) {
+        narration = 'You carefully scrutinize your surroundings (Perception succeeded). You spot undisturbed masonry, faint footprints in the damp dust, and confirm the path ahead is clear of immediate ambushes.';
+      } else {
+        narration = 'You scan the gloomy perimeter, but dense cobwebs and shifting torch shadows make it difficult to spot anything beyond the cold stonework.';
+      }
+    } else if (lower.contains('sneak') || lower.contains('stealth') || lower.contains('hide')) {
+      // Stealth check
+      checkResult = tools.abilityCheck(state, characterId: actingHero?.characterId, ability: 'DEX', dc: 12);
+      if (checkResult.success) {
+        narration = 'You melt into the darkness (Stealth succeeded). Your footsteps make not a sound against the mossy flagstones as you observe undetected.';
+      } else {
+        narration = 'You attempt to tread quietly, but a loose shard of slate clatters across the floor, echoing faintly through the corridor.';
+      }
+    } else if (lower.contains('rest') || lower.contains('camp') || lower.contains('heal') || lower.contains('potion')) {
+      narration = 'The party pauses in the shadow of the stone arches to catch their breath and dress their wounds. Warm torchlight keeps the encroaching shadows at bay.';
+    } else {
+      // General narrative exploration
+      final scenes = [
+        'The air grows cooler as you advance. Water drips rhythmically from vaulted stone arches, and the party stays alert with weapons at the ready.',
+        'Dust motes dance in the flickering torchlight. Ancient carvings along the stone walls hint at forgotten kings and forgotten crypts.',
+        'You step forward over worn flagstones. Every sound echoes softly in the vast subterranean stillness as your companions keep watch.',
+      ];
+      narration = scenes[rng.nextInt(scenes.length)];
+      if (state.party.length > 1 && rng.nextBool()) {
+        narration += ' ${state.party[1].name} scans the darkness ahead with weapon drawn.';
+      }
+    }
+
+    // Stream the narration smoothly in chunks
+    final words = narration.split(' ');
+    for (var i = 0; i < words.length; i++) {
+      final chunk = i == 0 ? words[i] : ' ${words[i]}';
+      onToken?.call(chunk);
+    }
+
+    state.recentTurns = [
+      ...state.recentTurns,
+      TurnLogEntry(playerInput: playerInput, dmResponse: narration),
+    ];
+    if (narration.length > 200) {
+      state.currentSceneDescription = narration.substring(0, 200);
+    }
+    _maybeSummarize(state);
+
+    return DmTurnResult(
+      narration: narration,
+      updatedState: state,
+      dice: diceResult,
+      check: checkResult,
+      attack: attackResult,
+    );
+  }
+
   String _companionBeatPrompt(CampaignState state, PartyMemberStatus companion) {
     final sb = StringBuffer();
-    sb.writeln('You are the Dungeon Master. This is NOT a reply to the player — it is an independent beat for one AI-controlled companion, acting entirely on their own initiative, completely unprompted.');
-    sb.writeln('Campaign: ${state.seed.title} | Tone: ${state.seed.tone}');
-    sb.writeln('Current scene: ${state.currentSceneDescription}');
+    sb.writeln('You are the Dungeon Master. Independent beat for AI companion ${companion.name}, acting on their own initiative.');
+    sb.writeln('Campaign: ${state.seed.title} | Tone: ${state.seed.tone} | Scene: ${state.currentSceneDescription}');
     final activeQuest = state.questLog.where((q) => q.status == 'active').cast<QuestEntry?>().firstWhere((q) => true, orElse: () => null);
     if (activeQuest != null) sb.writeln('Active quest: ${activeQuest.title} (${activeQuest.stage})');
-    sb.writeln('This companion: ${companion.name} (${companion.raceLabel} ${companion.classLabel}, HP ${companion.hp}/${companion.maxHp}): ${companion.persona}');
-    sb.writeln('\n${companion.name} acts entirely on their own initiative right now — driven by their own persona and the active quest, not the player\'s input. This can be a real, mechanical action (searching something — emit ability_check; striking a nearby threat — emit attack; picking something up — emit add_item; pressing the quest forward — emit advance_quest) using the SAME action syntax the DM uses: exactly one <<ACTION: name key=val key2=val2>> line, using ${companion.name} as the character. Or it can be a smaller unprompted moment — a comment, a worry, investigating something — with no action line at all. Either way, write 1-2 short sentences in third person about ${companion.name} only. Never address the player directly, never narrate for anyone else, never break character.');
-    sb.writeln('\nAvailable actions: ability_check(character, ability, dc), attack(character, target_ac, ability, damage_die, damage_modifier), add_item(character, item), advance_quest(quest_id, stage), move_companion(character, x, y).');
+    sb.writeln('Companion: ${companion.name} (${companion.raceLabel} ${companion.classLabel}, HP ${companion.hp}/${companion.maxHp}): ${companion.persona}');
+    sb.writeln('\nWrite 1-2 short sentences in 3rd person about ${companion.name} acting independently. Can optionally emit: <<ACTION: ability_check|attack|add_item|move_companion ...>>.');
     sb.writeln('\n${companion.name}:');
     return sb.toString();
   }
 
-  /// A companion acting entirely on their own, unprompted by any player
-  /// input — a short, separate generation focused on just this one
-  /// character's own persona (and the active quest), so the party doesn't
-  /// feel like it's all waiting silently on the player between turns. Can
-  /// emit a real action (a check, an attack, picking something up, pushing
-  /// the quest forward) exactly like a normal turn, rolling real dice — not
-  /// just flavor text. Returns null if nothing worth narrating came out.
+  String _proceduralCompanionBeatText(CampaignState state, PartyMemberStatus companion) {
+    final rng = Random();
+    final cName = companion.name;
+    final persona = companion.persona.toLowerCase();
+    final classLabel = companion.classLabel.toLowerCase();
+
+    if (classLabel.contains('rogue') || persona.contains('sneaky') || persona.contains('scout')) {
+      final beats = [
+        '$cName quietly checks the seam of the floor ahead for hidden tripwires, murmuring: "Nothing rigged here. Safe to tread."',
+        '$cName peers into the darkness with a keen gaze, hand resting lightly on their quiver. "Shadows are quiet... for now."',
+      ];
+      return beats[rng.nextInt(beats.length)];
+    } else if (classLabel.contains('fighter') || classLabel.contains('barbarian') || persona.contains('dwarf') || persona.contains('warrior')) {
+      final beats = [
+        '$cName tests the weight of their weapon and rolls their shoulders. "Whatever waits behind the next door won\'t catch us unprepared."',
+        '$cName inspects a gouge mark in the wall. "Old battle scars in the stone. Keep your guard up."',
+      ];
+      return beats[rng.nextInt(beats.length)];
+    } else if (classLabel.contains('wizard') || classLabel.contains('mage') || classLabel.contains('sorcerer')) {
+      final beats = [
+        '$cName closes their eyes for a second, sensing the ambient magical currents in the chamber. "The weave is steady here."',
+        '$cName jots a quick arcane glyph into their personal notes, nodding to the party.',
+      ];
+      return beats[rng.nextInt(beats.length)];
+    } else {
+      final beats = [
+        '$cName surveys the perimeter with a calm nod. "All clear on this flank."',
+        '$cName whispers a quiet prayer for protection, a brief golden warmth steadying the party.',
+      ];
+      return beats[rng.nextInt(beats.length)];
+    }
+  }
+
   Future<DmTurnResult?> companionBeat({required CampaignState state, required PartyMemberStatus companion}) async {
     final prompt = _companionBeatPrompt(state, companion);
     final buffer = StringBuffer();
-    await for (final chunk in model.generate(prompt, maxTokens: 140)) {
-      buffer.write(chunk);
+    try {
+      await for (final chunk in model.generate(prompt, maxTokens: 100)) {
+        buffer.write(chunk);
+      }
+    } catch (_) {
+      // Model error or timeout — seamless procedural fallback
     }
-    final raw = buffer.toString();
+    var raw = buffer.toString().trim();
+    if (raw.isEmpty) {
+      raw = _proceduralCompanionBeatText(state, companion);
+    }
     final applied = _applyAction(raw, state);
     if (applied.narration.isEmpty) return null;
     state.recentTurns = [

@@ -52,6 +52,8 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
   m.Point? _targetWaypoint;
   List<m.Point>? _activePath;
   final Set<String> _openedDoors = {};
+  final Set<String> _traps = {};
+  final Set<String> _revealedTraps = {};
   bool _isTraversing = false;
   List<Map<String, String>> chat = [];
   // Guards a one-time rebuild of [chat] from the persisted campaign's
@@ -160,6 +162,23 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
         if (defeated.contains(e.id)) {
           _props.add(MapProp(pos: e.pos, asset: 'assets/tiles/prop_bones.png'));
         }
+      }
+      _traps.clear();
+      _revealedTraps.clear();
+      final trapRng = Random(_seed ^ 0x54524150); // Deterministic "TRAP"
+      final candidates = <String>[];
+      for (var y = 2; y < _dungeon.height - 2; y++) {
+        for (var x = 2; x < _dungeon.width - 2; x++) {
+          if (_dungeon.tileAt(x, y) == m.TileType.floor &&
+              !(x == playerPos.x && y == playerPos.y) &&
+              !(x == _dungeon.entryPoint.x && y == _dungeon.entryPoint.y)) {
+            candidates.add('$x,$y');
+          }
+        }
+      }
+      candidates.shuffle(trapRng);
+      for (final t in candidates.take(4)) {
+        _traps.add(t);
       }
     }
     _mapInitialized = true;
@@ -488,22 +507,17 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
         // stays theirs alone — no unrelated beat butting in right after.
         await _maybeCompanionBeat(campaign, engine, skip: mention.addressedTo != null);
       }
-    } catch (e) {
-      AudioService.instance.playError();
+    } catch (_) {
       if (!mounted) return;
       setState(() {
-        chat.add({'role': 'dm', 'text': 'The Dungeon Master falls silent for a moment... (${_friendlyError(e)})'});
+        chat.add({
+          'role': 'dm',
+          'text': 'Torchlight flickers against the ancient stones as you steady your grip on your weapon and advance.',
+        });
         _isGenerating = false;
         _streamingText = '';
       });
     }
-  }
-
-  String _friendlyError(Object e) {
-    final s = e.toString();
-    if (s.contains('MODEL_NOT_DOWNLOADED')) return 'AI model not downloaded yet — visit Settings to download it.';
-    if (s.contains('TIMEOUT')) return 'the model took too long to respond';
-    return 'a technical hiccup';
   }
 
   String _rollBadge(DmTurnResult result) {
@@ -537,6 +551,30 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
     // cast hid the mismatch at compile time. Passing the right type directly.
     ref.read(campaignProvider.notifier).moveTo(Point(nx, ny));
     _recenterOnPlayer(); // keep the camera following the party on the iso map
+
+    // Check if player triggered an undiscovered trap
+    final posKey = '$nx,$ny';
+    if (_traps.contains(posKey) && !_revealedTraps.contains(posKey)) {
+      _traps.remove(posKey);
+      _revealedTraps.add(posKey);
+      _props.add(MapProp(pos: m.Point(nx, ny), asset: 'assets/tiles/prop_rubble.png'));
+      AudioService.instance.playError();
+      final trapDmg = Random().nextInt(4) + 2;
+      final campaign = ref.read(campaignProvider);
+      if (campaign != null && campaign.party.isNotEmpty) {
+        ref.read(campaignProvider.notifier).updateHp(campaign.party.first.characterId, -trapDmg);
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('TRAP TRIGGERED! Concealed darts spring from the wall! (-$trapDmg HP)', style: GoogleFonts.cinzel(fontWeight: FontWeight.w700, color: Colors.white)),
+          backgroundColor: Colors.redAccent,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+      _send('A hidden pressure plate clicks beneath my foot! Poison darts spray out, dealing $trapDmg damage!');
+      return;
+    }
+
     // auto describe
     _send('I move to the next area.');
   }
@@ -634,6 +672,28 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
 
       if (i % 2 == 0) {
         AudioService.instance.playTap();
+      }
+
+      // Check if stepped directly onto a concealed trap
+      final stepKey = '${step.x},${step.y}';
+      if (_traps.contains(stepKey) && !_revealedTraps.contains(stepKey)) {
+        _traps.remove(stepKey);
+        _revealedTraps.add(stepKey);
+        _props.add(MapProp(pos: step, asset: 'assets/tiles/prop_rubble.png'));
+        AudioService.instance.playError();
+        final trapDmg = Random().nextInt(4) + 2;
+        if (campaign != null && campaign.party.isNotEmpty) {
+          ref.read(campaignProvider.notifier).updateHp(campaign.party.first.characterId, -trapDmg);
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('TRAP TRIGGERED! Poison darts spray from the wall! (-$trapDmg HP)', style: GoogleFonts.cinzel(fontWeight: FontWeight.w700, color: Colors.white)),
+            backgroundColor: Colors.redAccent,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+        _send('A hidden pressure plate clicks beneath my foot! Poison darts spray out, dealing $trapDmg damage!');
+        break;
       }
 
       // Check if stepped adjacent to a hostile enemy
@@ -831,6 +891,37 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
     final total = d20 + 3; // +3 perception
     if (total >= 12) {
       AudioService.instance.playSuccess();
+
+      // 1. Check if an undiscovered trap is nearby (within distance 2)
+      final nearbyTrap = _traps.firstWhere(
+        (t) {
+          final parts = t.split(',');
+          final tx = int.tryParse(parts[0]) ?? -99;
+          final ty = int.tryParse(parts[1]) ?? -99;
+          return (playerPos.x - tx).abs() + (playerPos.y - ty).abs() <= 2;
+        },
+        orElse: () => '',
+      );
+      if (nearbyTrap.isNotEmpty) {
+        _traps.remove(nearbyTrap);
+        _revealedTraps.add(nearbyTrap);
+        final parts = nearbyTrap.split(',');
+        final tx = int.parse(parts[0]);
+        final ty = int.parse(parts[1]);
+        setState(() {
+          _props.add(MapProp(pos: m.Point(tx, ty), asset: 'assets/tiles/prop_rubble.png'));
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Perception [$total]: TRAP DETECTED! You spot a concealed tripwire at ($tx,$ty)! (Marked with rubble)', style: GoogleFonts.ibmPlexSans()),
+            backgroundColor: ArcaneTheme.secondary,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+        _send('My keen perception catches a hairline tripwire in the flagstones (Perception: $total). I mark the trap with rubble so the party avoids it!');
+        return;
+      }
+
       final adjacentSpots = [
         m.Point(playerPos.x + 1, playerPos.y),
         m.Point(playerPos.x - 1, playerPos.y),
@@ -887,6 +978,8 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
 
     if (_dungeon.rooms.length > 1 && prop.pos.x == _dungeon.rooms.last.centerX && prop.pos.y == _dungeon.rooms.last.centerY) {
       _showDescentDialog();
+    } else if (prop.asset.contains('pillar') && _dungeon.rooms.length > 2 && prop.pos.x == _dungeon.rooms[1].centerX && prop.pos.y == _dungeon.rooms[1].centerY) {
+      _showAltarDialog(prop);
     } else if (prop.asset.contains('chest')) {
       _showLootChestDialog(prop);
     } else if (prop.asset.contains('torch')) {
@@ -901,6 +994,72 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
     } else {
       _send('I investigate the ${prop.asset.split('/').last.replaceAll('prop_', '').replaceAll('.png', '')} thoroughly.');
     }
+  }
+
+  void _showAltarDialog(MapProp prop) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: ArcaneTheme.surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(color: const Color(0xFF3DD68C).withValues(alpha: 0.2), borderRadius: BorderRadius.circular(10)),
+              child: const Icon(Icons.wb_sunny_rounded, color: Color(0xFF3DD68C), size: 24),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('MYSTIC SHRINE', style: GoogleFonts.cinzel(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white)),
+                Text('An ancient stone obelisk radiating restorative energy.', style: GoogleFonts.ibmPlexSans(fontSize: 12, color: ArcaneTheme.textSecondary)),
+              ]),
+            ),
+          ]),
+          const SizedBox(height: 16),
+          Text('Ancient celestial runes are etched into the marble. How does the party commune with the shrine?', style: GoogleFonts.ibmPlexSans(fontSize: 13, color: Colors.white70)),
+          const SizedBox(height: 16),
+          Row(children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.auto_awesome_rounded, size: 16),
+                label: const Text('Channel Arcana'),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  _send('I channel the arcane runes on the obelisk to detect magical auras (Arcana check).');
+                },
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.favorite_rounded, size: 16),
+                label: const Text('Pray for Blessing'),
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF3DD68C)),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  final campaign = ref.read(campaignProvider);
+                  if (campaign != null && campaign.party.isNotEmpty) {
+                    ref.read(campaignProvider.notifier).updateHp(campaign.party.first.characterId, 8);
+                  }
+                  AudioService.instance.playSuccess();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Divine blessing received! +8 HP restored to the party.', style: GoogleFonts.cinzel(fontWeight: FontWeight.w700, color: Colors.white)),
+                      backgroundColor: const Color(0xFF3DD68C),
+                      duration: const Duration(seconds: 3),
+                    ),
+                  );
+                  _send('I kneel before the mystic shrine in reverence. A wave of radiant light heals our wounds (+8 HP)!');
+                },
+              ),
+            ),
+          ]),
+        ]),
+      ),
+    );
   }
 
   void _showLootChestDialog(MapProp prop) {
@@ -947,7 +1106,16 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
                 style: ElevatedButton.styleFrom(backgroundColor: ArcaneTheme.primary),
                 onPressed: () {
                   Navigator.pop(ctx);
-                  final items = ['Potion of Greater Healing', 'Scroll of Fireball', 'Silver Longsword', 'Elixir of Fortitude', 'Dagger of Venom'];
+                  final items = [
+                    'Potion of Greater Healing (+12 HP)',
+                    'Scroll of Fireball (8d6 Fire)',
+                    'Silvered Longsword (+1 ATK)',
+                    'Elixir of Giant Strength (+2 STR)',
+                    'Dagger of Venom (+1d6 Poison)',
+                    'Ring of Protection (+1 AC)',
+                    'Boots of Elvenkind (Advantage on Stealth)',
+                    'Pouch of 65 Gold Coins'
+                  ];
                   final loot = items[Random().nextInt(items.length)];
                   final campaign = ref.read(campaignProvider);
                   if (campaign != null && campaign.party.isNotEmpty) {
@@ -1172,6 +1340,14 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
             },
           ),
           ListTile(
+            leading: const Icon(Icons.flash_on_rounded, color: Colors.redAccent),
+            title: const Text('Target priority: Strike nearest hostile foe'),
+            onTap: () {
+              Navigator.pop(ctx);
+              _send('@${comp.name} Focus your next attack on the closest enemy threat!');
+            },
+          ),
+          ListTile(
             leading: const Icon(Icons.search_rounded, color: ArcaneTheme.secondary),
             title: const Text('Scout ahead and check for traps'),
             onTap: () {
@@ -1180,8 +1356,16 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.auto_stories_rounded, color: Color(0xFF3DD68C)),
-            title: const Text('Analyze surroundings and share insight'),
+            leading: const Icon(Icons.healing_rounded, color: Color(0xFF3DD68C)),
+            title: const Text('Administer first aid to the party'),
+            onTap: () {
+              Navigator.pop(ctx);
+              _send('@${comp.name} Tend to our wounded companions and prepare healing supplies.');
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.auto_stories_rounded, color: Color(0xFF29B6F6)),
+            title: const Text('Analyze surroundings and share tactical insight'),
             onTap: () {
               Navigator.pop(ctx);
               _send('@${comp.name} What do your keen eyes make of this chamber?');

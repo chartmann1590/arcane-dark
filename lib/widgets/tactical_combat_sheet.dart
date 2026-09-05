@@ -207,6 +207,82 @@ class _TacticalCombatSheetState extends State<TacticalCombatSheet> {
     setState(() => _isActing = false);
   }
 
+  Future<void> _executeCompanionAssist() async {
+    if (_isActing || _enemy.currentHp <= 0) return;
+    final companions = widget.campaign.party.skip(1).toList();
+    if (companions.isEmpty) return;
+    setState(() {
+      _isActing = true;
+      _lastRollBanner = null;
+    });
+
+    AudioService.instance.playDiceRoll();
+    final companion = companions[Random().nextInt(companions.length)];
+    final d20 = Random().nextInt(20) + 1;
+    final bonus = _heroAttackBonus(companion);
+    final totalAtk = d20 + bonus;
+    final isHit = d20 == 20 || (d20 > 1 && totalAtk >= _enemy.armorClass);
+
+    await Future.delayed(const Duration(milliseconds: 350));
+    if (!mounted) return;
+
+    if (isHit) {
+      AudioService.instance.playSend();
+      final dmg = Random().nextInt(6) + 1 + 2;
+      final newEnemyHp = max(0, _enemy.currentHp - dmg).toInt();
+      _enemy = _enemy.copyWith(currentHp: newEnemyHp);
+      widget.onEnemyUpdated(_enemy);
+
+      setState(() {
+        _lastRollBanner = '${companion.name} assists! Strikes ${_enemy.name} for $dmg damage!';
+        _battleLog.insert(0, '${companion.name} steps in with an assist strike dealing $dmg damage!');
+      });
+
+      if (newEnemyHp <= 0) {
+        AudioService.instance.playSuccess();
+        setState(() {
+          _battleLog.insert(0, 'VICTORY! ${_enemy.name} defeated by party teamwork!');
+        });
+        await Future.delayed(const Duration(milliseconds: 800));
+        if (mounted) {
+          widget.onEnemyDefeated(_enemy);
+          widget.onCombatNarration('${companion.name} and the party vanquished the ${_enemy.name} in coordinated combat!');
+          Navigator.pop(context);
+        }
+        return;
+      }
+    } else {
+      AudioService.instance.playError();
+      setState(() {
+        _lastRollBanner = '${companion.name}\'s flanking strike was parried!';
+        _battleLog.insert(0, '${companion.name}\'s assist strike missed ${_enemy.name}.');
+      });
+    }
+
+    // Enemy Retaliation
+    await Future.delayed(const Duration(milliseconds: 500));
+    if (!mounted) return;
+
+    final enemyD20 = Random().nextInt(20) + 1;
+    final enemyTotal = enemyD20 + _enemy.attackBonus;
+    final enemyHit = enemyD20 > 1 && enemyTotal >= _activeHero.armorClass;
+
+    if (enemyHit) {
+      AudioService.instance.playError();
+      final enemyDmg = Random().nextInt(_enemy.damageDice) + 1 + 1;
+      widget.onHeroDamaged(_activeHero.characterId, enemyDmg);
+      setState(() {
+        _battleLog.insert(0, '${_enemy.name} lashes back! Hits ${_activeHero.name} for $enemyDmg damage!');
+      });
+    } else {
+      setState(() {
+        _battleLog.insert(0, '${_enemy.name} strikes, but ${_activeHero.name} parries!');
+      });
+    }
+
+    setState(() => _isActing = false);
+  }
+
   @override
   Widget build(BuildContext context) {
     final hpRatio = (_enemy.currentHp / max(1, _enemy.maxHp)).clamp(0.0, 1.0);
@@ -399,6 +475,20 @@ class _TacticalCombatSheetState extends State<TacticalCombatSheet> {
               ),
             ],
           ),
+          if (party.length > 1) ...[
+            const SizedBox(height: 8),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.group_rounded, size: 16),
+              label: const Text('Companion Coordinated Flank Strike'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: ArcaneTheme.secondary.withValues(alpha: 0.25),
+                foregroundColor: Colors.white,
+                side: const BorderSide(color: ArcaneTheme.secondary),
+                padding: const EdgeInsets.symmetric(vertical: 10),
+              ),
+              onPressed: _isActing ? null : _executeCompanionAssist,
+            ),
+          ],
 
           const SizedBox(height: 10),
 
