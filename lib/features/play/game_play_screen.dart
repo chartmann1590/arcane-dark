@@ -10,6 +10,7 @@ import '../../domain/map/tile_types.dart' as m;
 import '../../providers/campaign_provider.dart';
 import '../../providers/character_provider.dart';
 import '../../providers/settings_provider.dart';
+import '../../domain/ability_scores.dart';
 import '../../domain/campaign_seed.dart';
 import '../../domain/campaign_state.dart';
 import '../../domain/character.dart';
@@ -21,6 +22,7 @@ import '../../widgets/fx.dart';
 import '../../widgets/campaign_journal_sheet.dart';
 import '../../widgets/inventory_sheet.dart';
 import '../../widgets/tactical_combat_sheet.dart';
+import '../../widgets/npc_interaction_sheet.dart';
 import 'dungeon_populator.dart';
 import 'iso_map_view.dart';
 import 'tavern_populator.dart';
@@ -157,7 +159,15 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
         for (final p in _props) '${p.pos.x},${p.pos.y}',
       });
       final defeated = campaign?.defeatedEnemies ?? const <String>{};
-      _npcs = allEnemies.where((n) => !defeated.contains(n.id)).toList();
+      final roamingNpcs = generateDungeonRoamingNpcs(_dungeon, excluding: {
+        for (final p in _props) '${p.pos.x},${p.pos.y}',
+        for (final e in allEnemies) '${e.pos.x},${e.pos.y}',
+      });
+      final partyNames = campaign?.party.map((p) => p.name).toSet() ?? {};
+      _npcs = [
+        ...allEnemies.where((n) => !defeated.contains(n.id)),
+        ...roamingNpcs.where((n) => !partyNames.contains(n.name)),
+      ];
       for (final e in allEnemies) {
         if (defeated.contains(e.id)) {
           _props.add(MapProp(pos: e.pos, asset: 'assets/tiles/prop_bones.png'));
@@ -536,6 +546,98 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
     return '';
   }
 
+  bool _isWalkableTile(int x, int y) {
+    if (x < 0 || y < 0 || x >= _dungeon.width || y >= _dungeon.height) return false;
+    final tile = _dungeon.tileAt(x, y);
+    if (tile == m.TileType.wall || tile == m.TileType.water) return false;
+    if (tile == m.TileType.door && !_openedDoors.contains('$x,$y')) return false;
+    return true;
+  }
+
+  int _roamTurnCounter = 0;
+
+  void _roamNpcs() {
+    _roamTurnCounter++;
+    if (_npcs.isEmpty) return;
+
+    final occupied = <String>{
+      '${playerPos.x},${playerPos.y}',
+      for (final p in _props) '${p.pos.x},${p.pos.y}',
+    };
+    final campaign = ref.read(campaignProvider);
+    if (campaign != null) {
+      for (final m in campaign.party) {
+        if (m.position != null) occupied.add('${m.position!.x},${m.position!.y}');
+      }
+    }
+
+    final rng = Random();
+    final updated = <MapNpc>[];
+    const deltas = [m.Point(1, 0), m.Point(-1, 0), m.Point(0, 1), m.Point(0, -1)];
+
+    for (final npc in _npcs) {
+      if (npc.currentHp <= 0) continue;
+      m.Point current = npc.pos;
+      m.Point target = current;
+
+      if (npc.isHostile) {
+        final dist = (current.x - playerPos.x).abs() + (current.y - playerPos.y).abs();
+        if (dist <= 4 && rng.nextDouble() < 0.65) {
+          // Stalk towards player
+          final dx = (playerPos.x - current.x).sign;
+          final dy = (playerPos.y - current.y).sign;
+          final moves = <m.Point>[];
+          if (dx != 0) moves.add(m.Point(current.x + dx, current.y));
+          if (dy != 0) moves.add(m.Point(current.x, current.y + dy));
+          moves.shuffle(rng);
+
+          for (final candidate in moves) {
+            final key = '${candidate.x},${candidate.y}';
+            if (_isWalkableTile(candidate.x, candidate.y) && !occupied.contains(key)) {
+              target = candidate;
+              break;
+            }
+          }
+        } else if (rng.nextDouble() < 0.30) {
+          // Patrol wander
+          final valid = <m.Point>[];
+          for (final d in deltas) {
+            final nx = current.x + d.x;
+            final ny = current.y + d.y;
+            if (_isWalkableTile(nx, ny) && !occupied.contains('$nx,$ny')) {
+              valid.add(m.Point(nx, ny));
+            }
+          }
+          if (valid.isNotEmpty) {
+            target = valid[rng.nextInt(valid.length)];
+          }
+        }
+      } else {
+        // Friendly / neutral wanderer: 45% chance to wander
+        if (rng.nextDouble() < 0.45) {
+          final valid = <m.Point>[];
+          for (final d in deltas) {
+            final nx = current.x + d.x;
+            final ny = current.y + d.y;
+            if (_isWalkableTile(nx, ny) && !occupied.contains('$nx,$ny')) {
+              valid.add(m.Point(nx, ny));
+            }
+          }
+          if (valid.isNotEmpty) {
+            target = valid[rng.nextInt(valid.length)];
+          }
+        }
+      }
+
+      occupied.add('${target.x},${target.y}');
+      updated.add(npc.copyWith(pos: target));
+    }
+
+    setState(() {
+      _npcs = updated;
+    });
+  }
+
   void _move(int dx, int dy) {
     final nx = playerPos.x + dx;
     final ny = playerPos.y + dy;
@@ -545,12 +647,9 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
       playerPos = m.Point(nx, ny);
       visited.add('$nx,$ny');
     });
-    // NOTE: was previously `moveTo(m.Point(nx, ny) as dynamic)` — m.Point is
-    // the *map tile* Point (tile_types.dart), a completely different class
-    // from the domain Point CampaignState actually expects; the `dynamic`
-    // cast hid the mismatch at compile time. Passing the right type directly.
     ref.read(campaignProvider.notifier).moveTo(Point(nx, ny));
-    _recenterOnPlayer(); // keep the camera following the party on the iso map
+    _recenterOnPlayer();
+    _roamNpcs();
 
     // Check if player triggered an undiscovered trap
     final posKey = '$nx,$ny';
@@ -721,6 +820,7 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
       });
       ref.read(campaignProvider.notifier).moveTo(Point(playerPos.x, playerPos.y));
       _recenterOnPlayer();
+      _roamNpcs();
 
       final tile = _dungeon.tileAt(playerPos.x, playerPos.y);
       final desc = tile == m.TileType.door ? 'through the doorway' : 'into the chamber';
@@ -816,10 +916,76 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
 
   void _handleNpcTap(MapNpc npc) {
     if (!npc.isHostile) {
-      _send('I approach and talk to ${npc.name} the ${npc.role.toLowerCase()}.');
+      _showNpcInteractionDialog(npc);
       return;
     }
     _showCombatDialog(npc);
+  }
+
+  void _showNpcInteractionDialog(MapNpc npc) {
+    final campaign = ref.read(campaignProvider);
+    if (campaign == null) return;
+    AudioService.instance.playTap();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => NpcInteractionSheet(
+        npc: npc,
+        campaign: campaign,
+        onConverse: (prompt) {
+          _send(prompt);
+        },
+        onBuyItem: (item) {
+          final activeHero = campaign.party.firstOrNull;
+          if (activeHero != null) {
+            ref.read(campaignProvider.notifier).addItem(activeHero.characterId, item);
+          }
+        },
+        onHealParty: (amount) {
+          for (final hero in campaign.party) {
+            ref.read(campaignProvider.notifier).updateHp(hero.characterId, amount);
+          }
+        },
+        onRecruit: (recruitedNpc) {
+          final newMember = PartyMemberStatus(
+            characterId: 'comp_${recruitedNpc.id}_${DateTime.now().millisecondsSinceEpoch}',
+            name: recruitedNpc.name,
+            raceLabel: recruitedNpc.role.contains('Elf') ? 'Elf' : (recruitedNpc.role.contains('Dwarf') ? 'Dwarf' : 'Human'),
+            classLabel: recruitedNpc.role,
+            persona: recruitedNpc.greeting ?? 'A skilled dungeon wanderer.',
+            abilities: AbilityScores(str: 14, dex: 13, con: 14, int_: 12, wis: 14, cha: 12),
+            hp: recruitedNpc.maxHp,
+            maxHp: recruitedNpc.maxHp,
+            armorClass: recruitedNpc.armorClass,
+            inventory: List.from(recruitedNpc.shopItems),
+          );
+          ref.read(campaignProvider.notifier).addPartyMemberStatus(newMember);
+          setState(() {
+            _npcs.removeWhere((n) => n.id == recruitedNpc.id);
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('${recruitedNpc.name} has joined your party!', style: GoogleFonts.cinzel(fontWeight: FontWeight.w700, color: Colors.white)),
+              backgroundColor: ArcaneTheme.primary,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+          _send('I welcome ${recruitedNpc.name} to our party of adventurers!');
+        },
+        onChallenge: (hostileNpc) {
+          setState(() {
+            final idx = _npcs.indexWhere((n) => n.id == hostileNpc.id);
+            if (idx != -1) {
+              _npcs[idx] = hostileNpc;
+            } else {
+              _npcs.add(hostileNpc);
+            }
+          });
+          _showCombatDialog(hostileNpc);
+        },
+      ),
+    );
   }
 
   void _showCombatDialog(MapNpc enemy) {
@@ -1419,9 +1585,14 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
       _mapCentered = false;
       chat.clear();
       _props = generateDungeonProps(newDungeon);
-      _npcs = generateDungeonEnemies(newDungeon, excluding: {
+      final floorEnemies = generateDungeonEnemies(newDungeon, excluding: {
         for (final p in _props) '${p.pos.x},${p.pos.y}',
       });
+      final floorRoaming = generateDungeonRoamingNpcs(newDungeon, excluding: {
+        for (final p in _props) '${p.pos.x},${p.pos.y}',
+        for (final e in floorEnemies) '${e.pos.x},${e.pos.y}',
+      });
+      _npcs = [...floorEnemies, ...floorRoaming];
       _openedDoors.clear();
       _activePath = null;
     });

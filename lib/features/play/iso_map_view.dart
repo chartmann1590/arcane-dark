@@ -388,6 +388,16 @@ class _NpcToken extends StatelessWidget {
                   decoration: const BoxDecoration(color: Colors.redAccent, shape: BoxShape.circle),
                   child: const Icon(Icons.flash_on_rounded, size: 9, color: Colors.white),
                 ),
+              )
+            else
+              Positioned(
+                top: -2,
+                right: -2,
+                child: Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: const BoxDecoration(color: ArcaneTheme.secondary, shape: BoxShape.circle),
+                  child: const Icon(Icons.chat_bubble_rounded, size: 9, color: Colors.black),
+                ),
               ),
           ],
         ),

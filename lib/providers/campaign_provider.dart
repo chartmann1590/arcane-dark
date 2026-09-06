@@ -102,6 +102,15 @@ class CampaignNotifier extends StateNotifier<CampaignState?> {
     _persist();
   }
 
+  void addPartyMemberStatus(PartyMemberStatus member) {
+    final cur = state;
+    if (cur == null) return;
+    if (cur.party.any((m) => m.characterId == member.characterId)) return;
+    cur.party = [...cur.party, member];
+    state = cur;
+    _persist();
+  }
+
   void updateHp(String characterId, int delta) {
     final cur = state;
     if (cur == null) return;

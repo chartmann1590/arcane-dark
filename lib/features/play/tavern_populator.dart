@@ -19,6 +19,12 @@ class MapNpc {
   final int damageDice;
   final String attackName;
 
+  final String? greeting;
+  final List<String> dialogueOptions;
+  final List<String> shopItems;
+  final int healPower;
+  final bool canRecruit;
+
   const MapNpc({
     required this.id,
     required this.name,
@@ -32,12 +38,22 @@ class MapNpc {
     this.attackBonus = 3,
     this.damageDice = 6,
     this.attackName = 'Strike',
+    this.greeting,
+    this.dialogueOptions = const [],
+    this.shopItems = const [],
+    this.healPower = 0,
+    this.canRecruit = false,
   });
 
   MapNpc copyWith({
     int? currentHp,
     Point? pos,
     bool? isHostile,
+    String? greeting,
+    List<String>? dialogueOptions,
+    List<String>? shopItems,
+    int? healPower,
+    bool? canRecruit,
   }) {
     return MapNpc(
       id: id,
@@ -52,6 +68,11 @@ class MapNpc {
       attackBonus: attackBonus,
       damageDice: damageDice,
       attackName: attackName,
+      greeting: greeting ?? this.greeting,
+      dialogueOptions: dialogueOptions ?? this.dialogueOptions,
+      shopItems: shopItems ?? this.shopItems,
+      healPower: healPower ?? this.healPower,
+      canRecruit: canRecruit ?? this.canRecruit,
     );
   }
 }
@@ -115,7 +136,44 @@ List<MapNpc> generateTavernNpcs(DungeonMap dungeon) {
   final npcs = <MapNpc>[];
   for (var i = 0; i < chosen.length && i < spots.length; i++) {
     final (name, role, asset) = chosen[i];
-    npcs.add(MapNpc(id: 'npc_$i', name: name, role: role, pos: spots[i], portraitAsset: asset));
+    final isBarkeep = role.toLowerCase().contains('barkeep') || role.toLowerCase().contains('innkeeper');
+    final isMerc = role.toLowerCase().contains('sellsword') || role.toLowerCase().contains('mercenary');
+    final isTrader = role.toLowerCase().contains('trader') || role.toLowerCase().contains('merchant');
+
+    npcs.add(
+      MapNpc(
+        id: 'npc_$i',
+        name: name,
+        role: role,
+        pos: spots[i],
+        portraitAsset: asset,
+        greeting: isBarkeep
+            ? "Welcome to my hearth! Rest your weary bones. What'll it be—a cold tankard, hearty stew, or rumors from the road?"
+            : isMerc
+                ? "Looking for blade-work? My sword arm is sharp, provided your purse has the coin to match."
+                : isTrader
+                    ? "Care to browse my wares? Clean potions, sturdy torches, and provisions for your crawl."
+                    : "The night is dark and the crypts are treacherous. Best keep your steel sharp.",
+        dialogueOptions: isBarkeep
+            ? [
+                "What rumors have you heard from the Whispering Crypts?",
+                "Pour me a tankard of your finest spiced ale.",
+                "Who's that suspicious stranger sitting in the shadows?",
+              ]
+            : [
+                "Have you traveled the roads north of here?",
+                "What dangers lurk in the nearby ruins?",
+                "Join our party for an expedition into the crypts.",
+              ],
+        shopItems: isBarkeep
+            ? ["Spiced Dwarven Stout", "Roasted Boar Shank", "Potion of Healing"]
+            : isTrader
+                ? ["Potion of Healing", "Torch Pack", "Antidote Flask", "Elixir of Vitality"]
+                : const [],
+        healPower: isBarkeep ? 6 : 0,
+        canRecruit: isMerc,
+      ),
+    );
   }
   return npcs;
 }

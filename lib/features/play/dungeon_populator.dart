@@ -173,3 +173,129 @@ List<Point> _floorSpots(DungeonMap dungeon, {required Set<String> excluding}) {
   }
   return spots;
 }
+
+class _WanderingNpcArchetype {
+  final String name;
+  final String role;
+  final String portraitAsset;
+  final String greeting;
+  final List<String> dialogueOptions;
+  final List<String> shopItems;
+  final int healPower;
+  final bool canRecruit;
+
+  const _WanderingNpcArchetype({
+    required this.name,
+    required this.role,
+    required this.portraitAsset,
+    required this.greeting,
+    required this.dialogueOptions,
+    this.shopItems = const [],
+    this.healPower = 0,
+    this.canRecruit = false,
+  });
+}
+
+const _wanderingNpcArchetypes = [
+  _WanderingNpcArchetype(
+    name: 'Valerius the Scholar',
+    role: 'Crypt Cartographer',
+    portraitAsset: 'assets/avatar/portraits/human.png',
+    greeting: 'Hail, fellow traveler! The stone carvings here predate the modern age. Keep your eyes sharp for pressure plates.',
+    dialogueOptions: [
+      'Have you discovered any hidden pathways or treasure vaults?',
+      'What advice can you offer for navigating these crypts?',
+      'Do you have any surplus mapping tools or potions to spare?',
+    ],
+    shopItems: ['Potion of Healing', 'Torch Pack', 'Antidote Flask'],
+    canRecruit: true,
+  ),
+  _WanderingNpcArchetype(
+    name: 'Sylvi Coldwhisper',
+    role: 'Wandering Apothecary',
+    portraitAsset: 'assets/avatar/portraits/elf.png',
+    greeting: 'The herbs of the upper vale grow well in mossy dampness. Are you in need of draughts to keep your blade arm steady?',
+    dialogueOptions: [
+      'What elixirs have you concocted down here?',
+      'Have you encountered any foul abominations in the lower chambers?',
+      'Can you mend our wounded party before we delve deeper?',
+    ],
+    shopItems: ['Potion of Healing', 'Potion of Greater Healing', 'Elixir of Vitality', 'Mana Phial'],
+    healPower: 8,
+    canRecruit: false,
+  ),
+  _WanderingNpcArchetype(
+    name: 'Brother Joshua',
+    role: 'Lost Cleric',
+    portraitAsset: 'assets/avatar/portraits/dwarf.png',
+    greeting: 'By the sacred light! Living companions in this tomb. May my blessing shield your courage against the dark.',
+    dialogueOptions: [
+      'Please impart a blessing upon our party.',
+      'What consecrated spirits or holy relics were buried here?',
+      'Will you join us in cleansing these chambers?',
+    ],
+    shopItems: ['Holy Water Flask', 'Potion of Healing'],
+    healPower: 12,
+    canRecruit: true,
+  ),
+  _WanderingNpcArchetype(
+    name: 'Morren Quickstep',
+    role: 'Tomb Scavenger',
+    portraitAsset: 'assets/avatar/portraits/halfling.png',
+    greeting: 'Quiet your steps! Heavy armor clangs like church bells in these tunnels. Looking to trade or hire some stealthy hands?',
+    dialogueOptions: [
+      'What traps have you spotted in the corridors ahead?',
+      'Can you pick heavy iron locks or spring hidden levers?',
+      'Fight beside us and we will split the dungeon spoils.',
+    ],
+    shopItems: ['Lockpick Kit', 'Smokebomb', 'Dagger of Keen Edge'],
+    canRecruit: true,
+  ),
+];
+
+/// Generates friendly and neutral interactive adventurers, merchants, and clerics
+/// roaming the dungeon corridors and chambers.
+List<MapNpc> generateDungeonRoamingNpcs(DungeonMap dungeon, {Set<String> excluding = const {}}) {
+  if (dungeon.rooms.length <= 1) return [];
+  final rng = Random(dungeon.seed ^ 0x57414E44); // "WAND"
+  final npcs = <MapNpc>[];
+  final occupied = Set<String>.from(excluding)..add('${dungeon.entryPoint.x},${dungeon.entryPoint.y}');
+
+  final spots = _floorSpots(dungeon, excluding: occupied);
+  if (spots.isEmpty) return [];
+  spots.shuffle(rng);
+
+  final archetypes = List.of(_wanderingNpcArchetypes)..shuffle(rng);
+  final spawnCount = min(spots.length, (2 + (rng.nextDouble() < 0.5 ? 1 : 0)).clamp(2, archetypes.length));
+
+  for (var i = 0; i < spawnCount; i++) {
+    final spot = spots[i];
+    occupied.add('${spot.x},${spot.y}');
+    final arch = archetypes[i % archetypes.length];
+
+    npcs.add(
+      MapNpc(
+        id: 'roaming_npc_$i',
+        name: arch.name,
+        role: arch.role,
+        pos: spot,
+        portraitAsset: arch.portraitAsset,
+        isHostile: false,
+        maxHp: 16,
+        currentHp: 16,
+        armorClass: 13,
+        attackBonus: 4,
+        damageDice: 6,
+        attackName: 'Sidearm Strike',
+        greeting: arch.greeting,
+        dialogueOptions: arch.dialogueOptions,
+        shopItems: arch.shopItems,
+        healPower: arch.healPower,
+        canRecruit: arch.canRecruit,
+      ),
+    );
+  }
+
+  return npcs;
+}
+
