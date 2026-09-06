@@ -275,7 +275,8 @@ class IsoMapView extends StatelessWidget {
   Widget _buildProp(MapProp prop, double originX, double originY) {
     if (_isFogged(prop.pos)) return const SizedBox.shrink();
     final origin = _project(prop.pos.x, prop.pos.y, originX, originY);
-    final isChest = prop.asset.contains('chest');
+    final isLootedChest = prop.asset.contains('chest_open');
+    final isChest = prop.asset.contains('chest') && !isLootedChest;
     final isGildedChest = prop.asset.contains('chest_gilded');
     final isTorch = prop.asset.contains('torch');
     final isCampfire = prop.asset.contains('campfire');
@@ -295,7 +296,9 @@ class IsoMapView extends StatelessWidget {
     Offset propDown = Offset.zero;
 
     Widget childWidget;
-    if (isGildedChest) {
+    if (isLootedChest) {
+      childWidget = const _LootedChestWidget();
+    } else if (isGildedChest) {
       childWidget = const _ChestGildedWidget();
     } else if (isCauldron) {
       childWidget = const _CauldronPropWidget();
@@ -1496,8 +1499,89 @@ class _IsoAtmosphericParticlesWidget extends StatelessWidget {
                   ),
                 ),
               ),
+            // Low-lying eerie crypt mist wisps
+            for (var m = 0; m < 8; m++)
+              Positioned(
+                left: (rng.nextDouble() * width).clamp(20, width - 60),
+                top: (rng.nextDouble() * height).clamp(20, height - 40),
+                child: Pulse(
+                  duration: Duration(milliseconds: 3200 + rng.nextInt(2200)),
+                  child: Container(
+                    width: 44.0 + rng.nextInt(28),
+                    height: 14.0 + rng.nextInt(10),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      gradient: RadialGradient(
+                        colors: [
+                          const Color(0xFF90CAF9).withValues(alpha: 0.16),
+                          Colors.transparent,
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _LootedChestWidget extends StatelessWidget {
+  const _LootedChestWidget();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 40,
+      height: 36,
+      child: Stack(
+        alignment: Alignment.center,
+        clipBehavior: Clip.none,
+        children: [
+          // Open ironbound chest base
+          Container(
+            width: 32,
+            height: 18,
+            decoration: BoxDecoration(
+              color: const Color(0xFF3E2C1E),
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(color: const Color(0xFF1E140C), width: 1.5),
+            ),
+          ),
+          // Opened tilted lid
+          Positioned(
+            top: 4,
+            left: 2,
+            child: Transform.rotate(
+              angle: -0.38,
+              child: Container(
+                width: 30,
+                height: 9,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF533B28),
+                  borderRadius: BorderRadius.circular(3),
+                  border: Border.all(color: const Color(0xFF2C1D12), width: 1.2),
+                ),
+              ),
+            ),
+          ),
+          // Claimed gold coin remnants
+          Positioned(
+            bottom: 4,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(width: 4, height: 4, decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFFFFD54F))),
+                const SizedBox(width: 2),
+                Container(width: 5, height: 5, decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFFFFC107))),
+                const SizedBox(width: 2),
+                Container(width: 4, height: 4, decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFFFFE082))),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

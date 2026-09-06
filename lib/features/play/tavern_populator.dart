@@ -94,6 +94,22 @@ class MapProp {
     this.name,
     this.interactionText,
   });
+
+  MapProp copyWith({
+    Point? pos,
+    String? asset,
+    bool? isSolid,
+    String? name,
+    String? interactionText,
+  }) {
+    return MapProp(
+      pos: pos ?? this.pos,
+      asset: asset ?? this.asset,
+      isSolid: isSolid ?? this.isSolid,
+      name: name ?? this.name,
+      interactionText: interactionText ?? this.interactionText,
+    );
+  }
 }
 
 /// A wild or domestic animal roaming maps independently with interactive actions.

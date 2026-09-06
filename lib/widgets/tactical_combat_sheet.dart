@@ -7,6 +7,7 @@ import '../domain/campaign_state.dart';
 import '../domain/pet_companion.dart';
 import '../features/play/tavern_populator.dart';
 import '../services/audio_service.dart';
+import '../services/tv_cast_service.dart';
 import 'fx.dart';
 
 enum StatusType {
@@ -155,16 +156,34 @@ class _TacticalCombatSheetState extends State<TacticalCombatSheet> with SingleTi
   String? _telegraphedEnemyIntent;
   String? _lastComboActor;
 
+  void _broadcastCombatState({bool active = true}) {
+    TvCastService.instance.broadcastCombat({
+      'active': active,
+      'round': _roundNumber,
+      'intent': _telegraphedEnemyIntent ?? '⚠️ ENEMY INTENT: Aggressive Assault',
+      'enemyName': _enemyNpc.name,
+      'enemyRole': _enemyNpc.role,
+      'enemyAc': _enemyNpc.armorClass,
+      'enemyHp': max(0, _enemyNpc.currentHp),
+      'enemyMaxHp': _enemyNpc.maxHp,
+      'logs': _battleLog.take(15).toList(),
+    });
+  }
+
   @override
   void initState() {
     super.initState();
     _enemyNpc = widget.initialEnemy;
     _setupCombatants();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _broadcastCombatState();
+    });
   }
 
   @override
   void dispose() {
     _aiTurnTimer?.cancel();
+    _broadcastCombatState(active: false);
     super.dispose();
   }
 
@@ -444,6 +463,7 @@ class _TacticalCombatSheetState extends State<TacticalCombatSheet> with SingleTi
       _isActing = false;
     });
 
+    _broadcastCombatState();
     _checkTriggerAiTurn();
   }
 
@@ -464,6 +484,14 @@ class _TacticalCombatSheetState extends State<TacticalCombatSheet> with SingleTi
     final totalAtk = d20 + hero.attackBonus;
     final isCrit = d20 == 20;
     final isHit = isCrit || (d20 > 1 && totalAtk >= enemy.armorClass);
+
+    TvCastService.instance.broadcastDiceRoll(
+      roller: hero.name,
+      reason: isHit ? 'Melee Strike (HIT)' : 'Melee Strike (MISS)',
+      d20: d20,
+      modifier: hero.attackBonus,
+      total: totalAtk,
+    );
 
     await Future.delayed(const Duration(milliseconds: 350));
     if (!mounted) return;
@@ -527,6 +555,7 @@ class _TacticalCombatSheetState extends State<TacticalCombatSheet> with SingleTi
       });
     }
 
+    _broadcastCombatState();
     await Future.delayed(const Duration(milliseconds: 600));
     if (!mounted) return;
     _advanceTurn();
@@ -1179,6 +1208,7 @@ class _TacticalCombatSheetState extends State<TacticalCombatSheet> with SingleTi
       _bannerText = 'VICTORY! The chamber is cleared!';
       _bannerColor = Colors.amberAccent;
     });
+    _broadcastCombatState(active: false);
 
     await Future.delayed(const Duration(milliseconds: 900));
     if (mounted) {
@@ -1335,6 +1365,8 @@ class _TacticalCombatSheetState extends State<TacticalCombatSheet> with SingleTi
                   const SizedBox(width: 8),
                   IconButton(
                     icon: const Icon(Icons.close_rounded, size: 20, color: Colors.white54),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
                     onPressed: () => Navigator.pop(context),
                   ),
                 ],

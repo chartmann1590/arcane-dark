@@ -19,11 +19,14 @@ import '../../domain/pet_companion.dart';
 import '../../services/audio_service.dart';
 import '../../services/session_repository.dart';
 import '../../services/tts_service.dart';
+import '../../services/tv_cast_service.dart';
+import '../../services/voice_transcription_service.dart';
 import '../../widgets/fx.dart';
 import '../../widgets/campaign_journal_sheet.dart';
 import '../../widgets/inventory_sheet.dart';
 import '../../widgets/tactical_combat_sheet.dart';
 import '../../widgets/npc_interaction_sheet.dart';
+import '../../widgets/tv_cast_sheet.dart';
 import 'dungeon_populator.dart';
 import 'iso_map_view.dart';
 import 'tavern_populator.dart';
@@ -78,6 +81,11 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
   StreamSubscription<Map<String, dynamic>?>? _stateSub;
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _actionsSub;
   int _renderedTurnCount = 0;
+  bool _isTvCompanionMode = false;
+  bool _isVoiceListening = false;
+  String _voiceStatusText = '';
+  double _voiceSoundLevel = 0.0;
+  StreamSubscription<int>? _tvClientCountSub;
 
   // The isometric canvas is much bigger than the viewport (InteractiveViewer
   // is unconstrained so panning works), so "zoom" is relative to a baked-in
@@ -327,6 +335,10 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
   void initState() {
     super.initState();
     _adHocSeed = Random().nextInt(1 << 30);
+    _tvClientCountSub = TvCastService.instance.clientCountStream.listen((count) {
+      if (count > 0) _broadcastTvState();
+      if (mounted) setState(() {});
+    });
     if (widget.sessionId != null) {
       _initMultiplayer();
     } else {
@@ -458,6 +470,8 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
 
   @override
   void dispose() {
+    _tvClientCountSub?.cancel();
+    VoiceTranscriptionService.instance.cancelListening();
     _inputController.dispose();
     _inputFocus.dispose();
     _mapController.dispose();
@@ -499,6 +513,7 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
       _isGenerating = true;
       _streamingText = '';
     });
+    TvCastService.instance.broadcastNarration('Player', text);
     if (!fromRemote) _inputController.clear();
 
     try {
@@ -520,6 +535,7 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
           _streamingText = '';
         });
         _maybeSpeak(narration);
+        TvCastService.instance.broadcastNarration('Dungeon Master', narration);
       } else {
         final engine = ref.read(dmEngineProvider);
         final mention = _parseMention(text, campaign);
@@ -532,7 +548,28 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
             setState(() => _streamingText += chunk);
           },
         );
-        if (result.hadRoll) AudioService.instance.playDiceRoll();
+        if (result.hadRoll) {
+          AudioService.instance.playDiceRoll();
+          if (result.attack != null) {
+            final a = result.attack!;
+            TvCastService.instance.broadcastDiceRoll(
+              roller: 'Player',
+              reason: a.hit ? 'Attack (HIT)' : 'Attack (MISS)',
+              d20: a.roll,
+              modifier: a.modifier,
+              total: a.total,
+            );
+          } else if (result.check != null) {
+            final c = result.check!;
+            TvCastService.instance.broadcastDiceRoll(
+              roller: 'Player',
+              reason: '${c.ability} Check',
+              d20: c.roll,
+              modifier: c.modifier,
+              total: c.total,
+            );
+          }
+        }
         _wanderCompanions(campaign);
         setState(() {
           chat.add({'role': 'dm', 'text': result.narration, 'roll': _rollBadge(result)});
@@ -541,6 +578,8 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
           ref.read(campaignProvider.notifier).load(campaign); // refresh UI
         });
         _maybeSpeak(result.narration);
+        TvCastService.instance.broadcastNarration('Dungeon Master', result.narration);
+        _broadcastTvState();
         if (widget.sessionId != null && _isMultiplayerHost == true) {
           SessionRepository.instance.pushState(widget.sessionId!, campaign);
         }
@@ -550,14 +589,16 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
       }
     } catch (_) {
       if (!mounted) return;
+      const fallback = 'Torchlight flickers against the ancient stones as you steady your grip on your weapon and advance.';
       setState(() {
         chat.add({
           'role': 'dm',
-          'text': 'Torchlight flickers against the ancient stones as you steady your grip on your weapon and advance.',
+          'text': fallback,
         });
         _isGenerating = false;
         _streamingText = '';
       });
+      TvCastService.instance.broadcastNarration('Dungeon Master', fallback);
     }
   }
 
@@ -785,6 +826,7 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
     _recenterOnPlayer();
     _roamNpcs();
     _roamAnimals();
+    _broadcastTvState();
 
     // Check newly discovered rooms
     for (final room in _dungeon.rooms) {
@@ -1087,6 +1129,7 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
       _recenterOnPlayer();
       _roamNpcs();
       _roamAnimals();
+      _broadcastTvState();
 
       final tile = _dungeon.tileAt(playerPos.x, playerPos.y);
       final desc = tile == m.TileType.door ? 'through the doorway' : 'into the chamber';
@@ -1734,6 +1777,10 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
                   if (campaign != null && campaign.party.isNotEmpty) {
                     ref.read(campaignProvider.notifier).addItem(campaign.party.first.characterId, loot);
                   }
+                  setState(() {
+                    _props = _props.map((p) => p == prop ? p.copyWith(asset: 'assets/tiles/prop_chest_open.png', name: 'Opened Chest') : p).toList();
+                  });
+                  _broadcastTvState();
                   AudioService.instance.playSuccess();
                   _send('I pry open the chest and claim a $loot!');
                 },
@@ -2028,6 +2075,10 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
                   if (campaign != null && campaign.party.isNotEmpty) {
                     ref.read(campaignProvider.notifier).addItem(campaign.party.first.characterId, loot);
                   }
+                  setState(() {
+                    _props = _props.map((p) => p == prop ? p.copyWith(asset: 'assets/tiles/prop_chest_open.png', name: 'Opened Vault Coffer') : p).toList();
+                  });
+                  _broadcastTvState();
                   AudioService.instance.playSuccess();
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
@@ -2306,6 +2357,281 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
     );
 
     _send('The party breaches ${room.name} (${room.type.icon}): ${room.description}');
+    _broadcastTvState();
+  }
+
+  void _broadcastTvState() {
+    if (!TvCastService.instance.isRunning && TvCastService.instance.connectedClientsCount == 0) return;
+    final campaign = ref.read(campaignProvider);
+    final chars = ref.read(savedCharactersProvider);
+    final activeBeat = campaign?.questLog.where((q) => q.status == 'active').firstOrNull;
+
+    final wallCoords = <Map<String, int>>[];
+    for (var y = 0; y < _dungeon.height; y++) {
+      for (var x = 0; x < _dungeon.width; x++) {
+        final t = _dungeon.tileAt(x, y);
+        if (t == m.TileType.wall || t == m.TileType.mountain) {
+          final isNearVisited = visited.any((v) {
+            final parts = v.split(',');
+            final vx = int.tryParse(parts[0]) ?? -99;
+            final vy = int.tryParse(parts[1]) ?? -99;
+            return (x - vx).abs() <= 3 && (y - vy).abs() <= 3;
+          });
+          if (isNearVisited) {
+            wallCoords.add({'x': x, 'y': y});
+          }
+        }
+      }
+    }
+
+    final partyList = <Map<String, dynamic>>[];
+    if (campaign != null && campaign.party.isNotEmpty) {
+      for (final p in campaign.party) {
+        final c = chars.where((ch) => ch.id == p.characterId).firstOrNull;
+        partyList.add({
+          'name': p.name,
+          'hp': p.hp,
+          'maxHp': p.maxHp,
+          'raceClass': '${p.raceLabel} ${p.classLabel}',
+          'icon': c != null ? '🛡️' : '⚔️',
+        });
+      }
+    } else {
+      partyList.add({
+        'name': 'Valgar Bloodscale',
+        'hp': 16,
+        'maxHp': 16,
+        'raceClass': 'Dragonborn Paladin',
+        'icon': '🛡️',
+      });
+    }
+
+    final propList = _props.map((p) => {
+      'x': p.pos.x,
+      'y': p.pos.y,
+      'asset': p.asset,
+      'name': p.name ?? 'Object',
+    }).toList();
+
+    TvCastService.instance.broadcastState({
+      'campaignTitle': campaign?.seed.title ?? 'Dungeon Delve',
+      'quest': activeBeat?.title ?? 'Explore the Crypt',
+      'depth': campaign?.worldFlags['dungeonDepth'] ?? 1,
+      'playerPos': {'x': playerPos.x, 'y': playerPos.y},
+      'visited': visited.toList(),
+      'walls': wallCoords,
+      'props': propList,
+      'party': partyList,
+    });
+  }
+
+  void _showTvCastSheet() {
+    AudioService.instance.playTap();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => TvCastSheet(
+        isCompanionMode: _isTvCompanionMode,
+        onToggleCompanionMode: (enabled) {
+          setState(() {
+            _isTvCompanionMode = enabled;
+          });
+          _broadcastTvState();
+        },
+      ),
+    );
+  }
+
+  Future<void> _toggleVoiceListening() async {
+    if (_isVoiceListening) {
+      await VoiceTranscriptionService.instance.stopListening();
+      setState(() {
+        _isVoiceListening = false;
+        _voiceStatusText = '';
+      });
+      return;
+    }
+
+    final available = await VoiceTranscriptionService.instance.initialize();
+    if (!available) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Speech recognition is not available or microphone permission was not granted.', style: GoogleFonts.ibmPlexSans()),
+          backgroundColor: ArcaneTheme.tertiary,
+        ),
+      );
+      return;
+    }
+
+    AudioService.instance.playSuccess();
+    setState(() {
+      _isVoiceListening = true;
+      _voiceStatusText = 'Listening... Speak your command or narrative';
+    });
+
+    await VoiceTranscriptionService.instance.startListening(
+      onResult: (words, isFinal) {
+        if (!mounted) return;
+        setState(() {
+          _voiceStatusText = words;
+          _inputController.text = words;
+        });
+
+        if (isFinal && words.trim().isNotEmpty) {
+          _handleVoiceCommandCommit(words);
+        }
+      },
+      onSoundLevel: (level) {
+        if (mounted) setState(() => _voiceSoundLevel = level);
+      },
+    );
+  }
+
+  void _handleVoiceCommandCommit(String words) {
+    setState(() {
+      _isVoiceListening = false;
+      _voiceStatusText = '';
+    });
+    final intent = VoiceTranscriptionService.parseIntent(words);
+    switch (intent.type) {
+      case VoiceCommandType.attack:
+        _performAttackAction();
+        break;
+      case VoiceCommandType.search:
+        _performSearchAction();
+        break;
+      case VoiceCommandType.castSpell:
+        if (intent.spellName != null) {
+          _send('I cast ${intent.spellName}!');
+        } else {
+          _showSpellPicker();
+        }
+        break;
+      case VoiceCommandType.shortRest:
+        _performShortRest();
+        break;
+      case VoiceCommandType.tactics:
+        _showCompanionTactics();
+        break;
+      case VoiceCommandType.codex:
+        _showExplorationCodex();
+        break;
+      case VoiceCommandType.minimap:
+        _showMinimap();
+        break;
+      case VoiceCommandType.narration:
+        _send(intent.rawText);
+        break;
+    }
+  }
+
+  Widget _buildVoiceStatusBanner() {
+    if (!_isVoiceListening && _voiceStatusText.isEmpty) return const SizedBox.shrink();
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.redAccent.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.redAccent.withValues(alpha: 0.5)),
+      ),
+      child: Row(
+        children: [
+          const Pulse(
+            duration: Duration(milliseconds: 800),
+            child: Icon(Icons.mic_rounded, color: Colors.redAccent, size: 18),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              _voiceStatusText.isNotEmpty ? _voiceStatusText : 'Listening... speak your action or narrative',
+              style: GoogleFonts.ibmPlexSans(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w600),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.close_rounded, size: 16, color: Colors.white70),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            onPressed: () {
+              VoiceTranscriptionService.instance.stopListening();
+              setState(() {
+                _isVoiceListening = false;
+                _voiceStatusText = '';
+              });
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTvCompanionHud() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFF181B28), Color(0xFF10121A)],
+        ),
+        border: Border(bottom: BorderSide(color: ArcaneTheme.secondary.withValues(alpha: 0.4))),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: const Color(0xFF3DD68C).withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFF3DD68C).withValues(alpha: 0.5)),
+            ),
+            child: const Icon(Icons.tv_rounded, color: Color(0xFF3DD68C), size: 22),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Text('TV CAST ACTIVE', style: GoogleFonts.cinzel(fontSize: 12, fontWeight: FontWeight.w800, color: Colors.white)),
+                    const SizedBox(width: 6),
+                    Container(width: 6, height: 6, decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFF3DD68C))),
+                  ],
+                ),
+                Text('Streaming 3D Map to Big Screen', style: GoogleFonts.ibmPlexSans(fontSize: 10.5, color: ArcaneTheme.secondary)),
+              ],
+            ),
+          ),
+          // Directional controls for moving on TV
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _DpadMiniBtn(icon: Icons.keyboard_arrow_left_rounded, onTap: () => _move(-1, 0)),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _DpadMiniBtn(icon: Icons.keyboard_arrow_up_rounded, onTap: () => _move(0, -1)),
+                  _DpadMiniBtn(icon: Icons.keyboard_arrow_down_rounded, onTap: () => _move(0, 1)),
+                ],
+              ),
+              _DpadMiniBtn(icon: Icons.keyboard_arrow_right_rounded, onTap: () => _move(1, 0)),
+              const SizedBox(width: 6),
+              IconButton(
+                icon: const Icon(Icons.fullscreen_exit_rounded, size: 22, color: Colors.white70),
+                tooltip: 'Show Map on Phone',
+                onPressed: () => setState(() => _isTvCompanionMode = false),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 
   void _showExplorationCodex() {
@@ -2753,6 +3079,15 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
         centerTitle: true,
         leading: IconButton(icon: const Icon(Icons.casino_rounded, size: 18), onPressed: _regenerate),
         actions: [
+          IconButton(
+            icon: Icon(
+              TvCastService.instance.isRunning ? Icons.tv_rounded : Icons.cast_rounded,
+              color: TvCastService.instance.isRunning ? const Color(0xFF3DD68C) : Colors.white,
+              size: 20,
+            ),
+            tooltip: 'TV Cast & Big Screen',
+            onPressed: _showTvCastSheet,
+          ),
           IconButton(icon: const Icon(Icons.explore_rounded, size: 20), onPressed: _showExplorationCodex, tooltip: 'Exploration Codex'),
           IconButton(icon: const Icon(Icons.auto_stories_rounded, size: 20), onPressed: _showCampaignJournal, tooltip: 'Campaign Codex & Rest'),
           IconButton(icon: const Icon(Icons.refresh_rounded, size: 18), onPressed: _regenerate, tooltip: 'New Dungeon'),
@@ -2774,8 +3109,11 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
         ],
       ),
       body: Column(children: [
-        // Map viewport — matches Stitch Main Gameplay Screen dungeon tile look
-        Container(
+        if (_isTvCompanionMode)
+          _buildTvCompanionHud()
+        else
+          // Map viewport — matches Stitch Main Gameplay Screen dungeon tile look
+          Container(
           height: mapHeight,
           width: double.infinity,
           decoration: BoxDecoration(color: const Color(0xFF0B0A12), border: Border(bottom: BorderSide(color: ArcaneTheme.border))),
@@ -3073,33 +3411,77 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
         Container(
           padding: EdgeInsets.fromLTRB(12, 8, 12, MediaQuery.of(context).viewInsets.bottom > 0 ? 0 : 8 + MediaQuery.of(context).padding.bottom),
           decoration: const BoxDecoration(color: ArcaneTheme.surface, border: Border(top: BorderSide(color: ArcaneTheme.border))),
-          child: Row(children: [
-            Expanded(
-              child: TextField(
-                controller: _inputController,
-                focusNode: _inputFocus,
-                style: GoogleFonts.ibmPlexSans(color: Colors.white, fontSize: 14),
-                decoration: InputDecoration(hintText: 'Speak to the party, or tap someone to address them...', filled: true, fillColor: ArcaneTheme.surfaceElevated, contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12), border: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide.none)),
-                onSubmitted: _send,
-                textInputAction: TextInputAction.send,
-              ),
-            ),
-            const SizedBox(width: 8),
-            PressableScale(
-              onTap: () => _send(_inputController.text),
-              child: Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(color: ArcaneTheme.primary, shape: BoxShape.circle, boxShadow: [BoxShadow(color: ArcaneTheme.primary.withOpacity(0.3), blurRadius: 8)]),
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 180),
-                  child: _isGenerating
-                      ? const Padding(key: ValueKey('spinner'), padding: EdgeInsets.all(12), child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                      : const Icon(Icons.send_rounded, key: ValueKey('send'), color: Colors.white, size: 18),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildVoiceStatusBanner(),
+              Row(children: [
+                PressableScale(
+                  onTap: _toggleVoiceListening,
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    margin: const EdgeInsets.only(right: 8),
+                    decoration: BoxDecoration(
+                      color: _isVoiceListening ? Colors.redAccent.withValues(alpha: 0.2) : ArcaneTheme.surfaceElevated,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: _isVoiceListening ? Colors.redAccent : Colors.white12,
+                        width: _isVoiceListening ? 2 : 1,
+                      ),
+                      boxShadow: [
+                        if (_isVoiceListening)
+                          BoxShadow(
+                            color: Colors.redAccent.withValues(alpha: (_voiceSoundLevel.clamp(0.0, 10.0) / 10.0).clamp(0.2, 0.8)),
+                            blurRadius: 10,
+                          ),
+                      ],
+                    ),
+                    child: Icon(
+                      _isVoiceListening ? Icons.mic_rounded : Icons.mic_none_rounded,
+                      color: _isVoiceListening ? Colors.redAccent : Colors.white70,
+                      size: 20,
+                    ),
+                  ),
                 ),
-              ),
-            ),
-          ]),
+                Expanded(
+                  child: TextField(
+                    controller: _inputController,
+                    focusNode: _inputFocus,
+                    style: GoogleFonts.ibmPlexSans(color: Colors.white, fontSize: 14),
+                    decoration: InputDecoration(
+                      hintText: _isVoiceListening ? 'Listening... speak now' : 'Speak to the party, or tap someone to address them...',
+                      filled: true,
+                      fillColor: ArcaneTheme.surfaceElevated,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide.none),
+                    ),
+                    onSubmitted: _send,
+                    textInputAction: TextInputAction.send,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                PressableScale(
+                  onTap: () => _send(_inputController.text),
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: ArcaneTheme.primary,
+                      shape: BoxShape.circle,
+                      boxShadow: [BoxShadow(color: ArcaneTheme.primary.withValues(alpha: 0.3), blurRadius: 8)],
+                    ),
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 180),
+                      child: _isGenerating
+                          ? const Padding(key: ValueKey('spinner'), padding: EdgeInsets.all(12), child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                          : const Icon(Icons.send_rounded, key: ValueKey('send'), color: Colors.white, size: 18),
+                    ),
+                  ),
+                ),
+              ]),
+            ],
+          ),
         ),
       ]),
     );
@@ -3277,6 +3659,35 @@ class _SpellTile extends StatelessWidget {
               Text(desc, style: GoogleFonts.ibmPlexSans(fontSize: 11, color: ArcaneTheme.textSecondary)),
             ])),
           ]),
+        ),
+      ),
+    );
+  }
+}
+
+class _DpadMiniBtn extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _DpadMiniBtn({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          width: 34,
+          height: 34,
+          margin: const EdgeInsets.all(2),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1F2433),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.white24),
+          ),
+          child: Icon(icon, color: Colors.white, size: 20),
         ),
       ),
     );
