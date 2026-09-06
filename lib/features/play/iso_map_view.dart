@@ -25,6 +25,7 @@ class IsoMapView extends StatelessWidget {
   final void Function(MapNpc npc)? onNpcTap;
   final void Function(MapAnimal animal)? onAnimalTap;
   final void Function(MapProp prop)? onPropTap;
+  final void Function(PetCompanion pet)? onPetTap;
 
   static const double tileW = 64;
   static const double tileH = 32;
@@ -48,6 +49,7 @@ class IsoMapView extends StatelessWidget {
     this.onNpcTap,
     this.onAnimalTap,
     this.onPropTap,
+    this.onPetTap,
   });
 
   Offset _project(int x, int y, double originX, double originY) {
@@ -183,6 +185,21 @@ class IsoMapView extends StatelessWidget {
               ),
             )
           else ...[
+            // 3D Floor Slab Skirt (gives floor tiles physical isometric thickness & depth)
+            Positioned(
+              left: 0,
+              top: 0,
+              width: tileW,
+              height: tileH + 4,
+              child: CustomPaint(
+                size: const Size(tileW, tileH + 4),
+                painter: _IsoFloor3DSlabPainter(
+                  torchGlow: lightIntensity,
+                  isVisited: isVisited,
+                  canFog: canFog,
+                ),
+              ),
+            ),
             // Floor tile base & relief
             Positioned(
               left: 0,
@@ -441,28 +458,102 @@ class IsoMapView extends StatelessWidget {
 
   Widget _buildPetCompanion(PetCompanion pet, double originX, double originY) {
     final origin = _project(playerPos.x, playerPos.y, originX, originY);
+    final isFlying = pet.isFlying;
+    final petX = origin.dx + tileW / 2 + (isFlying ? 11 : 9);
+    final petY = origin.dy + (isFlying ? -16 : -3);
+
     return Positioned(
-      left: origin.dx + tileW / 2 + 7,
-      top: origin.dy - 6,
-      child: Pulse(
-        duration: const Duration(milliseconds: 1800),
-        child: Container(
-          width: 22,
-          height: 22,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: const Color(0xFF1A1423),
-            border: Border.all(color: pet.color, width: 1.5),
-            boxShadow: [
-              BoxShadow(color: pet.color.withValues(alpha: 0.6), blurRadius: 8),
-            ],
-          ),
-          child: Center(
-            child: Text(
-              pet.emoji,
-              style: const TextStyle(fontSize: 12),
+      left: petX,
+      top: petY,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => onPetTap?.call(pet),
+        child: Stack(
+          alignment: Alignment.center,
+          clipBehavior: Clip.none,
+          children: [
+            // 1. Isometric Ground Drop Shadow beneath pet
+            Positioned(
+              top: isFlying ? 28 : 20,
+              child: Container(
+                width: isFlying ? 14 : 18,
+                height: isFlying ? 6 : 7,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  color: Colors.black.withValues(alpha: isFlying ? 0.35 : 0.65),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.5),
+                      blurRadius: isFlying ? 5 : 2,
+                    ),
+                  ],
+                ),
+              ),
             ),
-          ),
+
+            // 2. Animated Pet Token Body with Elemental Aura
+            Pulse(
+              duration: Duration(milliseconds: isFlying ? 1400 : 2000),
+              child: Container(
+                width: 25,
+                height: 25,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      pet.color.withValues(alpha: 0.35),
+                      const Color(0xFF161022),
+                      const Color(0xFF090612),
+                    ],
+                    stops: const [0.2, 0.7, 1.0],
+                  ),
+                  border: Border.all(
+                    color: pet.color,
+                    width: 1.8,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: pet.color.withValues(alpha: 0.8),
+                      blurRadius: 9,
+                      spreadRadius: 1,
+                    ),
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.8),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: Text(
+                    pet.emoji,
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                ),
+              ),
+            ),
+
+            // 3. Mini Pet Perk Indicator Badge
+            Positioned(
+              right: -2,
+              bottom: -1,
+              child: Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: pet.color,
+                  border: Border.all(color: Colors.white, width: 1),
+                  boxShadow: [
+                    BoxShadow(
+                      color: pet.color.withValues(alpha: 0.8),
+                      blurRadius: 3,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -919,6 +1010,71 @@ class _IsoFloorShadowPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _IsoFloorShadowPainter old) =>
       old.hasWallNW != hasWallNW || old.hasWallNE != hasWallNE || old.hasWallN != hasWallN;
+}
+
+class _IsoFloor3DSlabPainter extends CustomPainter {
+  final double torchGlow;
+  final bool isVisited;
+  final bool canFog;
+
+  const _IsoFloor3DSlabPainter({
+    this.torchGlow = 0.0,
+    this.isVisited = true,
+    this.canFog = true,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    const tileH = IsoMapView.tileH;
+    const slabDepth = 3.5;
+
+    // Dark shadow side (South-West facet)
+    Color leftSlab = const Color(0xFF100C18);
+    // Directional light side (South-East facet)
+    Color rightSlab = const Color(0xFF1C1426);
+
+    if (torchGlow > 0) {
+      leftSlab = Color.lerp(leftSlab, const Color(0xFF381E10), torchGlow * 0.45)!;
+      rightSlab = Color.lerp(rightSlab, const Color(0xFF542A16), torchGlow * 0.60)!;
+    }
+
+    if (canFog && !isVisited) {
+      leftSlab = const Color(0xFF07050C);
+      rightSlab = const Color(0xFF08060E);
+    }
+
+    // Left slab facet
+    final leftPath = Path()
+      ..moveTo(0, tileH / 2)
+      ..lineTo(w / 2, tileH)
+      ..lineTo(w / 2, tileH + slabDepth)
+      ..lineTo(0, tileH / 2 + slabDepth)
+      ..close();
+    canvas.drawPath(leftPath, Paint()..color = leftSlab);
+
+    // Right slab facet
+    final rightPath = Path()
+      ..moveTo(w / 2, tileH)
+      ..lineTo(w, tileH / 2)
+      ..lineTo(w, tileH / 2 + slabDepth)
+      ..lineTo(w / 2, tileH + slabDepth)
+      ..close();
+    canvas.drawPath(rightPath, Paint()..color = rightSlab);
+
+    // Seam lines & corner bevel
+    final seamPaint = Paint()
+      ..color = Colors.black.withValues(alpha: 0.65)
+      ..strokeWidth = 0.8
+      ..style = PaintingStyle.stroke;
+    canvas.drawLine(Offset(0, tileH / 2 + slabDepth), Offset(w / 2, tileH + slabDepth), seamPaint);
+    canvas.drawLine(Offset(w / 2, tileH + slabDepth), Offset(w, tileH / 2 + slabDepth), seamPaint);
+    canvas.drawLine(Offset(w / 2, tileH), Offset(w / 2, tileH + slabDepth), seamPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _IsoFloor3DSlabPainter old) =>
+      old.torchGlow != torchGlow || old.isVisited != isVisited;
 }
 
 class _IsoFloorReliefPainter extends CustomPainter {

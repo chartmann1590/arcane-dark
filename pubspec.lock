@@ -336,6 +336,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.3.3+1"
+  google_mlkit_smart_reply:
+    dependency: "direct main"
+    description:
+      name: google_mlkit_smart_reply
+      sha256: "64f15a67d1934e87d73c281f5498ffeed3c183ae097eb4559fb286389b5b8e2b"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.14.0"
   google_mobile_ads:
     dependency: "direct main"
     description:

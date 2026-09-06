@@ -92,7 +92,30 @@ class PetCompanion {
       perkDescription: 'Spits embers at hostile foes dealing 2 fire damage and keeps the party warm.',
       flavor: 'A tiny winged dragon that roosts on your shoulder, puffing harmless smoke rings.',
     ),
+    PetCompanion(
+      id: 'clockwork_spider',
+      name: 'Clockwork Spider',
+      emoji: '🕷️',
+      icon: Icons.precision_manufacturing_rounded,
+      color: Color(0xFFFFB74D),
+      perkTitle: 'Trap Tinker & Wire Snare',
+      perkDescription: 'Alerts party to mechanical tripwires (+2 Sleight of Hand) and can snare enemies in battle.',
+      flavor: 'A brass-and-copper eight-legged marvel created by a master gnomish artificer.',
+    ),
+    PetCompanion(
+      id: 'slime_blob',
+      name: 'Gelatinous Buddy',
+      emoji: '🧪',
+      icon: Icons.bubble_chart_rounded,
+      color: Color(0xFF69F0AE),
+      perkTitle: 'Acid Cushion & Lock Dissolve',
+      perkDescription: 'Absorbs blunt damage and secretes mild solvent aiding in dissolving rusty dungeon locks.',
+      flavor: 'A friendly, jiggly emerald ooze that purrs when fed copper coins and follows you like a puppy.',
+    ),
   ];
+
+  bool get isFlying => id == 'spectral_owl' || id == 'astral_falcon' || id == 'pygmy_drake';
+
 
   static PetCompanion fromId(String? id) {
     if (id == null || id.isEmpty || id == 'none') {

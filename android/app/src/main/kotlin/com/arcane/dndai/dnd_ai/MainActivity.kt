@@ -1,5 +1,8 @@
 package com.arcane.dndai.dnd_ai
 
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.EventChannel
@@ -11,6 +14,7 @@ import kotlinx.coroutines.launch
 
 private const val CONTROL_CHANNEL = "dnd_ai/llm_control"
 private const val STREAM_CHANNEL = "dnd_ai/llm_stream"
+private const val CAST_CHANNEL = "dnd_ai/system_cast"
 
 class MainActivity : FlutterActivity() {
     private lateinit var llmEngine: LlmEngine
@@ -53,6 +57,71 @@ class MainActivity : FlutterActivity() {
                         result.success(llmEngine.deviceRamMb())
                     } catch (e: Exception) {
                         result.error("RAM_QUERY_ERROR", e.message, null)
+                    }
+                }
+                else -> result.notImplemented()
+            }
+        }
+
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CAST_CHANNEL).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "openCastSettings" -> {
+                    try {
+                        val intent = Intent(Settings.ACTION_CAST_SETTINGS).apply {
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                        }
+                        startActivity(intent)
+                        result.success(true)
+                    } catch (e: Exception) {
+                        try {
+                            val fallback = Intent("android.settings.WIFI_DISPLAY_SETTINGS").apply {
+                                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                            }
+                            startActivity(fallback)
+                            result.success(true)
+                        } catch (e2: Exception) {
+                            result.error("CAST_ERROR", e2.message ?: "Cast settings unavailable", null)
+                        }
+                    }
+                }
+                "openMiracastSettings" -> {
+                    try {
+                        val intent = Intent("android.settings.WIFI_DISPLAY_SETTINGS").apply {
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                        }
+                        startActivity(intent)
+                        result.success(true)
+                    } catch (e: Exception) {
+                        try {
+                            val fallback = Intent(Settings.ACTION_CAST_SETTINGS).apply {
+                                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                            }
+                            startActivity(fallback)
+                            result.success(true)
+                        } catch (e2: Exception) {
+                            result.error("MIRACAST_ERROR", e2.message ?: "Miracast settings unavailable", null)
+                        }
+                    }
+                }
+                "openChrome" -> {
+                    val url = call.argument<String>("url") ?: "http://google.com"
+                    try {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                            setPackage("com.android.chrome")
+                        }
+                        startActivity(intent)
+                        result.success(true)
+                    } catch (e: Exception) {
+                        try {
+                            val fallback = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
+                                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                            }
+                            startActivity(fallback)
+                            result.success(true)
+                        } catch (e2: Exception) {
+                            result.error("BROWSER_ERROR", e2.message ?: "Failed to open browser", null)
+                        }
                     }
                 }
                 else -> result.notImplemented()

@@ -231,6 +231,7 @@ class TvCastService {
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
     body {
@@ -298,6 +299,15 @@ class TvCastService {
     @keyframes pulse {
       0%, 100% { opacity: 0.9; transform: scale(1); }
       50% { opacity: 0.5; transform: scale(0.96); }
+    }
+    .google-cast-btn {
+      --connected-color: #E2B35A;
+      --disconnected-color: #A0AEC0;
+      width: 32px;
+      height: 32px;
+      background: transparent;
+      border: none;
+      cursor: pointer;
     }
     /* Main Content Area */
     main {
@@ -611,6 +621,7 @@ class TvCastService {
       </div>
     </div>
     <div class="header-right">
+      <button id="castBtn" is="google-cast-button" class="google-cast-btn" title="Cast to Chromecast" style="display:none;"></button>
       <div class="live-badge">TV CAST LIVE</div>
     </div>
   </header>
@@ -755,6 +766,22 @@ class TvCastService {
           `;
           grid.appendChild(card);
         });
+      }
+
+      if (state.pet) {
+        const grid = document.getElementById('partyGrid');
+        const petCard = document.createElement('div');
+        petCard.className = 'party-card';
+        petCard.style.borderColor = state.pet.color || '#3DD68C';
+        petCard.innerHTML = `
+          <div style="font-size: 28px;">\${state.pet.emoji || '🐾'}</div>
+          <div class="party-info">
+            <div class="party-name" style="color: \${state.pet.color || '#3DD68C'};">\${state.pet.name} (Pet)</div>
+            <div class="party-role">\${state.pet.perk || 'Loyal Animal Companion'}</div>
+            <div class="hp-text" style="color: #A0AEC0;">Active Perk Ready</div>
+          </div>
+        `;
+        grid.appendChild(petCard);
       }
     }
 
@@ -973,11 +1000,54 @@ class TvCastService {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText('YOU', hIsoX, hIsoY - 7);
+
+        // Render Pet Companion Token on Big Screen Canvas
+        if (gameState.pet) {
+          const petIsoX = hIsoX + 22;
+          const petIsoY = hIsoY - 10;
+
+          // Pet ground shadow
+          ctx.beginPath();
+          ctx.ellipse(petIsoX, petIsoY + 14, 10, 5, 0, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(0,0,0,0.55)';
+          ctx.fill();
+
+          // Pet elemental aura
+          ctx.beginPath();
+          ctx.arc(petIsoX, petIsoY, 13, 0, Math.PI * 2);
+          ctx.fillStyle = gameState.pet.color ? (gameState.pet.color + '55') : 'rgba(61, 214, 140, 0.3)';
+          ctx.fill();
+          ctx.strokeStyle = gameState.pet.color || '#3DD68C';
+          ctx.lineWidth = 1.8;
+          ctx.stroke();
+
+          // Pet Emoji
+          ctx.font = '14px "IBM Plex Sans", sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(gameState.pet.emoji || '🐕', petIsoX, petIsoY);
+        }
       }
 
       ctx.restore();
     }
     render();
+
+    // Google Cast framework initialization for Chromecast receivers & Chrome
+    window['__onGCastApiAvailable'] = function(isAvailable) {
+      if (isAvailable && window.cast && window.cast.framework) {
+        try {
+          cast.framework.CastContext.getInstance().setOptions({
+            receiverApplicationId: chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID,
+            autoJoinPolicy: chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED
+          });
+          const btn = document.getElementById('castBtn');
+          if (btn) btn.style.display = 'inline-block';
+        } catch(e) {
+          console.log('[Cast] Init notice:', e);
+        }
+      }
+    };
   </script>
 </body>
 </html>

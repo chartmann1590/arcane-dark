@@ -21,6 +21,7 @@ import '../../services/session_repository.dart';
 import '../../services/tts_service.dart';
 import '../../services/tv_cast_service.dart';
 import '../../services/voice_transcription_service.dart';
+import '../../services/smart_ai_service.dart';
 import '../../widgets/fx.dart';
 import '../../widgets/campaign_journal_sheet.dart';
 import '../../widgets/inventory_sheet.dart';
@@ -86,6 +87,9 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
   String _voiceStatusText = '';
   double _voiceSoundLevel = 0.0;
   StreamSubscription<int>? _tvClientCountSub;
+  bool _is3dPerspective = false;
+  List<SmartSuggestion> _smartSuggestions = [];
+  bool _isLoadingSuggestions = false;
 
   // The isometric canvas is much bigger than the viewport (InteractiveViewer
   // is unconstrained so panning works), so "zoom" is relative to a baked-in
@@ -314,6 +318,29 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
     }
   }
 
+  Future<void> _refreshSmartSuggestions() async {
+    if (!mounted || _isLoadingSuggestions) return;
+    _isLoadingSuggestions = true;
+    try {
+      final campaign = ref.read(campaignProvider);
+      final chars = ref.read(savedCharactersProvider);
+      final pet = _getActivePet(campaign, chars);
+      final suggestions = await SmartAiService.instance.getContextualSuggestions(
+        chatHistory: chat,
+        campaign: campaign,
+        pet: pet,
+      );
+      if (mounted) {
+        setState(() {
+          _smartSuggestions = suggestions;
+          _isLoadingSuggestions = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) _isLoadingSuggestions = false;
+    }
+  }
+
   /// Every current party member's own portrait+name, in party order — every
   /// hero and recruited companion gets their own token clustered on the
   /// map, not just a single stand-in for "the party."
@@ -335,6 +362,10 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
   void initState() {
     super.initState();
     _adHocSeed = Random().nextInt(1 << 30);
+    SmartAiService.instance.initialize();
+    Future.delayed(const Duration(milliseconds: 650), () {
+      if (mounted) _refreshSmartSuggestions();
+    });
     _tvClientCountSub = TvCastService.instance.clientCountStream.listen((count) {
       if (count > 0) _broadcastTvState();
       if (mounted) setState(() {});
@@ -478,6 +509,7 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
     _stateSub?.cancel();
     _actionsSub?.cancel();
     TtsService.instance.stop();
+    SmartAiService.instance.dispose();
     super.dispose();
   }
 
@@ -2413,6 +2445,8 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
       'name': p.name ?? 'Object',
     }).toList();
 
+    final activePet = _getActivePet(campaign, chars);
+
     TvCastService.instance.broadcastState({
       'campaignTitle': campaign?.seed.title ?? 'Dungeon Delve',
       'quest': activeBeat?.title ?? 'Explore the Crypt',
@@ -2422,7 +2456,287 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
       'walls': wallCoords,
       'props': propList,
       'party': partyList,
+      'pet': activePet != null && activePet.id != 'none'
+          ? {
+              'id': activePet.id,
+              'name': activePet.name,
+              'emoji': activePet.emoji,
+              'perk': activePet.perkTitle,
+              'color': '#${activePet.color.toARGB32().toRadixString(16).padLeft(8, '0').substring(2)}',
+            }
+          : null,
     });
+  }
+
+  void _showPetInteractionDialog(PetCompanion pet) {
+    AudioService.instance.playTap();
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: const Color(0xFF140F22),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            border: Border.all(color: pet.color.withValues(alpha: 0.6), width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                color: pet.color.withValues(alpha: 0.3),
+                blurRadius: 20,
+                spreadRadius: 2,
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: pet.color.withValues(alpha: 0.2),
+                      border: Border.all(color: pet.color, width: 2),
+                    ),
+                    child: Center(child: Text(pet.emoji, style: const TextStyle(fontSize: 26))),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          pet.name,
+                          style: GoogleFonts.ibmPlexSans(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        Text(
+                          pet.perkTitle,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: pet.color,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded, color: Colors.white70),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.4),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.white12),
+                ),
+                child: Text(
+                  pet.flavor,
+                  style: GoogleFonts.spectral(
+                    fontStyle: FontStyle.italic,
+                    color: Colors.white70,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: pet.color.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: pet.color.withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(pet.icon, color: pet.color, size: 20),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        pet.perkDescription,
+                        style: const TextStyle(color: Colors.white, fontSize: 12),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: pet.color.withValues(alpha: 0.25),
+                        foregroundColor: Colors.white,
+                        side: BorderSide(color: pet.color),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      icon: const Icon(Icons.favorite_rounded, size: 18),
+                      label: const Text('Pet & Bond'),
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        AudioService.instance.playSuccess();
+                        final bondMsg = '${pet.name} nuzzles into your hand happily. The bond strengthens your resolve! (+1 Inspiration)';
+                        _appendDmNarration(bondMsg);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(bondMsg),
+                            backgroundColor: const Color(0xFF2E1A47),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: ArcaneTheme.primary.withValues(alpha: 0.3),
+                        foregroundColor: Colors.white,
+                        side: const BorderSide(color: ArcaneTheme.secondary),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      icon: const Icon(Icons.explore_rounded, size: 18),
+                      label: const Text('Scout Ahead'),
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        _scoutWithPet(pet);
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _scoutWithPet(PetCompanion pet) {
+    final unvisitedNear = <m.Point>[];
+    for (var dy = -2; dy <= 2; dy++) {
+      for (var dx = -2; dx <= 2; dx++) {
+        final nx = playerPos.x + dx;
+        final ny = playerPos.y + dy;
+        if (nx >= 0 && ny >= 0 && nx < _dungeon.width && ny < _dungeon.height) {
+          if (!visited.contains('$nx,$ny')) {
+            unvisitedNear.add(m.Point(nx, ny));
+          }
+        }
+      }
+    }
+
+    if (unvisitedNear.isNotEmpty) {
+      final revealed = unvisitedNear.take(3).toList();
+      setState(() {
+        for (final p in revealed) {
+          visited.add('${p.x},${p.y}');
+        }
+      });
+      AudioService.instance.playTap();
+      final msg = '${pet.name} darts forward into the shadows, sniffing the stone floor and scouting the corridor ahead. It reveals ${revealed.length} hidden tiles!';
+      _appendDmNarration(msg);
+      _broadcastTvState();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('✨ ${pet.name} scouted and revealed ${revealed.length} tiles!'),
+          backgroundColor: const Color(0xFF1E3A2F),
+        ),
+      );
+    } else {
+      final msg = '${pet.name} returns to your side and confirms the immediate perimeter is fully secured.';
+      _appendDmNarration(msg);
+    }
+  }
+
+  void _appendDmNarration(String text) {
+    setState(() {
+      chat.add({
+        'role': 'dm',
+        'text': text,
+      });
+    });
+    TvCastService.instance.broadcastNarration('Dungeon Master', text);
+    _refreshSmartSuggestions();
+  }
+
+  Widget _buildSmartAiSuggestionsBar() {
+    if (_smartSuggestions.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+            child: Row(
+              children: [
+                const Icon(Icons.psychology_rounded, size: 13, color: Color(0xFF80D8FF)),
+                const SizedBox(width: 5),
+                Text(
+                  'SMART AI SUGGESTIONS',
+                  style: GoogleFonts.ibmPlexSans(
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.9,
+                    color: const Color(0xFF80D8FF),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: Row(
+              children: _smartSuggestions.map((sug) {
+                final color = switch (sug.type) {
+                  SuggestionType.combat => Colors.redAccent,
+                  SuggestionType.exploration => ArcaneTheme.secondary,
+                  SuggestionType.pet => const Color(0xFF69F0AE),
+                  SuggestionType.survival => Colors.tealAccent,
+                  SuggestionType.dialogue => Colors.purpleAccent,
+                };
+
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 3),
+                  child: ActionChip(
+                    avatar: Text(sug.icon, style: const TextStyle(fontSize: 12)),
+                    label: Text(
+                      sug.label,
+                      style: GoogleFonts.ibmPlexSans(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white),
+                    ),
+                    backgroundColor: ArcaneTheme.surfaceElevated,
+                    side: BorderSide(color: color.withValues(alpha: 0.6), width: 1),
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    onPressed: () {
+                      AudioService.instance.playTap();
+                      _send(sug.text);
+                    },
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showTvCastSheet() {
@@ -3137,23 +3451,32 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
                 boundaryMargin: const EdgeInsets.all(200),
                 child: Padding(
                   padding: const EdgeInsets.all(8),
-                  child: IsoMapView(
-                    dungeon: _dungeon,
-                    playerPos: playerPos,
-                    visited: visited,
-                    partyMembers: _partyVisuals(campaign, chars),
-                    environment: campaign?.mapEnvironment ?? 'dungeon',
-                    npcs: _npcs,
-                    animals: _animals,
-                    props: _props,
-                    activePet: _getActivePet(campaign, chars),
-                    openedDoors: _openedDoors,
-                    activePath: _activePath,
-                    targetWaypoint: _targetWaypoint,
-                    onTileTap: _handleTileTap,
-                    onPropTap: _handlePropTap,
-                    onNpcTap: _handleNpcTap,
-                    onAnimalTap: _showAnimalInteractionDialog,
+                  child: Transform(
+                    transform: _is3dPerspective
+                        ? (Matrix4.identity()
+                            ..setEntry(3, 2, 0.0012)
+                            ..rotateX(0.22))
+                        : Matrix4.identity(),
+                    alignment: FractionalOffset.center,
+                    child: IsoMapView(
+                      dungeon: _dungeon,
+                      playerPos: playerPos,
+                      visited: visited,
+                      partyMembers: _partyVisuals(campaign, chars),
+                      environment: campaign?.mapEnvironment ?? 'dungeon',
+                      npcs: _npcs,
+                      animals: _animals,
+                      props: _props,
+                      activePet: _getActivePet(campaign, chars),
+                      openedDoors: _openedDoors,
+                      activePath: _activePath,
+                      targetWaypoint: _targetWaypoint,
+                      onTileTap: _handleTileTap,
+                      onPropTap: _handlePropTap,
+                      onNpcTap: _handleNpcTap,
+                      onAnimalTap: _showAnimalInteractionDialog,
+                      onPetTap: _showPetInteractionDialog,
+                    ),
                   ),
                 ),
               );
@@ -3234,6 +3557,22 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
                 _MapBtn(icon: Icons.remove_rounded, onTap: () => _zoomBy(1 / 1.4)),
                 const SizedBox(height: 6),
                 _MapBtn(icon: Icons.my_location_rounded, onTap: _recenterOnPlayer),
+                const SizedBox(height: 6),
+                _MapBtn(
+                  icon: _is3dPerspective ? Icons.view_in_ar_rounded : Icons.layers_rounded,
+                  color: _is3dPerspective ? ArcaneTheme.secondary : null,
+                  onTap: () {
+                    setState(() => _is3dPerspective = !_is3dPerspective);
+                    AudioService.instance.playTap();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(_is3dPerspective ? '3D Cinematic Perspective enabled' : 'Standard 2.5D Isometric view restored'),
+                        duration: const Duration(seconds: 1),
+                        backgroundColor: const Color(0xFF1B1429),
+                      ),
+                    );
+                  },
+                ),
                 const SizedBox(height: 6),
                 _MapBtn(icon: Icons.map_rounded, onTap: _showMinimap),
                 const SizedBox(height: 6),
@@ -3389,6 +3728,9 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
           ),
         ),
 
+        // On-Device ML Kit & Tactical AI Smart Suggestions
+        _buildSmartAiSuggestionsBar(),
+
         // Quick actions — match Stitch: Attack, Talk, Inspect, Roll Die
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -3535,12 +3877,22 @@ class _ActionLine extends StatelessWidget {
 class _MapBtn extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
-  const _MapBtn({required this.icon, required this.onTap});
+  final Color? color;
+  const _MapBtn({required this.icon, required this.onTap, this.color});
   @override
   Widget build(BuildContext context) {
     return PressableScale(
       onTap: onTap,
-      child: Container(width: 32, height: 32, decoration: BoxDecoration(color: Colors.black.withOpacity(0.5), borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.white.withOpacity(0.12))), child: Icon(icon, size: 16, color: Colors.white)),
+      child: Container(
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(
+          color: color != null ? color!.withValues(alpha: 0.25) : Colors.black.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: color ?? Colors.white.withValues(alpha: 0.12)),
+        ),
+        child: Icon(icon, size: 16, color: color ?? Colors.white),
+      ),
     );
   }
 }

@@ -561,6 +561,77 @@ class _TacticalCombatSheetState extends State<TacticalCombatSheet> with SingleTi
     _advanceTurn();
   }
 
+  Future<void> _executePetCombatAction() async {
+    final enemy = _enemyCombatant;
+    if (_isActing || enemy == null || enemy.currentHp <= 0) return;
+    final pet = widget.activePet;
+    if (pet == null || pet.id == 'none') return;
+    final hero = _activeCombatant;
+
+    setState(() {
+      _isActing = true;
+      _bannerText = null;
+    });
+
+    AudioService.instance.playSend();
+
+    final petDmg = switch (pet.id) {
+      'shadow_wolf' => 7,
+      'pygmy_drake' => 6,
+      'astral_falcon' => 5,
+      'clockwork_spider' => 5,
+      'slime_blob' => 5,
+      'hearth_cat' => 4,
+      'spectral_owl' => 3,
+      'tavern_hound' => 4,
+      _ => 4,
+    };
+
+    final newEnemyHp = max(0, enemy.currentHp - petDmg).toInt();
+    enemy.currentHp = newEnemyHp;
+    _enemyNpc = _enemyNpc.copyWith(currentHp: newEnemyHp);
+    widget.onEnemyUpdated(_enemyNpc);
+
+    // Special pet combat effects
+    if (pet.id == 'spectral_owl' || pet.id == 'tavern_hound') {
+      enemy.addStatus(StatusType.stunned, rounds: 1);
+    } else if (pet.id == 'pygmy_drake') {
+      enemy.addStatus(StatusType.burning, rounds: 2, magnitude: 2);
+    } else if (pet.id == 'clockwork_spider') {
+      enemy.addStatus(StatusType.poisoned, rounds: 2, magnitude: 2);
+    }
+
+    TvCastService.instance.broadcastCombat({
+      'active': true,
+      'round': _roundNumber,
+      'currentTurn': '${pet.name} (${pet.emoji})',
+      'action': '🐾 ${pet.perkTitle} dealing $petDmg damage to ${enemy.name}!',
+      'enemy': {
+        'name': enemy.name,
+        'hp': enemy.currentHp,
+        'maxHp': enemy.maxHp,
+      },
+    });
+
+    setState(() {
+      _floatingEnemyText = '-$petDmg HP';
+      _floatingEnemyColor = pet.color;
+      _bannerText = '🐾 ${pet.name} strikes with ${pet.perkTitle} for $petDmg damage!';
+      _bannerColor = pet.color;
+      _battleLog.insert(0, '${pet.emoji} ${pet.name} obeys ${hero.name}\'s command: ${pet.perkTitle} dealing $petDmg damage to ${enemy.name}!');
+    });
+
+    if (newEnemyHp <= 0) {
+      _handleVictory(pet.name);
+      return;
+    }
+
+    _broadcastCombatState();
+    await Future.delayed(const Duration(milliseconds: 650));
+    if (!mounted) return;
+    _advanceTurn();
+  }
+
   Future<void> _executeCastSpell(String spellName, int diceCount, int diceSides, int bonus, {bool isHeal = false, StatusType? inflictStatus}) async {
     final enemy = _enemyCombatant;
     if (_isActing || enemy == null || enemy.currentHp <= 0) return;
@@ -1273,6 +1344,51 @@ class _TacticalCombatSheetState extends State<TacticalCombatSheet> with SingleTi
     );
   }
 
+  Widget _buildAiTacticalAdvisor() {
+    final enemy = _enemyCombatant;
+    final pet = widget.activePet;
+    if (enemy == null || enemy.currentHp <= 0) return const SizedBox.shrink();
+
+    String advice;
+    Color color = const Color(0xFF80D8FF);
+
+    if (_telegraphedEnemyIntent != null && (_telegraphedEnemyIntent!.contains('Cleave') || _telegraphedEnemyIntent!.contains('Heavy') || _telegraphedEnemyIntent!.contains('Frenzy'))) {
+      advice = 'ML Alert: Heavy assault telegraphed! Raise Guard or use Pet Distract to mitigate damage.';
+      color = Colors.orangeAccent;
+    } else if (enemy.currentHp <= 8) {
+      advice = 'ML Tactic: Foe is vulnerable in execute range! Strike now to seal victory.';
+      color = Colors.greenAccent;
+    } else if (pet != null && pet.id != 'none') {
+      advice = 'ML Synergy: Command ${pet.name} (${pet.emoji}) to unleash ${pet.perkTitle}!';
+      color = pet.color;
+    } else {
+      advice = 'ML Analysis: Alternate melee with spell strikes to build Combo Stagger bonus (+3 DMG).';
+      color = Colors.cyanAccent;
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withValues(alpha: 0.45)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.psychology_rounded, size: 16, color: color),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              advice,
+              style: GoogleFonts.ibmPlexSans(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final enemy = _enemyCombatant;
@@ -1755,6 +1871,9 @@ class _TacticalCombatSheetState extends State<TacticalCombatSheet> with SingleTi
 
           const SizedBox(height: 10),
 
+          // AI TACTICAL ADVISOR (Contextual ML combat assistance)
+          if (isPlayerTurn) _buildAiTacticalAdvisor(),
+
           // ACTION BUTTONS (Visible on player's turn)
           if (isPlayerTurn)
             Row(
@@ -1804,6 +1923,21 @@ class _TacticalCombatSheetState extends State<TacticalCombatSheet> with SingleTi
                   ),
                   onPressed: _executeUsePotion,
                 ),
+                if (widget.activePet != null && widget.activePet!.id != 'none') ...[
+                  const SizedBox(width: 4),
+                  IconButton(
+                    icon: Text(widget.activePet!.emoji, style: const TextStyle(fontSize: 16)),
+                    tooltip: '${widget.activePet!.name}: ${widget.activePet!.perkTitle}',
+                    style: IconButton.styleFrom(
+                      backgroundColor: widget.activePet!.color.withValues(alpha: 0.25),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        side: BorderSide(color: widget.activePet!.color, width: 1.5),
+                      ),
+                    ),
+                    onPressed: _executePetCombatAction,
+                  ),
+                ],
               ],
             )
           else
