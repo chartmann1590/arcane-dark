@@ -170,6 +170,16 @@ class MapAnimal {
         return '🪲';
       case 'frog':
         return '🐸';
+      case 'horse':
+        return '🐎';
+      case 'cow':
+        return '🐄';
+      case 'bird':
+        return '🕊️';
+      case 'bear':
+        return '🐻';
+      case 'deer':
+        return '🦌';
       default:
         return '🐾';
     }

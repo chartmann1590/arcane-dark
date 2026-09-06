@@ -228,15 +228,25 @@ class CampaignState {
     this.locationSeeds.putIfAbsent(this.mapEnvironment, () => this.mapSeed);
   }
 
-  /// Environment inferred from free-form narration/location text — tavern,
-  /// inn, shop, and other furnished interiors get warm wood-and-timber
-  /// tiles; caves, crypts, wilderness, and unrecognized text get the
-  /// generic stone dungeon set. Checked every DM turn (not just once at
-  /// campaign start) so actually walking indoors/outdoors changes the map.
+  /// Environment inferred from narration or location text — automatically sets
+  /// the active map mode to forest wilderness, village town, underground caverns,
+  /// warm tavern interiors, or stone dungeon crypts.
   static String environmentFor(String text) {
     final l = text.toLowerCase();
-    const indoor = ['tavern', 'inn', 'outpost', 'shop', 'store', 'house', 'hall', 'chamber', 'room', 'cellar', 'keep', 'fort', 'temple', 'shrine', 'library', 'manor', 'parlor', 'kitchen'];
-    for (final w in indoor) {
+    const forestWords = ['forest', 'woods', 'woodland', 'grove', 'glade', 'jungle', 'wilds', 'wilderness', 'trail', 'clearing', 'canopy', 'timber'];
+    for (final w in forestWords) {
+      if (l.contains(w)) return 'forest';
+    }
+    const villageWords = ['village', 'town', 'city', 'market', 'plaza', 'street', 'bazaar', 'hamlet', 'district', 'square', 'quarter', 'blacksmith', 'apothecary'];
+    for (final w in villageWords) {
+      if (l.contains(w)) return 'village';
+    }
+    const caveWords = ['cave', 'cavern', 'grotto', 'mine', 'chasm', 'underdark', 'fissure', 'geode', 'subterranean'];
+    for (final w in caveWords) {
+      if (l.contains(w)) return 'cave';
+    }
+    const tavernWords = ['tavern', 'inn', 'pub', 'bar', 'alehouse', 'parlor'];
+    for (final w in tavernWords) {
       if (l.contains(w)) return 'tavern';
     }
     return 'dungeon';

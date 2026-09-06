@@ -203,6 +203,28 @@ class CampaignNotifier extends StateNotifier<CampaignState?> {
     _persist();
   }
 
+  void setEnvironment(String environment, {Point? entryPoint, int? seed}) {
+    final cur = state;
+    if (cur == null) return;
+    cur.mapEnvironment = environment;
+    if (seed != null) {
+      cur.locationSeeds[environment] = seed;
+      cur.mapSeed = seed;
+    } else {
+      cur.mapSeed = cur.seedForEnvironment(environment);
+    }
+    if (entryPoint != null) {
+      cur.partyPosition = entryPoint;
+      cur.visitedTiles = {'${entryPoint.x},${entryPoint.y}'};
+      for (final m in cur.party) {
+        m.position = null;
+      }
+    }
+    state = cur;
+    _persist();
+  }
+
+
   Future<void> moveTo(Point p) async {
     if (state == null) return;
     state!.partyPosition = p;

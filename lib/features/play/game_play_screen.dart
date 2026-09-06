@@ -5,7 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../app/theme.dart';
+import '../../domain/map/cave_generator.dart';
 import '../../domain/map/dungeon_generator.dart';
+import '../../domain/map/forest_generator.dart';
+import '../../domain/map/village_generator.dart';
 import '../../domain/map/tile_types.dart' as m;
 import '../../providers/campaign_provider.dart';
 import '../../providers/character_provider.dart';
@@ -28,9 +31,12 @@ import '../../widgets/inventory_sheet.dart';
 import '../../widgets/tactical_combat_sheet.dart';
 import '../../widgets/npc_interaction_sheet.dart';
 import '../../widgets/tv_cast_sheet.dart';
+import 'cave_populator.dart';
 import 'dungeon_populator.dart';
+import 'forest_populator.dart';
 import 'iso_map_view.dart';
 import 'tavern_populator.dart';
+import 'village_populator.dart';
 
 class GamePlayScreen extends ConsumerStatefulWidget {
   final String? sessionId;
@@ -47,6 +53,7 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
   String _streamingText = '';
   late m.DungeonMap _dungeon;
   late int _seed;
+  String? _currentEnvironment;
   bool _mapInitialized = false;
   // Only used when there's no active campaign (ad-hoc dungeon crawl) — a real
   // campaign's map seed lives on CampaignState.mapSeed instead, so it survives
@@ -93,7 +100,6 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
   final Map<String, String> _companionSpeechBubbles = {};
   Timer? _companionSpeechTimer;
   Timer? _companionAutonomyTimer;
-  bool _showingSidequestsHud = false;
 
   // The isometric canvas is much bigger than the viewport (InteractiveViewer
   // is unconstrained so panning works), so "zoom" is relative to a baked-in
@@ -171,8 +177,9 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
   /// means revisiting this screen reconstructs the identical layout.
   void _ensureMapForCampaign(CampaignState? campaign) {
     if (campaign == null && widget.sessionId != null) return;
-    final targetSeed = campaign?.mapSeed ?? _adHocSeed;
-    if (_mapInitialized && _seed == targetSeed) {
+    final env = campaign?.mapEnvironment ?? 'dungeon';
+    final targetSeed = campaign != null ? campaign.seedForEnvironment(env) : _adHocSeed;
+    if (_mapInitialized && _seed == targetSeed && _currentEnvironment == env) {
       if (campaign != null) {
         _openedDoors.addAll(campaign.openedDoors);
         _npcs.removeWhere((n) => campaign.defeatedEnemies.contains(n.id));
@@ -180,18 +187,49 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
       return;
     }
     _seed = targetSeed;
-    _dungeon = DungeonGenerator().generate(seed: _seed, width: 34, height: 34);
-    if (campaign != null) {
-      playerPos = m.Point(campaign.partyPosition.x, campaign.partyPosition.y);
-      visited = campaign.visitedTiles.isNotEmpty ? Set<String>.from(campaign.visitedTiles) : {'${playerPos.x},${playerPos.y}'};
-      _openedDoors.clear();
-      _openedDoors.addAll(campaign.openedDoors);
-    } else {
-      playerPos = m.Point(_dungeon.entryPoint.x, _dungeon.entryPoint.y);
-      visited = {'${playerPos.x},${playerPos.y}'};
-      _openedDoors.clear();
-    }
-    if ((campaign?.mapEnvironment ?? 'dungeon') == 'tavern') {
+    _currentEnvironment = env;
+
+    if (env == 'forest') {
+      _dungeon = ForestGenerator().generate(seed: _seed, width: 34, height: 34);
+      _props = generateForestProps(_dungeon);
+      _npcs = generateForestNpcs(_dungeon, excluding: {
+        for (final p in _props) '${p.pos.x},${p.pos.y}',
+      });
+      _animals = generateForestAnimals(_dungeon, excluding: {
+        '${playerPos.x},${playerPos.y}',
+        for (final p in _props) '${p.pos.x},${p.pos.y}',
+        for (final n in _npcs) '${n.pos.x},${n.pos.y}',
+      });
+      _traps.clear();
+      _revealedTraps.clear();
+    } else if (env == 'village') {
+      _dungeon = VillageGenerator().generate(seed: _seed, width: 34, height: 34);
+      _props = generateVillageProps(_dungeon);
+      _npcs = generateVillageNpcs(_dungeon, excluding: {
+        for (final p in _props) '${p.pos.x},${p.pos.y}',
+      });
+      _animals = generateVillageAnimals(_dungeon, excluding: {
+        '${playerPos.x},${playerPos.y}',
+        for (final p in _props) '${p.pos.x},${p.pos.y}',
+        for (final n in _npcs) '${n.pos.x},${n.pos.y}',
+      });
+      _traps.clear();
+      _revealedTraps.clear();
+    } else if (env == 'cave') {
+      _dungeon = CaveGenerator().generate(seed: _seed, width: 34, height: 34);
+      _props = generateCaveProps(_dungeon);
+      _npcs = generateCaveNpcs(_dungeon, excluding: {
+        for (final p in _props) '${p.pos.x},${p.pos.y}',
+      });
+      _animals = generateCaveAnimals(_dungeon, excluding: {
+        '${playerPos.x},${playerPos.y}',
+        for (final p in _props) '${p.pos.x},${p.pos.y}',
+        for (final n in _npcs) '${n.pos.x},${n.pos.y}',
+      });
+      _traps.clear();
+      _revealedTraps.clear();
+    } else if (env == 'tavern') {
+      _dungeon = DungeonGenerator().generate(seed: _seed, width: 34, height: 34);
       _npcs = generateTavernNpcs(_dungeon);
       _props = generateTavernProps(_dungeon, _npcs);
       _animals = generateTavernAnimals(_dungeon, excluding: {
@@ -199,7 +237,10 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
         for (final p in _props) '${p.pos.x},${p.pos.y}',
         for (final n in _npcs) '${n.pos.x},${n.pos.y}',
       });
+      _traps.clear();
+      _revealedTraps.clear();
     } else {
+      _dungeon = DungeonGenerator().generate(seed: _seed, width: 34, height: 34);
       _props = generateDungeonProps(_dungeon);
       final allEnemies = generateDungeonEnemies(_dungeon, excluding: {
         for (final p in _props) '${p.pos.x},${p.pos.y}',
@@ -241,6 +282,17 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
       for (final t in candidates.take(4)) {
         _traps.add(t);
       }
+    }
+
+    if (campaign != null && campaign.partyPosition.x > 0 && campaign.mapEnvironment == env) {
+      playerPos = m.Point(campaign.partyPosition.x, campaign.partyPosition.y);
+      visited = campaign.visitedTiles.isNotEmpty ? Set<String>.from(campaign.visitedTiles) : {'${playerPos.x},${playerPos.y}'};
+      _openedDoors.clear();
+      _openedDoors.addAll(campaign.openedDoors);
+    } else {
+      playerPos = m.Point(_dungeon.entryPoint.x, _dungeon.entryPoint.y);
+      visited = {'${playerPos.x},${playerPos.y}'};
+      _openedDoors.clear();
     }
 
     // Initialize discovered rooms
@@ -421,8 +473,8 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
     Future.delayed(const Duration(milliseconds: 650), () {
       if (mounted) _refreshSmartSuggestions();
     });
-    _tvClientCountSub = TvCastService.instance.clientCountStream.listen((count) {
-      if (count > 0) _broadcastTvState();
+    _tvClientCountSub = TvCastService.instance.clientCountStream.listen((clientCount) {
+      if (clientCount > 0) _broadcastTvState();
       if (mounted) setState(() {});
     });
     _companionAutonomyTimer = Timer.periodic(const Duration(seconds: 5), (_) {
@@ -3998,6 +4050,14 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
   }
 
   void _showMinimap() {
+    final env = _currentEnvironment ?? 'dungeon';
+    final title = switch (env) {
+      'forest' => 'FOREST WILDERNESS MAP',
+      'village' => 'VILLAGE & MARKET MAP',
+      'cave' => 'CRYSTAL CAVERNS MAP',
+      'tavern' => 'TAVERN MAP',
+      _ => 'DUNGEON MAP',
+    };
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -4005,7 +4065,7 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
         title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('DUNGEON MAP', style: GoogleFonts.cinzel(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16)),
+            Text(title, style: GoogleFonts.cinzel(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14)),
             IconButton(icon: const Icon(Icons.close_rounded, size: 20, color: ArcaneTheme.textMuted), onPressed: () => Navigator.pop(ctx)),
           ],
         ),
@@ -4018,6 +4078,7 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
               dungeon: _dungeon,
               playerPos: playerPos,
               visited: visited,
+              environment: env,
             ),
           ),
         ),
@@ -4064,6 +4125,406 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
         SessionRepository.instance.pushState(widget.sessionId!, updated);
       }
     }
+  }
+
+  void _travelToEnvironment(String targetEnv, String regionTitle) {
+    final campaign = ref.read(campaignProvider);
+    final targetSeed = campaign != null ? campaign.seedForEnvironment(targetEnv) : Random().nextInt(1 << 30);
+
+    late m.DungeonMap newDungeon;
+    late List<MapProp> newProps;
+    late List<MapNpc> newNpcs;
+    late List<MapAnimal> newAnimals;
+
+    if (targetEnv == 'forest') {
+      newDungeon = ForestGenerator().generate(seed: targetSeed, width: 34, height: 34);
+      newProps = generateForestProps(newDungeon);
+      newNpcs = generateForestNpcs(newDungeon, excluding: {
+        for (final p in newProps) '${p.pos.x},${p.pos.y}',
+      });
+      newAnimals = generateForestAnimals(newDungeon, excluding: {
+        '${newDungeon.entryPoint.x},${newDungeon.entryPoint.y}',
+        for (final p in newProps) '${p.pos.x},${p.pos.y}',
+        for (final n in newNpcs) '${n.pos.x},${n.pos.y}',
+      });
+    } else if (targetEnv == 'village') {
+      newDungeon = VillageGenerator().generate(seed: targetSeed, width: 34, height: 34);
+      newProps = generateVillageProps(newDungeon);
+      newNpcs = generateVillageNpcs(newDungeon, excluding: {
+        for (final p in newProps) '${p.pos.x},${p.pos.y}',
+      });
+      newAnimals = generateVillageAnimals(newDungeon, excluding: {
+        '${newDungeon.entryPoint.x},${newDungeon.entryPoint.y}',
+        for (final p in newProps) '${p.pos.x},${p.pos.y}',
+        for (final n in newNpcs) '${n.pos.x},${n.pos.y}',
+      });
+    } else if (targetEnv == 'cave') {
+      newDungeon = CaveGenerator().generate(seed: targetSeed, width: 34, height: 34);
+      newProps = generateCaveProps(newDungeon);
+      newNpcs = generateCaveNpcs(newDungeon, excluding: {
+        for (final p in newProps) '${p.pos.x},${p.pos.y}',
+      });
+      newAnimals = generateCaveAnimals(newDungeon, excluding: {
+        '${newDungeon.entryPoint.x},${newDungeon.entryPoint.y}',
+        for (final p in newProps) '${p.pos.x},${p.pos.y}',
+        for (final n in newNpcs) '${n.pos.x},${n.pos.y}',
+      });
+    } else if (targetEnv == 'tavern') {
+      newDungeon = DungeonGenerator().generate(seed: targetSeed, width: 34, height: 34);
+      newNpcs = generateTavernNpcs(newDungeon);
+      newProps = generateTavernProps(newDungeon, newNpcs);
+      newAnimals = generateTavernAnimals(newDungeon, excluding: {
+        '${newDungeon.entryPoint.x},${newDungeon.entryPoint.y}',
+        for (final p in newProps) '${p.pos.x},${p.pos.y}',
+        for (final n in newNpcs) '${n.pos.x},${n.pos.y}',
+      });
+    } else {
+      newDungeon = DungeonGenerator().generate(seed: targetSeed, width: 34, height: 34);
+      newProps = generateDungeonProps(newDungeon);
+      final floorEnemies = generateDungeonEnemies(newDungeon, excluding: {
+        for (final p in newProps) '${p.pos.x},${p.pos.y}',
+      });
+      final floorRoaming = generateDungeonRoamingNpcs(newDungeon, excluding: {
+        for (final p in newProps) '${p.pos.x},${p.pos.y}',
+        for (final e in floorEnemies) '${e.pos.x},${e.pos.y}',
+      });
+      newNpcs = [...floorEnemies, ...floorRoaming];
+      newAnimals = [];
+    }
+
+    final entry = Point(newDungeon.entryPoint.x, newDungeon.entryPoint.y);
+
+    setState(() {
+      _seed = targetSeed;
+      _currentEnvironment = targetEnv;
+      _dungeon = newDungeon;
+      playerPos = m.Point(entry.x, entry.y);
+      visited = {'${entry.x},${entry.y}'};
+      _props = newProps;
+      _npcs = newNpcs;
+      _animals = newAnimals;
+      _traps.clear();
+      _revealedTraps.clear();
+      _openedDoors.clear();
+      _activePath = null;
+      _mapInitialized = true;
+      _mapCentered = false;
+      _discoveredRoomIds.clear();
+      for (final r in newDungeon.rooms) {
+        if (r.contains(playerPos)) {
+          _discoveredRoomIds.add(r.id);
+        }
+      }
+    });
+
+    if (campaign != null) {
+      ref.read(campaignProvider.notifier).setEnvironment(
+            targetEnv,
+            entryPoint: entry,
+            seed: targetSeed,
+          );
+      final updated = ref.read(campaignProvider);
+      if (widget.sessionId != null && _isMultiplayerHost == true && updated != null) {
+        SessionRepository.instance.pushState(widget.sessionId!, updated);
+      }
+    }
+
+    AudioService.instance.playSuccess();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Traveled to $regionTitle!'),
+        backgroundColor: const Color(0xFF1B1429),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  void _showWorldTravelSheet() {
+    AudioService.instance.playTap();
+    final currentEnv = _currentEnvironment ?? 'dungeon';
+
+    final realms = <({
+      String id,
+      String name,
+      String type,
+      IconData icon,
+      Color color,
+      String desc,
+      List<String> features,
+    })>[
+      (
+        id: 'forest',
+        name: 'Whispering Woods',
+        type: 'Wilderness Canopy & Rivers',
+        icon: Icons.forest_rounded,
+        color: const Color(0xFF4E9A51),
+        desc: 'Ancient towering canopy trees, sun-dappled winding dirt trails, crystal river footbridges, and wild fauna.',
+        features: const ['3D Trees', 'River Bridges', 'Wildlife & Scouts', 'Wild Deer & Wolves'],
+      ),
+      (
+        id: 'village',
+        name: 'Oakhaven Village',
+        type: 'Civilized Town & Bazaar',
+        icon: Icons.location_city_rounded,
+        color: const Color(0xFFE5A93C),
+        desc: 'Cobblestone avenues, town square water fountain, blacksmith forge, merchant houses, guards, and townsfolk.',
+        features: const ['Cobblestone Streets', 'Town Fountain', 'Blacksmith & Houses', 'Villagers & Dogs'],
+      ),
+      (
+        id: 'cave',
+        name: 'Crystalline Caverns',
+        type: 'Subterranean Abyss',
+        icon: Icons.terrain_rounded,
+        color: const Color(0xFF5B8DEF),
+        desc: 'Organic winding rock chambers, luminous geode crystals, subterranean pools, cave bats, and dwarven miners.',
+        features: const ['Rock Chambers', 'Glowing Geodes', 'Cave Bats & Spiders', 'Dwarven Miners'],
+      ),
+      (
+        id: 'tavern',
+        name: 'The Gilded Goblet',
+        type: 'Tavern Sanctuary',
+        icon: Icons.sports_bar_rounded,
+        color: const Color(0xFFD97706),
+        desc: 'Warm timber hearth, roaring fire, bustling tavern patrons, bardic melodies, and friendly companions.',
+        features: const ['Timber Hearth', 'Barkeep & Bards', 'Sanctuary & Rest', 'Companion Banter'],
+      ),
+      (
+        id: 'dungeon',
+        name: 'Ancient Catacombs',
+        type: 'Stone Dungeon & Crypts',
+        icon: Icons.castle_rounded,
+        color: const Color(0xFF9E77ED),
+        desc: 'Sprawling subterranean fortress with carved flagstones, locked iron gates, spiked traps, and roaming undead.',
+        features: const ['Stone Halls', 'Locked Gates', 'Treasure Chests', 'Undead Warlords'],
+      ),
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF10121A),
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.85,
+          ),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFD54F).withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFFFFD54F).withValues(alpha: 0.4)),
+                    ),
+                    child: const Icon(Icons.travel_explore_rounded, color: Color(0xFFFFD54F), size: 22),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'REALM TRAVEL & EXPLORATION',
+                          style: GoogleFonts.cinzel(fontSize: 15, fontWeight: FontWeight.w800, color: Colors.white),
+                        ),
+                        Text(
+                          'Choose an environment to travel to with your party',
+                          style: GoogleFonts.ibmPlexSans(fontSize: 11, color: Colors.white60),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded, color: Colors.white60, size: 20),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Flexible(
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: realms.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 10),
+                  itemBuilder: (context, i) {
+                    final r = realms[i];
+                    final isCurrent = r.id == currentEnv;
+                    return Material(
+                      color: isCurrent
+                          ? r.color.withValues(alpha: 0.18)
+                          : const Color(0xFF161A26),
+                      borderRadius: BorderRadius.circular(12),
+                      clipBehavior: Clip.antiAlias,
+                      child: InkWell(
+                        onTap: isCurrent
+                            ? null
+                            : () {
+                                Navigator.pop(ctx);
+                                _travelToEnvironment(r.id, r.name);
+                              },
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                              color: isCurrent
+                                  ? r.color
+                                  : Colors.white.withValues(alpha: 0.08),
+                              width: isCurrent ? 1.5 : 1.0,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: r.color.withValues(alpha: 0.2),
+                                      shape: BoxShape.circle,
+                                      border: Border.all(color: r.color.withValues(alpha: 0.5)),
+                                    ),
+                                    child: Icon(r.icon, color: r.color, size: 20),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Text(
+                                              r.name,
+                                              style: GoogleFonts.cinzel(
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w700,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                            if (isCurrent) ...[
+                                              const SizedBox(width: 8),
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                decoration: BoxDecoration(
+                                                  color: r.color.withValues(alpha: 0.3),
+                                                  borderRadius: BorderRadius.circular(4),
+                                                  border: Border.all(color: r.color),
+                                                ),
+                                                child: Text(
+                                                  'ACTIVE REALM',
+                                                  style: GoogleFonts.ibmPlexSans(
+                                                    fontSize: 8.5,
+                                                    fontWeight: FontWeight.w800,
+                                                    color: r.color,
+                                                    letterSpacing: 0.6,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ],
+                                        ),
+                                        Text(
+                                          r.type,
+                                          style: GoogleFonts.ibmPlexSans(
+                                            fontSize: 10.5,
+                                            fontWeight: FontWeight.w500,
+                                            color: r.color,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  if (!isCurrent)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                      decoration: BoxDecoration(
+                                        color: r.color.withValues(alpha: 0.2),
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(color: r.color.withValues(alpha: 0.6)),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            'Travel',
+                                            style: GoogleFonts.ibmPlexSans(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w700,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 4),
+                                          const Icon(Icons.arrow_forward_rounded, size: 13, color: Colors.white),
+                                        ],
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                r.desc,
+                                style: GoogleFonts.ibmPlexSans(
+                                  fontSize: 11,
+                                  color: Colors.white70,
+                                  height: 1.3,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Wrap(
+                                spacing: 6,
+                                runSpacing: 4,
+                                children: [
+                                  for (final feat in r.features)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withValues(alpha: 0.06),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Text(
+                                        feat,
+                                        style: GoogleFonts.ibmPlexSans(
+                                          fontSize: 9.5,
+                                          color: Colors.white60,
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -4180,13 +4641,21 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
                 ),
               );
             }),
-            // Live Quest Objective HUD overlay
+            // Live Quest Objective & Realm HUD overlay
             if (campaign != null && (campaign.questLog.isNotEmpty || campaign.sidequests.isNotEmpty))
               Positioned(
                 top: 8,
                 left: 8,
                 right: 64, // leave clearance for right-side map buttons
                 child: Builder(builder: (context) {
+                  final env = _currentEnvironment ?? 'dungeon';
+                  final (envName, envIcon, envColor) = switch (env) {
+                    'forest' => ('Woods', Icons.forest_rounded, const Color(0xFF4E9A51)),
+                    'village' => ('Village', Icons.location_city_rounded, const Color(0xFFE5A93C)),
+                    'cave' => ('Cavern', Icons.terrain_rounded, const Color(0xFF5B8DEF)),
+                    'tavern' => ('Tavern', Icons.sports_bar_rounded, const Color(0xFFD97706)),
+                    _ => ('Dungeon', Icons.castle_rounded, const Color(0xFF9E77ED)),
+                  };
                   final activeBeat = campaign.questLog.where((q) => q.status == 'active').firstOrNull;
                   final beatIdx = activeBeat != null ? campaign.questLog.indexOf(activeBeat) + 1 : campaign.questLog.length;
                   final title = activeBeat?.title ?? 'Dungeon Cleansed';
@@ -4203,33 +4672,52 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
                     ),
                     child: Row(
                       children: [
+                        // Realm travel button & indicator
+                        Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: _showWorldTravelSheet,
+                            borderRadius: const BorderRadius.horizontal(left: Radius.circular(10)),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(envIcon, size: 14, color: envColor),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    envName.toUpperCase(),
+                                    style: GoogleFonts.cinzel(fontSize: 9, fontWeight: FontWeight.w800, color: envColor, letterSpacing: 0.5),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        Container(width: 1, height: 26, color: ArcaneTheme.secondary.withValues(alpha: 0.3)),
                         Expanded(
                           child: Material(
                             color: Colors.transparent,
                             child: InkWell(
                               onTap: () => _showExplorationCodex(initialTab: 0),
-                              borderRadius: BorderRadius.horizontal(
-                                left: const Radius.circular(10),
-                                right: totalSq == 0 ? const Radius.circular(10) : Radius.zero,
-                              ),
                               child: Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                                 child: Row(
                                   children: [
-                                    const Icon(Icons.explore_rounded, size: 16, color: ArcaneTheme.secondary),
-                                    const SizedBox(width: 8),
+                                    const Icon(Icons.explore_rounded, size: 14, color: ArcaneTheme.secondary),
+                                    const SizedBox(width: 6),
                                     Expanded(
                                       child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
                                           Text(
-                                            'QUEST BEAT $beatIdx/${campaign.questLog.length}',
-                                            style: GoogleFonts.cinzel(fontSize: 9.5, fontWeight: FontWeight.w800, color: ArcaneTheme.secondary, letterSpacing: 0.8),
+                                            'BEAT $beatIdx/${campaign.questLog.length}',
+                                            style: GoogleFonts.cinzel(fontSize: 9, fontWeight: FontWeight.w800, color: ArcaneTheme.secondary, letterSpacing: 0.8),
                                           ),
                                           Text(
                                             title,
-                                            style: GoogleFonts.ibmPlexSans(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white),
+                                            style: GoogleFonts.ibmPlexSans(fontSize: 10.5, fontWeight: FontWeight.w600, color: Colors.white),
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
                                           ),
@@ -4237,7 +4725,7 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
                                       ),
                                     ),
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                                       decoration: BoxDecoration(
                                         color: ArcaneTheme.secondary.withValues(alpha: 0.2),
                                         borderRadius: BorderRadius.circular(6),
@@ -4245,7 +4733,7 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
                                       ),
                                       child: Text(
                                         '${_discoveredRoomIds.length}/${_dungeon.rooms.length}',
-                                        style: GoogleFonts.ibmPlexSans(fontSize: 9.5, color: ArcaneTheme.secondary, fontWeight: FontWeight.w700),
+                                        style: GoogleFonts.ibmPlexSans(fontSize: 9, color: ArcaneTheme.secondary, fontWeight: FontWeight.w700),
                                       ),
                                     ),
                                   ],
@@ -4266,12 +4754,12 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    const Text('📜', style: TextStyle(fontSize: 12)),
-                                    const SizedBox(width: 4),
+                                    const Text('📜', style: TextStyle(fontSize: 11)),
+                                    const SizedBox(width: 3),
                                     Text(
                                       '$completedSq/$totalSq SQ',
                                       style: GoogleFonts.ibmPlexSans(
-                                        fontSize: 9.5,
+                                        fontSize: 9,
                                         fontWeight: FontWeight.w700,
                                         color: completedSq == totalSq ? const Color(0xFF3DD68C) : ArcaneTheme.secondary,
                                       ),
@@ -4286,6 +4774,51 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
                     ),
                   );
                 }),
+              )
+            else
+              Positioned(
+                top: 8,
+                left: 8,
+                child: Builder(builder: (context) {
+                  final env = _currentEnvironment ?? 'dungeon';
+                  final (envName, envIcon, envColor) = switch (env) {
+                    'forest' => ('Woods', Icons.forest_rounded, const Color(0xFF4E9A51)),
+                    'village' => ('Village', Icons.location_city_rounded, const Color(0xFFE5A93C)),
+                    'cave' => ('Cavern', Icons.terrain_rounded, const Color(0xFF5B8DEF)),
+                    'tavern' => ('Tavern', Icons.sports_bar_rounded, const Color(0xFFD97706)),
+                    _ => ('Dungeon', Icons.castle_rounded, const Color(0xFF9E77ED)),
+                  };
+                  return Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF10121A).withValues(alpha: 0.90),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: envColor.withValues(alpha: 0.6)),
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: _showWorldTravelSheet,
+                        borderRadius: BorderRadius.circular(10),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(envIcon, size: 14, color: envColor),
+                              const SizedBox(width: 6),
+                              Text(
+                                envName.toUpperCase(),
+                                style: GoogleFonts.cinzel(fontSize: 10, fontWeight: FontWeight.w800, color: envColor),
+                              ),
+                              const SizedBox(width: 6),
+                              const Icon(Icons.travel_explore_rounded, size: 12, color: Colors.white70),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }),
               ),
             // Controls overlay
             Positioned(
@@ -4293,11 +4826,11 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
               top: 8,
               child: Column(children: [
                 _MapBtn(icon: Icons.add_rounded, onTap: () => _zoomBy(1.4)),
-                const SizedBox(height: 6),
+                const SizedBox(height: 5),
                 _MapBtn(icon: Icons.remove_rounded, onTap: () => _zoomBy(1 / 1.4)),
-                const SizedBox(height: 6),
+                const SizedBox(height: 5),
                 _MapBtn(icon: Icons.my_location_rounded, onTap: _recenterOnPlayer),
-                const SizedBox(height: 6),
+                const SizedBox(height: 5),
                 _MapBtn(
                   icon: _is3dPerspective ? Icons.view_in_ar_rounded : Icons.layers_rounded,
                   color: _is3dPerspective ? ArcaneTheme.secondary : null,
@@ -4313,9 +4846,15 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
                     );
                   },
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 5),
+                _MapBtn(
+                  icon: Icons.travel_explore_rounded,
+                  color: const Color(0xFFFFD54F),
+                  onTap: _showWorldTravelSheet,
+                ),
+                const SizedBox(height: 5),
                 _MapBtn(icon: Icons.map_rounded, onTap: _showMinimap),
-                const SizedBox(height: 6),
+                const SizedBox(height: 5),
                 _MapBtn(icon: Icons.auto_stories_rounded, onTap: _showCampaignJournal),
               ]),
             ),
@@ -4677,11 +5216,13 @@ class _DungeonMinimapPainter extends CustomPainter {
   final m.DungeonMap dungeon;
   final m.Point playerPos;
   final Set<String> visited;
+  final String environment;
 
   _DungeonMinimapPainter({
     required this.dungeon,
     required this.playerPos,
     required this.visited,
+    this.environment = 'dungeon',
   });
 
   @override
@@ -4689,10 +5230,23 @@ class _DungeonMinimapPainter extends CustomPainter {
     final cellW = size.width / dungeon.width;
     final cellH = size.height / dungeon.height;
 
-    final wallPaint = Paint()..color = const Color(0xFF140F22);
-    final visitedFloorPaint = Paint()..color = const Color(0xFF4A3B69);
-    final unvisitedFloorPaint = Paint()..color = const Color(0xFF221A38);
+    final wallPaint = Paint()..color = environment == 'forest' ? const Color(0xFF0F1E12) : (environment == 'village' ? const Color(0xFF1F1B14) : const Color(0xFF140F22));
+    final visitedFloorPaint = Paint()..color = switch (environment) {
+      'forest' => const Color(0xFF2E5E35),
+      'village' => const Color(0xFF5C4E38),
+      'cave' => const Color(0xFF2E4562),
+      'tavern' => const Color(0xFF6B4226),
+      _ => const Color(0xFF4A3B69),
+    };
+    final unvisitedFloorPaint = Paint()..color = switch (environment) {
+      'forest' => const Color(0xFF152A18),
+      'village' => const Color(0xFF282218),
+      'cave' => const Color(0xFF162231),
+      'tavern' => const Color(0xFF332012),
+      _ => const Color(0xFF221A38),
+    };
     final doorPaint = Paint()..color = const Color(0xFF3DD68C);
+    final waterPaint = Paint()..color = const Color(0xFF2B5B84);
     final playerPaint = Paint()..color = const Color(0xFFFFB300);
 
     for (var y = 0; y < dungeon.height; y++) {
@@ -4703,6 +5257,8 @@ class _DungeonMinimapPainter extends CustomPainter {
 
         if (tile == m.TileType.wall) {
           canvas.drawRect(rect, wallPaint);
+        } else if (tile == m.TileType.water) {
+          canvas.drawRect(rect, waterPaint);
         } else if (tile == m.TileType.door) {
           canvas.drawRect(rect, doorPaint);
         } else if (isVisited) {

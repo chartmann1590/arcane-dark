@@ -86,13 +86,101 @@ class IsoMapView extends StatelessWidget {
     final originX = dungeon.height * tileW / 2;
     const originY = tileH / 2;
     final totalWidth = (dungeon.width + dungeon.height) * tileW / 2 + tileW;
-    final totalHeight = (dungeon.width + dungeon.height) * tileH / 2 + wallRise + tileH * 2;
+    final totalHeight = (dungeon.width + dungeon.height) * tileH / 2 + wallRise + tileH * 2 + 32;
     final torches = _torchPositions;
 
-    final coords = <m.Point>[
-      for (var y = 0; y < dungeon.height; y++)
-        for (var x = 0; x < dungeon.width; x++) m.Point(x, y),
-    ]..sort((a, b) => (a.x + a.y).compareTo(b.x + b.y));
+    final renderItems = <_IsoRenderItem>[];
+
+    // 1. All map tiles (ground layer 10, wall/tree layer 70)
+    for (var y = 0; y < dungeon.height; y++) {
+      for (var x = 0; x < dungeon.width; x++) {
+        final tile = dungeon.tileAt(x, y);
+        final isWall = tile == m.TileType.wall || tile == m.TileType.mountain;
+        final layer = isWall ? 70.0 : 10.0;
+        final depth = (x + y) * 100.0 + layer;
+        renderItems.add(_IsoRenderItem(
+          depth: depth,
+          widget: _buildTile(x, y, originX, originY, torches),
+        ));
+      }
+    }
+
+    // 2. Props (rugs 15, low ground props 25, tall furniture/statues 65)
+    for (final prop in props) {
+      if (!_isFogged(prop.pos)) {
+        final isRug = prop.asset.contains('rug');
+        final isTall = prop.asset.contains('statue') || prop.asset.contains('bookshelf') || prop.asset.contains('altar');
+        final layer = isRug ? 15.0 : (isTall ? 65.0 : 25.0);
+        final depth = (prop.pos.x + prop.pos.y) * 100.0 + layer;
+        renderItems.add(_IsoRenderItem(
+          depth: depth,
+          widget: _buildProp(prop, originX, originY),
+        ));
+      }
+    }
+
+    // 3. Animals (layer 35)
+    for (final animal in animals) {
+      if (!_isFogged(animal.pos)) {
+        final depth = (animal.pos.x + animal.pos.y) * 100.0 + 35.0;
+        renderItems.add(_IsoRenderItem(
+          depth: depth,
+          widget: _buildAnimal(animal, originX, originY),
+        ));
+      }
+    }
+
+    // 4. Pet Companion (layer 40)
+    if (activePet != null && activePet!.id != 'none') {
+      final depth = (playerPos.x + playerPos.y) * 100.0 + 40.0;
+      renderItems.add(_IsoRenderItem(
+        depth: depth,
+        widget: _buildPetCompanion(activePet!, originX, originY),
+      ));
+    }
+
+    // 5. NPCs (layer 45)
+    for (final npc in npcs) {
+      if (!_isFogged(npc.pos)) {
+        final depth = (npc.pos.x + npc.pos.y) * 100.0 + 45.0;
+        renderItems.add(_IsoRenderItem(
+          depth: depth,
+          widget: _buildNpc(npc, originX, originY),
+        ));
+      }
+    }
+
+    // 6. Party Members (Player + AI Companions, layer 50)
+    if (partyMembers.isNotEmpty) {
+      for (var i = 0; i < partyMembers.length; i++) {
+        final mPos = partyMembers[i].pos ?? playerPos;
+        final depth = (mPos.x + mPos.y) * 100.0 + 50.0 + (i * 0.1);
+        renderItems.add(_IsoRenderItem(
+          depth: depth,
+          widget: _buildPartyMember(partyMembers[i], i, originX, originY),
+        ));
+      }
+    } else {
+      final depth = (playerPos.x + playerPos.y) * 100.0 + 50.0;
+      renderItems.add(_IsoRenderItem(
+        depth: depth,
+        widget: _buildPartyMember(const PartyMemberVisual(name: 'You', portraitAsset: null), 0, originX, originY),
+      ));
+    }
+
+    // 7. Sidequest Beacons (layer 85)
+    for (final beacon in sidequestMarkers ?? const <SidequestMarker>[]) {
+      if (!_isFogged(beacon.pos)) {
+        final depth = (beacon.pos.x + beacon.pos.y) * 100.0 + 85.0;
+        renderItems.add(_IsoRenderItem(
+          depth: depth,
+          widget: _buildSidequestBeacon(beacon, originX, originY),
+        ));
+      }
+    }
+
+    // Sort strictly by depth (Painter's Algorithm: back-to-front rendering)
+    renderItems.sort((a, b) => a.depth.compareTo(b.depth));
 
     return SizedBox(
       width: totalWidth,
@@ -100,14 +188,7 @@ class IsoMapView extends StatelessWidget {
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          for (final p in coords) _buildTile(p.x, p.y, originX, originY, torches),
-          for (final prop in props) _buildProp(prop, originX, originY),
-          for (final beacon in sidequestMarkers ?? const <SidequestMarker>[]) _buildSidequestBeacon(beacon, originX, originY),
-          for (final animal in animals) _buildAnimal(animal, originX, originY),
-          for (final npc in npcs) _buildNpc(npc, originX, originY),
-          for (var i = 0; i < partyMembers.length; i++) _buildPartyMember(partyMembers[i], i, originX, originY),
-          if (partyMembers.isEmpty) _buildPartyMember(const PartyMemberVisual(name: 'You', portraitAsset: null), 0, originX, originY),
-          if (activePet != null && activePet!.id != 'none') _buildPetCompanion(activePet!, originX, originY),
+          for (final item in renderItems) item.widget,
           _IsoAtmosphericParticlesWidget(width: totalWidth, height: totalHeight, seed: dungeon.seed),
         ],
       ),
@@ -121,8 +202,11 @@ class IsoMapView extends StatelessWidget {
     final isDoorOpen = openedDoors.contains('$x,$y');
     final isVisited = visited.contains('$x,$y');
     final isPlayer = playerPos.x == x && playerPos.y == y;
+    final isForest = environment == 'forest';
+    final isVillage = environment == 'village';
+    final isCave = environment == 'cave';
     final isTavern = environment == 'tavern';
-    final canFog = !isTavern;
+    final canFog = !isTavern && !isVillage;
 
     final tileAsset = switch (tile) {
       m.TileType.wall => isTavern ? 'assets/tiles/wall_tavern.png' : 'assets/tiles/wall.png',
@@ -134,8 +218,19 @@ class IsoMapView extends StatelessWidget {
       m.TileType.plains => 'assets/tiles/plains.png',
     };
 
+    // Cutaway South Walls: A wall that borders a walkable floor to its North/West
+    // is between the room and the camera. Render with low cutaway curb (12px)
+    // so the camera looks directly into the room without obstructing characters!
+    final hasFloorNorth = (x > 0 && dungeon.tileAt(x - 1, y).walkable) ||
+        (y > 0 && dungeon.tileAt(x, y - 1).walkable) ||
+        (x > 0 && y > 0 && dungeon.tileAt(x - 1, y - 1).walkable);
+
     final raised = isWall || (isDoor && !isDoorOpen);
-    final riseH = raised ? wallRise : 0.0;
+    final riseH = raised
+        ? (isForest && isWall
+            ? 38.0
+            : (hasFloorNorth ? 12.0 : wallRise))
+        : 0.0;
     final origin = _project(x, y, originX, originY);
     final lightIntensity = _lightIntensityAt(x, y, torches);
     final isTargetWaypoint = targetWaypoint != null && targetWaypoint!.x == x && targetWaypoint!.y == y;
@@ -192,14 +287,24 @@ class IsoMapView extends StatelessWidget {
               height: tileH + riseH,
               child: CustomPaint(
                 size: Size(tileW, tileH + riseH),
-                painter: _Iso3DWallPainter(
-                  isDoor: isDoor && !isDoorOpen,
-                  isTavern: isTavern,
-                  torchGlow: lightIntensity,
-                  isVisited: isVisited,
-                  canFog: canFog,
-                  riseH: riseH,
-                ),
+                painter: (isForest && isWall)
+                    ? _Iso3DTreePainter(
+                        torchGlow: lightIntensity,
+                        isVisited: isVisited,
+                        canFog: canFog,
+                        treeSeed: (x * 47 + y * 89) & 0xFFFF,
+                      )
+                    : _Iso3DWallPainter(
+                        isDoor: isDoor && !isDoorOpen,
+                        isTavern: isTavern,
+                        isVillage: isVillage,
+                        isCave: isCave,
+                        torchGlow: lightIntensity,
+                        isVisited: isVisited,
+                        canFog: canFog,
+                        riseH: riseH,
+                        isCutaway: hasFloorNorth,
+                      ),
               ),
             )
           else ...[
@@ -229,7 +334,7 @@ class IsoMapView extends StatelessWidget {
                 child: Stack(fit: StackFit.expand, children: [
                   Image.asset(tileAsset, fit: BoxFit.fill),
                   // Multi-layered 3D Flagstone relief & room theme symbols
-                  if (tile == m.TileType.floor || (isDoor && isDoorOpen))
+                  if (tile == m.TileType.floor || (isDoor && isDoorOpen) || tile == m.TileType.plains)
                     CustomPaint(
                       size: const Size(tileW, tileH),
                       painter: _IsoFloorReliefPainter(
@@ -237,6 +342,7 @@ class IsoMapView extends StatelessWidget {
                         isRoomCenter: isRoomCenter,
                         torchGlow: lightIntensity,
                         tileSeed: (x * 31 + y * 17) & 0xFFFF,
+                        environment: environment,
                       ),
                     )
                   else if (tile == m.TileType.water)
@@ -325,8 +431,13 @@ class IsoMapView extends StatelessWidget {
     final isSarcophagus = prop.asset.contains('sarcophagus');
     final isLectern = prop.asset.contains('lectern');
     final isStatue = prop.asset.contains('statue');
-    final isCrystals = prop.asset.contains('crystals');
+    final isCrystals = prop.asset.contains('crystals') || prop.asset.contains('geode');
     final isCrates = prop.asset.contains('crates');
+    final isFountain = prop.asset.contains('fountain') || prop.asset.contains('well');
+    final isForge = prop.asset.contains('forge') || prop.asset.contains('anvil');
+    final isStall = prop.asset.contains('stall') || prop.asset.contains('market');
+    final isShrine = prop.asset.contains('shrine');
+    final isCart = prop.asset.contains('cart') || prop.asset.contains('wagon');
 
     Offset propDown = Offset.zero;
 
@@ -361,13 +472,29 @@ class IsoMapView extends StatelessWidget {
       childWidget = const _RugPropWidget();
     } else if (isChair) {
       childWidget = const _ChairPropWidget();
+    } else if (isFountain) {
+      childWidget = const _FountainPropWidget();
+    } else if (isForge) {
+      childWidget = const _ForgePropWidget();
+    } else if (isStall) {
+      childWidget = const _MarketStallPropWidget();
+    } else if (isShrine) {
+      childWidget = const _ShrinePropWidget();
+    } else if (isCart) {
+      childWidget = const _CartPropWidget();
     } else {
-      childWidget = Image.asset(prop.asset, width: 48, height: 48, fit: BoxFit.contain);
+      childWidget = Image.asset(
+        prop.asset,
+        width: 48,
+        height: 48,
+        fit: BoxFit.contain,
+        errorBuilder: (ctx, err, stack) => _GenericPropWidget(prop: prop),
+      );
     }
 
     return Positioned(
       left: origin.dx + tileW / 2 - 24,
-      top: origin.dy - (isRug ? 10 : (isStatue ? 32 : 22)),
+      top: origin.dy + 18.0 - (isRug ? 16 : (isStatue ? 48 : 34)),
       child: Listener(
         behavior: HitTestBehavior.opaque,
         onPointerDown: (e) => propDown = e.position,
@@ -446,31 +573,48 @@ class IsoMapView extends StatelessWidget {
       'rat' => '🐀',
       'beetle' => '🪲',
       'frog' => '🐸',
-      _ => '🐾',
+      _ => animal.emoji.isNotEmpty ? animal.emoji : '🐾',
     };
 
     return Positioned(
       left: origin.dx + tileW / 2 - 13,
-      top: origin.dy - 12,
+      top: origin.dy + 18.0 - 26,
       child: Listener(
         behavior: HitTestBehavior.opaque,
         onPointerDown: onAnimalTap == null ? null : (_) => onAnimalTap!(animal),
         child: Pulse(
           duration: const Duration(milliseconds: 2000),
-          child: Container(
-            width: 26,
-            height: 26,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: const Color(0xFF1E1428),
-              border: Border.all(color: const Color(0xFF3DD68C), width: 1.5),
-              boxShadow: [
-                BoxShadow(color: const Color(0xFF3DD68C).withValues(alpha: 0.4), blurRadius: 6),
-              ],
-            ),
-            child: Center(
-              child: Text(emoji, style: const TextStyle(fontSize: 13)),
-            ),
+          child: Stack(
+            clipBehavior: Clip.none,
+            alignment: Alignment.center,
+            children: [
+              Positioned(
+                bottom: -2,
+                child: Container(
+                  width: 20,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.black.withValues(alpha: 0.5),
+                  ),
+                ),
+              ),
+              Container(
+                width: 26,
+                height: 26,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFF1E1428),
+                  border: Border.all(color: const Color(0xFF3DD68C), width: 1.5),
+                  boxShadow: [
+                    BoxShadow(color: const Color(0xFF3DD68C).withValues(alpha: 0.4), blurRadius: 6),
+                  ],
+                ),
+                child: Center(
+                  child: Text(emoji, style: const TextStyle(fontSize: 13)),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -481,7 +625,7 @@ class IsoMapView extends StatelessWidget {
     final origin = _project(playerPos.x, playerPos.y, originX, originY);
     final isFlying = pet.isFlying;
     final petX = origin.dx + tileW / 2 + (isFlying ? 11 : 9);
-    final petY = origin.dy + (isFlying ? -16 : -3);
+    final petY = origin.dy + 18.0 - (isFlying ? 36 : 24);
 
     return Positioned(
       left: petX,
@@ -583,10 +727,10 @@ class IsoMapView extends StatelessWidget {
   Widget _buildNpc(MapNpc npc, double originX, double originY) {
     if (_isFogged(npc.pos)) return const SizedBox.shrink();
     final origin = _project(npc.pos.x, npc.pos.y, originX, originY);
-    final token = Padding(padding: const EdgeInsets.all(8), child: _NpcToken(npc: npc));
+    final token = Padding(padding: const EdgeInsets.all(4), child: _NpcToken(npc: npc));
     return Positioned(
-      left: origin.dx + tileW / 2 - 23,
-      top: origin.dy - (npc.isHostile ? 28 : 24),
+      left: origin.dx + tileW / 2 - 20,
+      top: origin.dy + 18.0 - (npc.isHostile ? 38 : 34),
       child: Listener(
         behavior: HitTestBehavior.opaque,
         onPointerDown: onNpcTap == null ? null : (_) => onNpcTap!(npc),
@@ -597,10 +741,10 @@ class IsoMapView extends StatelessWidget {
 
   static const _clusterOffsets = [
     Offset(0, 0),
-    Offset(-14, 6),
-    Offset(14, 6),
-    Offset(-12, -6),
-    Offset(12, -6),
+    Offset(-9, 3),
+    Offset(9, 3),
+    Offset(-7, -4),
+    Offset(7, -4),
   ];
 
   Widget _buildPartyMember(PartyMemberVisual member, int index, double originX, double originY) {
@@ -610,22 +754,23 @@ class IsoMapView extends StatelessWidget {
     Offset offset = sharingTile ? _clusterOffsets[index % _clusterOffsets.length] : Offset.zero;
 
     // Strict boundary adherence: ensure character is never pushed towards or over adjacent walls
-    if (offset.dy < 0 && (dungeon.tileAt(pos.x, pos.y - 1) == m.TileType.wall || dungeon.tileAt(pos.x - 1, pos.y) == m.TileType.wall)) {
+    if (offset.dy < 0 && (pos.y > 0 && dungeon.tileAt(pos.x, pos.y - 1) == m.TileType.wall ||
+        pos.x > 0 && dungeon.tileAt(pos.x - 1, pos.y) == m.TileType.wall)) {
       offset = Offset(offset.dx, 0);
     }
-    if (offset.dx < 0 && dungeon.tileAt(pos.x - 1, pos.y) == m.TileType.wall) {
+    if (offset.dx < 0 && pos.x > 0 && dungeon.tileAt(pos.x - 1, pos.y) == m.TileType.wall) {
       offset = Offset(0, offset.dy);
     }
-    if (offset.dx > 0 && dungeon.tileAt(pos.x + 1, pos.y) == m.TileType.wall) {
+    if (offset.dx > 0 && pos.x < dungeon.width - 1 && dungeon.tileAt(pos.x + 1, pos.y) == m.TileType.wall) {
       offset = Offset(0, offset.dy);
     }
 
     final isLead = index == 0;
     final tokenSize = isLead ? 30.0 : 26.0;
-    // Grounding: tile diamond is vertically [origin.dy, origin.dy + 32], center is origin.dy + 16.
-    // Placing token at origin.dy + (tileH - tokenSize)/2 centers it vertically within the diamond.
-    final tokenTop = origin.dy + (tileH - tokenSize) / 2 + offset.dy;
+    // Grounding: tile diamond center floor line is origin.dy + 18.0.
+    // Miniature token stands upright from the floor slab:
     final tokenLeft = origin.dx + tileW / 2 - tokenSize / 2 + offset.dx;
+    final tokenTop = origin.dy + 18.0 - tokenSize + offset.dy;
 
     final token = _PartyToken(
       portraitAsset: member.portraitAsset,
@@ -800,44 +945,87 @@ class _PartyToken extends StatelessWidget {
       clipBehavior: Clip.none,
       alignment: Alignment.center,
       children: [
-        // Ground shadow firmly anchoring token to the isometric tile center
+        // 1. Isometric Ground Drop Shadow firmly resting on the floor slab
         Positioned(
-          bottom: -2,
+          bottom: -4,
           child: Container(
-            width: size * 0.85,
+            width: size * 0.95,
             height: 7,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Colors.black.withValues(alpha: 0.55),
+              color: Colors.black.withValues(alpha: 0.65),
               boxShadow: [
-                BoxShadow(color: Colors.black.withValues(alpha: 0.45), blurRadius: 4),
+                BoxShadow(color: Colors.black.withValues(alpha: 0.5), blurRadius: 4, spreadRadius: 1),
               ],
             ),
           ),
         ),
-        // Token avatar circle
+        // 2. 3D Miniature Figurine Beveled Pedestal Base Ring
+        Positioned(
+          bottom: -2,
+          child: Container(
+            width: size * 0.88,
+            height: 5,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: isLead
+                    ? [const Color(0xFFFFE082), const Color(0xFFC67C00)]
+                    : [const Color(0xFF80DEEA), const Color(0xFF00838F)],
+              ),
+              border: Border.all(
+                color: isLead ? const Color(0xFFFFD54F) : const Color(0xFF4DD0E1),
+                width: 0.8,
+              ),
+            ),
+          ),
+        ),
+        // 3. Upright Character Portrait Avatar Token
         Container(
           width: size,
           height: size,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(color: color, width: isLead ? 2 : 1.5),
+            border: Border.all(color: color, width: isLead ? 2.2 : 1.6),
             boxShadow: [
               BoxShadow(
-                color: color.withValues(alpha: isLead ? 0.6 : 0.4),
-                blurRadius: isLead ? 10 : 6,
+                color: color.withValues(alpha: isLead ? 0.65 : 0.45),
+                blurRadius: isLead ? 12 : 7,
                 spreadRadius: isLead ? 1 : 0,
-              )
+              ),
+              const BoxShadow(
+                color: Colors.black87,
+                blurRadius: 4,
+                offset: Offset(0, 2),
+              ),
             ],
             image: portraitAsset != null ? DecorationImage(image: AssetImage(portraitAsset!), fit: BoxFit.cover) : null,
             color: portraitAsset == null ? color : null,
           ),
           child: portraitAsset == null ? Icon(Icons.person_rounded, size: isLead ? 17 : 14, color: Colors.white) : null,
         ),
+        // Lead Hero Crown Badge
+        if (isLead)
+          Positioned(
+            top: -5,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFD54F),
+                borderRadius: BorderRadius.circular(4),
+                boxShadow: [
+                  BoxShadow(color: Colors.black.withValues(alpha: 0.6), blurRadius: 3),
+                ],
+              ),
+              child: const Text('👑', style: TextStyle(fontSize: 8)),
+            ),
+          ),
         // Speech / Banter bubble over character head
         if (speechBubble != null && speechBubble!.isNotEmpty)
           Positioned(
-            bottom: size + 4,
+            bottom: size + 6,
             child: Material(
               color: Colors.transparent,
               child: Container(
@@ -898,6 +1086,168 @@ class SidequestMarker {
   });
 }
 
+/// Depth-sorted renderable item for Painter's Algorithm in isometric diorama.
+class _IsoRenderItem {
+  final double depth;
+  final Widget widget;
+  const _IsoRenderItem({required this.depth, required this.widget});
+}
+
+/// 3D Layered Isometric Canopy Tree for Forest and Wilderness environments.
+class _Iso3DTreePainter extends CustomPainter {
+  final double torchGlow;
+  final bool isVisited;
+  final bool canFog;
+  final int treeSeed;
+
+  const _Iso3DTreePainter({
+    this.torchGlow = 0.0,
+    this.isVisited = true,
+    this.canFog = true,
+    this.treeSeed = 0,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    const tileH = IsoMapView.tileH; // 32
+    final centerX = w / 2;
+    final groundY = tileH + 12.0;
+
+    // 1. Isometric Ground Drop Shadow beneath tree base
+    final shadowPaint = Paint()
+      ..color = Colors.black.withValues(alpha: 0.45)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
+    canvas.drawOval(
+      Rect.fromCenter(center: Offset(centerX, groundY - 4), width: 38, height: 16),
+      shadowPaint,
+    );
+
+    // 2. Sturdy Wooden Tree Trunk
+    final trunkBase = groundY - 6;
+    const trunkHeight = 22.0;
+    final trunkTop = trunkBase - trunkHeight;
+
+    final trunkPath = Path()
+      ..moveTo(centerX - 5, trunkBase)
+      ..lineTo(centerX - 3.5, trunkTop)
+      ..lineTo(centerX + 3.5, trunkTop)
+      ..lineTo(centerX + 5, trunkBase)
+      ..close();
+
+    final trunkGradient = const LinearGradient(
+      begin: Alignment.centerLeft,
+      end: Alignment.centerRight,
+      colors: [
+        Color(0xFF2E1C0C),
+        Color(0xFF4E3620),
+        Color(0xFF382312),
+      ],
+    );
+    final trunkPaint = Paint()
+      ..shader = trunkGradient.createShader(Rect.fromLTWH(centerX - 5, trunkTop, 10, trunkHeight));
+    canvas.drawPath(trunkPath, trunkPaint);
+
+    // 3. Layered 3D Isometric Foliage Canopies
+    // Layer 1 (Bottom Tier - Broadest & Deep Forest Green)
+    _drawCanopyTier(
+      canvas,
+      centerX: centerX,
+      centerY: trunkTop + 4,
+      width: 46,
+      height: 24,
+      baseColor: const Color(0xFF133926),
+      highlightColor: const Color(0xFF1E5238),
+      torchGlow: torchGlow,
+      fogFactor: (canFog && !isVisited) ? 0.8 : 0.0,
+    );
+
+    // Layer 2 (Middle Tier - Lush Vibrant Emerald)
+    _drawCanopyTier(
+      canvas,
+      centerX: centerX,
+      centerY: trunkTop - 8,
+      width: 38,
+      height: 22,
+      baseColor: const Color(0xFF1E593E),
+      highlightColor: const Color(0xFF2D7A56),
+      torchGlow: torchGlow,
+      fogFactor: (canFog && !isVisited) ? 0.8 : 0.0,
+    );
+
+    // Layer 3 (Top Crown Tier - Sunlight Highlighted Leaf Crown)
+    _drawCanopyTier(
+      canvas,
+      centerX: centerX,
+      centerY: trunkTop - 20,
+      width: 28,
+      height: 18,
+      baseColor: const Color(0xFF2D7A56),
+      highlightColor: const Color(0xFF45A274),
+      torchGlow: torchGlow,
+      fogFactor: (canFog && !isVisited) ? 0.8 : 0.0,
+    );
+
+    // Subtle sunlit top pinnacle
+    final pinnaclePaint = Paint()
+      ..color = const Color(0xFF68C997).withValues(alpha: 0.7)
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(Offset(centerX, trunkTop - 26), 2.2, pinnaclePaint);
+  }
+
+  void _drawCanopyTier(
+    Canvas canvas, {
+    required double centerX,
+    required double centerY,
+    required double width,
+    required double height,
+    required Color baseColor,
+    required Color highlightColor,
+    required double torchGlow,
+    required double fogFactor,
+  }) {
+    Color litBase = baseColor;
+    Color litHigh = highlightColor;
+    if (torchGlow > 0) {
+      litBase = Color.lerp(litBase, const Color(0xFFD4A347), torchGlow * 0.35)!;
+      litHigh = Color.lerp(litHigh, const Color(0xFFFFD54F), torchGlow * 0.45)!;
+    }
+    if (fogFactor > 0) {
+      litBase = Color.lerp(litBase, const Color(0xFF090A12), fogFactor)!;
+      litHigh = Color.lerp(litHigh, const Color(0xFF0B0E18), fogFactor)!;
+    }
+
+    final path = Path()
+      ..moveTo(centerX, centerY - height / 2)
+      ..lineTo(centerX + width / 2, centerY)
+      ..lineTo(centerX, centerY + height / 2)
+      ..lineTo(centerX - width / 2, centerY)
+      ..close();
+
+    final grad = LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [litHigh, litBase, Color.lerp(litBase, Colors.black, 0.35)!],
+      stops: const [0.0, 0.55, 1.0],
+    );
+    final p = Paint()..shader = grad.createShader(Rect.fromCenter(center: Offset(centerX, centerY), width: width, height: height));
+    canvas.drawPath(path, p);
+
+    final bevelPaint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.12)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0;
+    canvas.drawPath(path, bevelPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _Iso3DTreePainter old) =>
+      old.torchGlow != torchGlow ||
+      old.isVisited != isVisited ||
+      old.canFog != canFog ||
+      old.treeSeed != treeSeed;
+}
+
 class _DiamondClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
@@ -916,18 +1266,24 @@ class _DiamondClipper extends CustomClipper<Path> {
 class _Iso3DWallPainter extends CustomPainter {
   final bool isDoor;
   final bool isTavern;
+  final bool isVillage;
+  final bool isCave;
   final double torchGlow;
   final bool isVisited;
   final bool canFog;
   final double riseH;
+  final bool isCutaway;
 
   const _Iso3DWallPainter({
     required this.isDoor,
     this.isTavern = false,
+    this.isVillage = false,
+    this.isCave = false,
     this.torchGlow = 0.0,
     this.isVisited = true,
     this.canFog = true,
     this.riseH = 32.0,
+    this.isCutaway = false,
   });
 
   @override
@@ -937,15 +1293,33 @@ class _Iso3DWallPainter extends CustomPainter {
     final rise = riseH;
 
     // Palette selection
-    Color leftBase = isDoor
-        ? const Color(0xFF2C1D13)
-        : (isTavern ? const Color(0xFF2E2014) : const Color(0xFF1B1726));
-    Color rightBase = isDoor
-        ? const Color(0xFF4A3222)
-        : (isTavern ? const Color(0xFF422E1D) : const Color(0xFF2E273F));
-    Color topBase = isDoor
-        ? const Color(0xFF382618)
-        : (isTavern ? const Color(0xFF3B2A1B) : const Color(0xFF252033));
+    Color leftBase;
+    Color rightBase;
+    Color topBase;
+
+    if (isDoor) {
+      leftBase = const Color(0xFF2C1D13);
+      rightBase = const Color(0xFF4A3222);
+      topBase = const Color(0xFF382618);
+    } else if (isVillage) {
+      // Medieval timber & warm stucco
+      leftBase = const Color(0xFFB8A692);
+      rightBase = const Color(0xFFD4C5B3);
+      topBase = const Color(0xFFC7B7A4);
+    } else if (isCave) {
+      // Rough subterranean cave rock
+      leftBase = const Color(0xFF161820);
+      rightBase = const Color(0xFF252936);
+      topBase = const Color(0xFF1E212B);
+    } else if (isTavern) {
+      leftBase = const Color(0xFF2E2014);
+      rightBase = const Color(0xFF422E1D);
+      topBase = const Color(0xFF3B2A1B);
+    } else {
+      leftBase = const Color(0xFF1B1726);
+      rightBase = const Color(0xFF2E273F);
+      topBase = const Color(0xFF252033);
+    }
 
     if (torchGlow > 0) {
       leftBase = Color.lerp(leftBase, const Color(0xFF5E2E10), torchGlow * 0.45)!;
@@ -971,7 +1345,6 @@ class _Iso3DWallPainter extends CustomPainter {
     final leftPaint = Paint()..color = leftBase;
     canvas.drawPath(leftPath, leftPaint);
 
-    // Front-Left Ashlar Masonry Courses
     final mortarPaint = Paint()
       ..color = Colors.black.withValues(alpha: 0.65)
       ..strokeWidth = 1.0
@@ -981,7 +1354,7 @@ class _Iso3DWallPainter extends CustomPainter {
       ..strokeWidth = 0.8
       ..style = PaintingStyle.stroke;
 
-    const numRows = 3;
+    final numRows = rise <= 14.0 ? 1 : 3;
     final rowH = rise / numRows;
     for (var r = 1; r <= numRows; r++) {
       final yOff = r * rowH;
@@ -1000,6 +1373,14 @@ class _Iso3DWallPainter extends CustomPainter {
       canvas.drawLine(Offset(jx2, jy2), Offset(jx2, jy2 + rowH), mortarPaint);
     }
 
+    // Timber framing overlay for village walls
+    if (isVillage && !isDoor && rise > 14.0) {
+      final timberPaint = Paint()
+        ..color = const Color(0xFF3E2723).withValues(alpha: 0.85)
+        ..strokeWidth = 2.0;
+      canvas.drawLine(Offset(0, tileH / 2), Offset(w / 2, tileH + rise), timberPaint);
+    }
+
     // 2. FRONT-RIGHT VERTICAL FACE (South-East facing, lit side)
     final rightPath = Path()
       ..moveTo(w / 2, tileH)
@@ -1011,7 +1392,6 @@ class _Iso3DWallPainter extends CustomPainter {
     final rightPaint = Paint()..color = rightBase;
     canvas.drawPath(rightPath, rightPaint);
 
-    // Front-Right Ashlar Masonry Courses
     for (var r = 1; r <= numRows; r++) {
       final yOff = r * rowH;
       canvas.drawLine(Offset(w / 2, tileH + yOff), Offset(w, tileH / 2 + yOff), mortarPaint);
@@ -1027,6 +1407,14 @@ class _Iso3DWallPainter extends CustomPainter {
       final jx2 = (w / 2) + (w / 2) * t2;
       final jy2 = tileH - (tileH / 2) * t2 + yOff - rowH;
       canvas.drawLine(Offset(jx2, jy2), Offset(jx2, jy2 + rowH), mortarPaint);
+    }
+
+    // Timber framing overlay for village walls
+    if (isVillage && !isDoor && rise > 14.0) {
+      final timberPaint = Paint()
+        ..color = const Color(0xFF3E2723).withValues(alpha: 0.85)
+        ..strokeWidth = 2.0;
+      canvas.drawLine(Offset(w / 2, tileH + rise), Offset(w, tileH / 2), timberPaint);
     }
 
     // Door hardware overlay on front-right face if door
@@ -1112,10 +1500,13 @@ class _Iso3DWallPainter extends CustomPainter {
   bool shouldRepaint(covariant _Iso3DWallPainter old) =>
       old.isDoor != isDoor ||
       old.isTavern != isTavern ||
+      old.isVillage != isVillage ||
+      old.isCave != isCave ||
       old.torchGlow != torchGlow ||
       old.isVisited != isVisited ||
       old.canFog != canFog ||
-      old.riseH != riseH;
+      old.riseH != riseH ||
+      old.isCutaway != isCutaway;
 }
 
 class _IsoFloorShadowPainter extends CustomPainter {
@@ -1260,12 +1651,14 @@ class _IsoFloorReliefPainter extends CustomPainter {
   final bool isRoomCenter;
   final double torchGlow;
   final int tileSeed;
+  final String environment;
 
   const _IsoFloorReliefPainter({
     this.roomType,
     this.isRoomCenter = false,
     this.torchGlow = 0.0,
     required this.tileSeed,
+    this.environment = 'dungeon',
   });
 
   @override
@@ -1280,6 +1673,41 @@ class _IsoFloorReliefPainter extends CustomPainter {
       ..lineTo(0, h / 2)
       ..close();
     canvas.clipPath(diamond);
+
+    // Environment-specific relief details
+    if (environment == 'village') {
+      final cobblePaint = Paint()
+        ..color = const Color(0xFF6D6356).withValues(alpha: 0.35)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.0;
+      final cobbleFill = Paint()
+        ..color = const Color(0xFFDCD2C3).withValues(alpha: 0.12)
+        ..style = PaintingStyle.fill;
+      canvas.drawOval(Rect.fromCenter(center: Offset(w * 0.35, h * 0.4), width: 14, height: 7), cobbleFill);
+      canvas.drawOval(Rect.fromCenter(center: Offset(w * 0.35, h * 0.4), width: 14, height: 7), cobblePaint);
+      canvas.drawOval(Rect.fromCenter(center: Offset(w * 0.65, h * 0.42), width: 12, height: 6), cobbleFill);
+      canvas.drawOval(Rect.fromCenter(center: Offset(w * 0.65, h * 0.42), width: 12, height: 6), cobblePaint);
+      canvas.drawOval(Rect.fromCenter(center: Offset(w * 0.5, h * 0.65), width: 15, height: 8), cobbleFill);
+      canvas.drawOval(Rect.fromCenter(center: Offset(w * 0.5, h * 0.65), width: 15, height: 8), cobblePaint);
+    } else if (environment == 'forest') {
+      final trailPaint = Paint()
+        ..color = const Color(0xFF3E2718).withValues(alpha: 0.25)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.2;
+      canvas.drawLine(Offset(w * 0.25, h * 0.35), Offset(w * 0.75, h * 0.65), trailPaint);
+      final mossPaint = Paint()
+        ..color = const Color(0xFF4CAF50).withValues(alpha: 0.30)
+        ..style = PaintingStyle.fill;
+      canvas.drawCircle(Offset(w * 0.3, h * 0.6), 2.5, mossPaint);
+      canvas.drawCircle(Offset(w * 0.7, h * 0.35), 2.0, mossPaint);
+    } else if (environment == 'cave') {
+      final crackPaint = Paint()
+        ..color = Colors.black.withValues(alpha: 0.4)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 0.8;
+      canvas.drawLine(Offset(w * 0.3, h * 0.3), Offset(w * 0.5, h * 0.5), crackPaint);
+      canvas.drawLine(Offset(w * 0.5, h * 0.5), Offset(w * 0.7, h * 0.45), crackPaint);
+    }
 
     final mortarPaint = Paint()
       ..color = const Color(0xFF090710).withValues(alpha: 0.70)
@@ -1414,7 +1842,8 @@ class _IsoFloorReliefPainter extends CustomPainter {
       old.roomType != roomType ||
       old.isRoomCenter != isRoomCenter ||
       old.torchGlow != torchGlow ||
-      old.tileSeed != tileSeed;
+      old.tileSeed != tileSeed ||
+      old.environment != environment;
 }
 
 class _IsoWaterPainter extends CustomPainter {
@@ -2524,6 +2953,213 @@ class _ChestGildedWidget extends StatelessWidget {
               ],
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FountainPropWidget extends StatelessWidget {
+  const _FountainPropWidget();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 48,
+      height: 48,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Container(
+            width: 44,
+            height: 28,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: const Color(0xFF37474F),
+              border: Border.all(color: const Color(0xFF78909C), width: 2),
+              boxShadow: const [
+                BoxShadow(color: Colors.black54, blurRadius: 4, offset: Offset(0, 3)),
+              ],
+            ),
+          ),
+          Container(
+            width: 32,
+            height: 20,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: const Color(0xFF1976D2).withValues(alpha: 0.85),
+              boxShadow: [
+                BoxShadow(color: const Color(0xFF42A5F5).withValues(alpha: 0.6), blurRadius: 6),
+              ],
+            ),
+          ),
+          const Icon(Icons.water_drop_rounded, size: 16, color: Color(0xFFE1F5FE)),
+        ],
+      ),
+    );
+  }
+}
+
+class _ForgePropWidget extends StatelessWidget {
+  const _ForgePropWidget();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 46,
+      height: 46,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: const Color(0xFF212121),
+              border: Border.all(color: const Color(0xFFFF6F00), width: 1.5),
+              boxShadow: [
+                BoxShadow(color: const Color(0xFFFF6F00).withValues(alpha: 0.5), blurRadius: 8),
+              ],
+            ),
+          ),
+          const Icon(Icons.hardware_rounded, size: 18, color: Color(0xFFFFB300)),
+        ],
+      ),
+    );
+  }
+}
+
+class _MarketStallPropWidget extends StatelessWidget {
+  const _MarketStallPropWidget();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 46,
+      height: 46,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Container(
+            width: 40,
+            height: 32,
+            decoration: BoxDecoration(
+              color: const Color(0xFF5D4037),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: const Color(0xFF8D6E63), width: 1.5),
+              boxShadow: const [
+                BoxShadow(color: Colors.black54, blurRadius: 4, offset: Offset(0, 3)),
+              ],
+            ),
+          ),
+          Positioned(
+            top: 6,
+            child: Container(
+              width: 36,
+              height: 10,
+              decoration: BoxDecoration(
+                color: const Color(0xFFC62828),
+                borderRadius: BorderRadius.circular(3),
+                border: Border.all(color: Colors.white70, width: 0.8),
+              ),
+            ),
+          ),
+          const Positioned(
+            bottom: 10,
+            child: Icon(Icons.storefront_rounded, size: 16, color: Color(0xFFFFE082)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ShrinePropWidget extends StatelessWidget {
+  const _ShrinePropWidget();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 46,
+      height: 46,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: const Color(0xFF263238),
+              border: Border.all(color: const Color(0xFFFFD54F), width: 1.5),
+              boxShadow: [
+                BoxShadow(color: const Color(0xFFFFD54F).withValues(alpha: 0.5), blurRadius: 10),
+              ],
+            ),
+          ),
+          const Icon(Icons.auto_awesome_rounded, size: 20, color: Color(0xFFFFD54F)),
+        ],
+      ),
+    );
+  }
+}
+
+class _CartPropWidget extends StatelessWidget {
+  const _CartPropWidget();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 46,
+      height: 46,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Container(
+            width: 38,
+            height: 28,
+            decoration: BoxDecoration(
+              color: const Color(0xFF4E342E),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: const Color(0xFF795548), width: 1.5),
+              boxShadow: const [
+                BoxShadow(color: Colors.black54, blurRadius: 4, offset: Offset(0, 3)),
+              ],
+            ),
+          ),
+          const Icon(Icons.agriculture_rounded, size: 20, color: Color(0xFFBCAAA4)),
+        ],
+      ),
+    );
+  }
+}
+
+class _GenericPropWidget extends StatelessWidget {
+  final MapProp prop;
+  const _GenericPropWidget({required this.prop});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 44,
+      height: 44,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: const Color(0xFF2A2438),
+              border: Border.all(color: const Color(0xFFFFD54F).withValues(alpha: 0.7), width: 1.5),
+              boxShadow: const [
+                BoxShadow(color: Colors.black54, blurRadius: 4, offset: Offset(0, 2)),
+              ],
+            ),
+          ),
+          const Icon(Icons.star_rounded, size: 18, color: Color(0xFFFFD54F)),
         ],
       ),
     );
