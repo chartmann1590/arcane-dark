@@ -95,6 +95,65 @@ class PartyMemberStatus {
       );
 }
 
+class Sidequest {
+  final String id;
+  final String title;
+  final String description;
+  final String objective;
+  final String category; // 'exploration', 'combat', 'puzzle', 'scavenge'
+  final Point targetTile;
+  final String rewardDescription;
+  final int rewardXp;
+  final String? rewardItem;
+  bool isCompleted;
+  bool isDiscovered;
+
+  Sidequest({
+    required this.id,
+    required this.title,
+    required this.description,
+    required this.objective,
+    this.category = 'exploration',
+    required this.targetTile,
+    this.rewardDescription = '100 XP',
+    this.rewardXp = 100,
+    this.rewardItem,
+    this.isCompleted = false,
+    this.isDiscovered = true,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'title': title,
+        'description': description,
+        'objective': objective,
+        'category': category,
+        'targetTile': {'x': targetTile.x, 'y': targetTile.y},
+        'rewardDescription': rewardDescription,
+        'rewardXp': rewardXp,
+        'rewardItem': rewardItem,
+        'isCompleted': isCompleted,
+        'isDiscovered': isDiscovered,
+      };
+
+  factory Sidequest.fromJson(Map<String, dynamic> j) => Sidequest(
+        id: j['id'] as String,
+        title: j['title'] as String? ?? 'Mysterious Rumor',
+        description: j['description'] as String? ?? '',
+        objective: j['objective'] as String? ?? 'Investigate the area',
+        category: j['category'] as String? ?? 'exploration',
+        targetTile: Point(
+          (j['targetTile']?['x'] as num?)?.toInt() ?? 0,
+          (j['targetTile']?['y'] as num?)?.toInt() ?? 0,
+        ),
+        rewardDescription: j['rewardDescription'] as String? ?? '100 XP',
+        rewardXp: (j['rewardXp'] as num?)?.toInt() ?? 100,
+        rewardItem: j['rewardItem'] as String?,
+        isCompleted: j['isCompleted'] as bool? ?? false,
+        isDiscovered: j['isDiscovered'] as bool? ?? true,
+      );
+}
+
 class QuestEntry {
   final String id;
   final String title;
@@ -121,6 +180,7 @@ class CampaignState {
   List<NpcRef> activeNpcs;
   List<PartyMemberStatus> party;
   List<QuestEntry> questLog;
+  List<Sidequest> sidequests;
   Map<String, dynamic> worldFlags;
   String runningSummary;
   List<TurnLogEntry> recentTurns;
@@ -150,6 +210,7 @@ class CampaignState {
     this.activeNpcs = const [],
     required this.party,
     this.questLog = const [],
+    List<Sidequest>? sidequests,
     this.worldFlags = const {},
     this.runningSummary = '',
     this.recentTurns = const [],
@@ -159,7 +220,8 @@ class CampaignState {
     int? mapSeed,
     String? mapEnvironment,
     Map<String, int>? locationSeeds,
-  })  : visitedTiles = visitedTiles ?? {},
+  })  : sidequests = sidequests ?? defaultSidequestsFor(seed),
+        visitedTiles = visitedTiles ?? {},
         mapSeed = mapSeed ?? Random().nextInt(1 << 30),
         mapEnvironment = mapEnvironment ?? 'dungeon',
         locationSeeds = locationSeeds ?? {} {
@@ -200,6 +262,55 @@ class CampaignState {
   /// generated for that environment, or rolls (and remembers) a fresh one.
   int seedForEnvironment(String env) => locationSeeds.putIfAbsent(env, () => Random().nextInt(1 << 30));
 
+  static List<Sidequest> defaultSidequestsFor(CampaignSeed seed) {
+    return [
+      Sidequest(
+        id: 'sq_altar_relic',
+        title: 'The Mystic Shrine',
+        description: 'An ancient consecrated obelisk hums with restorative power in a secluded chamber.',
+        objective: 'Locate and commune with the Mystic Shrine or Altar',
+        category: 'puzzle',
+        targetTile: const Point(8, 6),
+        rewardDescription: '120 XP & Ring of Protection',
+        rewardXp: 120,
+        rewardItem: 'Ring of Protection (+1 AC)',
+      ),
+      Sidequest(
+        id: 'sq_crypt_scavenge',
+        title: 'Lost Munitions Cache',
+        description: 'Valuable pioneer supplies and gold lie hidden in abandoned coffer boxes or supply barrels.',
+        objective: 'Open and loot an iron chest, gilded coffer, or supply crate',
+        category: 'scavenge',
+        targetTile: const Point(14, 12),
+        rewardDescription: '100 XP & 50 Gold Pieces',
+        rewardXp: 100,
+        rewardItem: 'Pouch of 50 Royal Gold Pieces',
+      ),
+      Sidequest(
+        id: 'sq_beast_cull',
+        title: 'Crypt Cleansing Bounty',
+        description: 'Vile undead horrors stalk the subterranean corridors, threatening the realm above.',
+        objective: 'Defeat at least 2 hostile crypt stalkers',
+        category: 'combat',
+        targetTile: const Point(6, 16),
+        rewardDescription: '150 XP & Elixir of Giant Strength',
+        rewardXp: 150,
+        rewardItem: 'Elixir of Giant Strength (+2 STR)',
+      ),
+      Sidequest(
+        id: 'sq_cartographer',
+        title: 'Delve Cartography',
+        description: 'Explore the gloomy depths and chart unknown rooms and corridors.',
+        objective: 'Chart at least 25 dungeon tiles and uncover secret chambers',
+        category: 'exploration',
+        targetTile: const Point(18, 8),
+        rewardDescription: '140 XP & Boots of Elvenkind',
+        rewardXp: 140,
+        rewardItem: 'Boots of Elvenkind (Advantage on Stealth)',
+      ),
+    ];
+  }
+
   factory CampaignState.initial({required CampaignSeed seed, required List<Character> characters}) {
     return CampaignState(
       campaignId: seed.id,
@@ -207,6 +318,7 @@ class CampaignState {
       currentSceneDescription: 'You gather at ${seed.startingLocation}. ${seed.hook}',
       party: characters.map(PartyMemberStatus.fromCharacter).toList(),
       questLog: seed.beats.asMap().entries.map((e) => QuestEntry(id: 'beat_${e.key}', title: e.value, stage: e.key == 0 ? 'active' : 'locked', status: e.key == 0 ? 'active' : 'locked')).toList(),
+      sidequests: defaultSidequestsFor(seed),
       worldFlags: {},
       runningSummary: 'Campaign "${seed.title}" begins at ${seed.startingLocation}.',
       recentTurns: [],
@@ -223,6 +335,7 @@ class CampaignState {
         'activeNpcs': activeNpcs.map((e) => e.toJson()).toList(),
         'party': party.map((e) => e.toJson()).toList(),
         'questLog': questLog.map((e) => e.toJson()).toList(),
+        'sidequests': sidequests.map((e) => e.toJson()).toList(),
         'worldFlags': worldFlags,
         'runningSummary': runningSummary,
         'recentTurns': recentTurns.map((e) => e.toJson()).toList(),
@@ -237,13 +350,18 @@ class CampaignState {
   /// Mirrors [toJson] — used both for local (SharedPreferences) persistence
   /// and for reconstructing the host's synced state on other players'
   /// devices (see SessionRepository.pushState/watchState).
-  factory CampaignState.fromJson(Map<String, dynamic> j) => CampaignState(
+  factory CampaignState.fromJson(Map<String, dynamic> j) {
+    final seed = CampaignSeed.fromJson(j['seed'] as Map<String, dynamic>);
+    return CampaignState(
         campaignId: j['campaignId'],
-        seed: CampaignSeed.fromJson(j['seed'] as Map<String, dynamic>),
+        seed: seed,
         currentSceneDescription: j['currentSceneDescription'],
         activeNpcs: (j['activeNpcs'] as List? ?? []).map((e) => NpcRef.fromJson(e as Map<String, dynamic>)).toList(),
         party: (j['party'] as List).map((e) => PartyMemberStatus.fromJson(e as Map<String, dynamic>)).toList(),
         questLog: (j['questLog'] as List).map((e) => QuestEntry.fromJson(e as Map<String, dynamic>)).toList(),
+        sidequests: (j['sidequests'] as List? ?? []).isNotEmpty
+            ? (j['sidequests'] as List).map((e) => Sidequest.fromJson(e as Map<String, dynamic>)).toList()
+            : defaultSidequestsFor(seed),
         worldFlags: Map<String, dynamic>.from(j['worldFlags'] ?? {}),
         runningSummary: j['runningSummary'] ?? '',
         recentTurns: (j['recentTurns'] as List? ?? []).map((e) => TurnLogEntry.fromJson(e as Map<String, dynamic>)).toList(),
@@ -254,6 +372,7 @@ class CampaignState {
         mapEnvironment: j['mapEnvironment'] as String?,
         locationSeeds: (j['locationSeeds'] as Map?)?.map((k, v) => MapEntry(k as String, v as int)),
       );
+  }
 }
 
 class Point {

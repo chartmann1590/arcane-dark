@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../app/theme.dart';
 import '../../domain/map/tile_types.dart' as m;
 import '../../domain/pet_companion.dart';
@@ -26,6 +27,8 @@ class IsoMapView extends StatelessWidget {
   final void Function(MapAnimal animal)? onAnimalTap;
   final void Function(MapProp prop)? onPropTap;
   final void Function(PetCompanion pet)? onPetTap;
+  final void Function(PartyMemberVisual member)? onPartyMemberTap;
+  final List<SidequestMarker>? sidequestMarkers;
 
   static const double tileW = 64;
   static const double tileH = 32;
@@ -50,6 +53,8 @@ class IsoMapView extends StatelessWidget {
     this.onAnimalTap,
     this.onPropTap,
     this.onPetTap,
+    this.onPartyMemberTap,
+    this.sidequestMarkers,
   });
 
   Offset _project(int x, int y, double originX, double originY) {
@@ -97,6 +102,7 @@ class IsoMapView extends StatelessWidget {
         children: [
           for (final p in coords) _buildTile(p.x, p.y, originX, originY, torches),
           for (final prop in props) _buildProp(prop, originX, originY),
+          for (final beacon in sidequestMarkers ?? const <SidequestMarker>[]) _buildSidequestBeacon(beacon, originX, originY),
           for (final animal in animals) _buildAnimal(animal, originX, originY),
           for (final npc in npcs) _buildNpc(npc, originX, originY),
           for (var i = 0; i < partyMembers.length; i++) _buildPartyMember(partyMembers[i], i, originX, originY),
@@ -150,7 +156,7 @@ class IsoMapView extends StatelessWidget {
     }
     final isRoomCenter = room != null && room.centerX == x && room.centerY == y;
 
-    Offset downPos = Offset.zero;
+    Offset downPos = const Offset(-999, -999);
 
     return Positioned(
       left: origin.dx,
@@ -159,10 +165,22 @@ class IsoMapView extends StatelessWidget {
       height: tileH + riseH,
       child: Listener(
         behavior: HitTestBehavior.translucent,
-        onPointerDown: (e) => downPos = e.position,
+        onPointerDown: (e) {
+          final localY = e.localPosition.dy - (raised ? wallRise : 0);
+          final inDiamond = (e.localPosition.dx - 32).abs() / 32.0 + (localY - 16).abs() / 16.0 <= 1.0;
+          if (inDiamond) {
+            downPos = e.position;
+          } else {
+            downPos = const Offset(-999, -999);
+          }
+        },
         onPointerUp: (e) {
-          if ((e.position - downPos).distanceSquared < 400) {
-            onTileTap?.call(m.Point(x, y));
+          if (downPos.dx > -900 && (e.position - downPos).distanceSquared < 400) {
+            final localY = e.localPosition.dy - (raised ? wallRise : 0);
+            final inDiamond = (e.localPosition.dx - 32).abs() / 32.0 + (localY - 16).abs() / 16.0 <= 1.0;
+            if (inDiamond) {
+              onTileTap?.call(m.Point(x, y));
+            }
           }
         },
         child: Stack(clipBehavior: Clip.none, children: [
@@ -425,6 +443,9 @@ class IsoMapView extends StatelessWidget {
       'owl' => '🦉',
       'fox' => '🦊',
       'bat' => '🦇',
+      'rat' => '🐀',
+      'beetle' => '🪲',
+      'frog' => '🐸',
       _ => '🐾',
     };
 
@@ -576,10 +597,10 @@ class IsoMapView extends StatelessWidget {
 
   static const _clusterOffsets = [
     Offset(0, 0),
-    Offset(-5, -2),
-    Offset(5, -2),
-    Offset(-5, 2),
-    Offset(5, 2),
+    Offset(-14, 6),
+    Offset(14, 6),
+    Offset(-12, -6),
+    Offset(12, -6),
   ];
 
   Widget _buildPartyMember(PartyMemberVisual member, int index, double originX, double originY) {
@@ -600,11 +621,81 @@ class IsoMapView extends StatelessWidget {
     }
 
     final isLead = index == 0;
-    final token = _PartyToken(portraitAsset: member.portraitAsset, isLead: isLead);
+    final tokenSize = isLead ? 30.0 : 26.0;
+    // Grounding: tile diamond is vertically [origin.dy, origin.dy + 32], center is origin.dy + 16.
+    // Placing token at origin.dy + (tileH - tokenSize)/2 centers it vertically within the diamond.
+    final tokenTop = origin.dy + (tileH - tokenSize) / 2 + offset.dy;
+    final tokenLeft = origin.dx + tileW / 2 - tokenSize / 2 + offset.dx;
+
+    final token = _PartyToken(
+      portraitAsset: member.portraitAsset,
+      isLead: isLead,
+      speechBubble: member.speechBubble,
+      name: member.name,
+    );
+
     return Positioned(
-      left: origin.dx + tileW / 2 - 16 + offset.dx,
-      top: origin.dy - 14 + offset.dy,
-      child: isLead ? Pulse(child: token) : token,
+      left: tokenLeft,
+      top: tokenTop,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          if (member.onTap != null) {
+            member.onTap!();
+          } else if (onPartyMemberTap != null) {
+            onPartyMemberTap!(member);
+          }
+        },
+        child: isLead ? Pulse(child: token) : token,
+      ),
+    );
+  }
+
+  Widget _buildSidequestBeacon(SidequestMarker beacon, double originX, double originY) {
+    if (_isFogged(beacon.pos)) return const SizedBox.shrink();
+    final origin = _project(beacon.pos.x, beacon.pos.y, originX, originY);
+    return Positioned(
+      left: origin.dx + tileW / 2 - 20,
+      top: origin.dy - 18,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: beacon.onTap,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Pulse(
+              duration: const Duration(milliseconds: 1400),
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFFFFD54F).withValues(alpha: 0.3),
+                  border: Border.all(color: const Color(0xFFFFD54F), width: 1.5),
+                  boxShadow: [
+                    BoxShadow(color: const Color(0xFFFFD54F).withValues(alpha: 0.5), blurRadius: 10, spreadRadius: 1),
+                  ],
+                ),
+                child: Text(beacon.icon, style: const TextStyle(fontSize: 14)),
+              ),
+            ),
+            Container(
+              margin: const EdgeInsets.only(top: 2),
+              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+              decoration: BoxDecoration(
+                color: const Color(0xFF140F22).withValues(alpha: 0.9),
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(color: const Color(0xFFFFD54F).withValues(alpha: 0.6), width: 0.5),
+              ),
+              child: Text(
+                beacon.title,
+                style: GoogleFonts.cinzel(fontSize: 8.5, fontWeight: FontWeight.bold, color: const Color(0xFFFFD54F)),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -692,23 +783,89 @@ class _NpcToken extends StatelessWidget {
 class _PartyToken extends StatelessWidget {
   final String? portraitAsset;
   final bool isLead;
-  const _PartyToken({this.portraitAsset, this.isLead = true});
+  final String? speechBubble;
+  final String? name;
+  const _PartyToken({
+    this.portraitAsset,
+    this.isLead = true,
+    this.speechBubble,
+    this.name,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final size = isLead ? 32.0 : 26.0;
+    final size = isLead ? 30.0 : 26.0;
     final color = isLead ? ArcaneTheme.primary : ArcaneTheme.secondary;
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(color: color, width: isLead ? 2 : 1.5),
-        boxShadow: [BoxShadow(color: color.withValues(alpha: isLead ? 0.6 : 0.4), blurRadius: isLead ? 10 : 6, spreadRadius: isLead ? 1 : 0)],
-        image: portraitAsset != null ? DecorationImage(image: AssetImage(portraitAsset!), fit: BoxFit.cover) : null,
-        color: portraitAsset == null ? color : null,
-      ),
-      child: portraitAsset == null ? Icon(Icons.person_rounded, size: isLead ? 18 : 14, color: Colors.white) : null,
+    return Stack(
+      clipBehavior: Clip.none,
+      alignment: Alignment.center,
+      children: [
+        // Ground shadow firmly anchoring token to the isometric tile center
+        Positioned(
+          bottom: -2,
+          child: Container(
+            width: size * 0.85,
+            height: 7,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.black.withValues(alpha: 0.55),
+              boxShadow: [
+                BoxShadow(color: Colors.black.withValues(alpha: 0.45), blurRadius: 4),
+              ],
+            ),
+          ),
+        ),
+        // Token avatar circle
+        Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: color, width: isLead ? 2 : 1.5),
+            boxShadow: [
+              BoxShadow(
+                color: color.withValues(alpha: isLead ? 0.6 : 0.4),
+                blurRadius: isLead ? 10 : 6,
+                spreadRadius: isLead ? 1 : 0,
+              )
+            ],
+            image: portraitAsset != null ? DecorationImage(image: AssetImage(portraitAsset!), fit: BoxFit.cover) : null,
+            color: portraitAsset == null ? color : null,
+          ),
+          child: portraitAsset == null ? Icon(Icons.person_rounded, size: isLead ? 17 : 14, color: Colors.white) : null,
+        ),
+        // Speech / Banter bubble over character head
+        if (speechBubble != null && speechBubble!.isNotEmpty)
+          Positioned(
+            bottom: size + 4,
+            child: Material(
+              color: Colors.transparent,
+              child: Container(
+                constraints: const BoxConstraints(maxWidth: 150),
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF141220).withValues(alpha: 0.95),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: color, width: 1),
+                  boxShadow: [
+                    BoxShadow(color: Colors.black.withValues(alpha: 0.7), blurRadius: 6),
+                  ],
+                ),
+                child: Text(
+                  speechBubble!,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.ibmPlexSans(
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }
@@ -717,7 +874,28 @@ class PartyMemberVisual {
   final String name;
   final String? portraitAsset;
   final m.Point? pos;
-  const PartyMemberVisual({required this.name, this.portraitAsset, this.pos});
+  final String? speechBubble;
+  final VoidCallback? onTap;
+  const PartyMemberVisual({
+    required this.name,
+    this.portraitAsset,
+    this.pos,
+    this.speechBubble,
+    this.onTap,
+  });
+}
+
+class SidequestMarker {
+  final m.Point pos;
+  final String title;
+  final String icon;
+  final VoidCallback? onTap;
+  const SidequestMarker({
+    required this.pos,
+    required this.title,
+    this.icon = '📜',
+    this.onTap,
+  });
 }
 
 class _DiamondClipper extends CustomClipper<Path> {

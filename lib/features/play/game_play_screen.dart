@@ -90,6 +90,10 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
   bool _is3dPerspective = false;
   List<SmartSuggestion> _smartSuggestions = [];
   bool _isLoadingSuggestions = false;
+  final Map<String, String> _companionSpeechBubbles = {};
+  Timer? _companionSpeechTimer;
+  Timer? _companionAutonomyTimer;
+  bool _showingSidequestsHud = false;
 
   // The isometric canvas is much bigger than the viewport (InteractiveViewer
   // is unconstrained so panning works), so "zoom" is relative to a baked-in
@@ -133,6 +137,25 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
       ..translate(viewportCenter.dx, viewportCenter.dy)
       ..scale(_baseFitScale)
       ..translate(-playerScreen.dx, -playerScreen.dy);
+    setState(() {
+      _mapController.value = matrix;
+      _mapCentered = true;
+    });
+  }
+
+  void _recenterOnTile(m.Point tile) {
+    const outerPadding = 8.0;
+    final originX = _dungeon.height * IsoMapView.tileW / 2;
+    const originY = IsoMapView.tileH / 2;
+    final tileScreen = Offset(
+      outerPadding + originX + (tile.x - tile.y) * IsoMapView.tileW / 2 + IsoMapView.tileW / 2,
+      outerPadding + originY + (tile.x + tile.y) * IsoMapView.tileH / 2 + IsoMapView.tileH / 2,
+    );
+    final viewportCenter = Offset(_mapViewportSize.width / 2, _mapViewportSize.height / 2);
+    final matrix = Matrix4.identity()
+      ..translate(viewportCenter.dx, viewportCenter.dy)
+      ..scale(_baseFitScale * 1.2)
+      ..translate(-tileScreen.dx, -tileScreen.dy);
     setState(() {
       _mapController.value = matrix;
       _mapCentered = true;
@@ -231,6 +254,24 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
             return r.contains(m.Point(vx, vy));
           })) {
         _discoveredRoomIds.add(r.id);
+      }
+    }
+
+    // Initialize companion positions on adjacent walkable tiles if unassigned
+    if (campaign != null && campaign.party.length > 1) {
+      final adjacent = [
+        m.Point(playerPos.x - 1, playerPos.y),
+        m.Point(playerPos.x + 1, playerPos.y),
+        m.Point(playerPos.x, playerPos.y - 1),
+        m.Point(playerPos.x, playerPos.y + 1),
+      ].where((p) => _isWalkableTile(p.x, p.y)).toList();
+
+      for (var i = 1; i < campaign.party.length; i++) {
+        final member = campaign.party[i];
+        if (member.position == null && i - 1 < adjacent.length) {
+          member.position = Point(adjacent[i - 1].x, adjacent[i - 1].y);
+          visited.add('${adjacent[i - 1].x},${adjacent[i - 1].y}');
+        }
       }
     }
 
@@ -341,6 +382,19 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
     }
   }
 
+  String _portraitForMember(PartyMemberStatus member, Map<String, Character> charsById) {
+    final c = charsById[member.characterId];
+    if (c != null) return 'assets/avatar/portraits/${c.race.name}.png';
+    final lower = member.raceLabel.toLowerCase();
+    if (lower.contains('dwarf')) return 'assets/avatar/portraits/dwarf.png';
+    if (lower.contains('elf')) return 'assets/avatar/portraits/elf.png';
+    if (lower.contains('dragon')) return 'assets/avatar/portraits/dragonborn.png';
+    if (lower.contains('half') || lower.contains('gnome')) return 'assets/avatar/portraits/halfling.png';
+    if (lower.contains('orc')) return 'assets/avatar/portraits/orc.png';
+    if (lower.contains('tief')) return 'assets/avatar/portraits/tiefling.png';
+    return 'assets/avatar/portraits/human.png';
+  }
+
   /// Every current party member's own portrait+name, in party order — every
   /// hero and recruited companion gets their own token clustered on the
   /// map, not just a single stand-in for "the party."
@@ -349,12 +403,13 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
     final charsById = {for (final c in chars) c.id: c};
     return [
       for (final member in campaign.party)
-        if (charsById[member.characterId] != null)
-          PartyMemberVisual(
-            name: member.name,
-            portraitAsset: 'assets/avatar/portraits/${charsById[member.characterId]!.race.name}.png',
-            pos: member.position != null ? m.Point(member.position!.x, member.position!.y) : null,
-          ),
+        PartyMemberVisual(
+          name: member.name,
+          portraitAsset: _portraitForMember(member, charsById),
+          pos: member.position != null ? m.Point(member.position!.x, member.position!.y) : null,
+          speechBubble: _companionSpeechBubbles[member.characterId],
+          onTap: () => _showCompanionInteractionSheet(member),
+        ),
     ];
   }
 
@@ -369,6 +424,9 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
     _tvClientCountSub = TvCastService.instance.clientCountStream.listen((count) {
       if (count > 0) _broadcastTvState();
       if (mounted) setState(() {});
+    });
+    _companionAutonomyTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      _runCompanionAutonomousBehavior();
     });
     if (widget.sessionId != null) {
       _initMultiplayer();
@@ -502,6 +560,8 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
   @override
   void dispose() {
     _tvClientCountSub?.cancel();
+    _companionSpeechTimer?.cancel();
+    _companionAutonomyTimer?.cancel();
     VoiceTranscriptionService.instance.cancelListening();
     _inputController.dispose();
     _inputFocus.dispose();
@@ -839,10 +899,24 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
     final chars = ref.read(savedCharactersProvider);
     final activePet = _getActivePet(campaign, chars);
     final visionRad = activePet?.id == 'spectral_owl' ? 3 : 2;
+    final prevLeaderPos = Point(playerPos.x, playerPos.y);
 
     setState(() {
       playerPos = m.Point(nx, ny);
       visited.add('$nx,$ny');
+
+      // Companion trail march formation behind the leader
+      if (campaign != null && campaign.party.length > 1) {
+        Point trailPos = prevLeaderPos;
+        for (var i = 1; i < campaign.party.length; i++) {
+          final currentMemberPos = campaign.party[i].position ?? prevLeaderPos;
+          campaign.party[i].position = trailPos;
+          trailPos = currentMemberPos;
+          visited.add('${campaign.party[i].position!.x},${campaign.party[i].position!.y}');
+          campaign.visitedTiles.add('${campaign.party[i].position!.x},${campaign.party[i].position!.y}');
+        }
+      }
+
       for (var yOff = -visionRad; yOff <= visionRad; yOff++) {
         for (var xOff = -visionRad; xOff <= visionRad; xOff++) {
           final vx = nx + xOff;
@@ -916,6 +990,7 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
     // auto describe
     _send('I move to the next area.');
     _checkMapQuestProgression();
+    _checkSidequestProgression(atPos: m.Point(nx, ny));
   }
 
   void _checkMapQuestProgression() {
@@ -1090,11 +1165,14 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
 
         // Companion trail formation behind the leader
         if (campaign != null && campaign.party.length > 1 && i > 0) {
-          final t1 = path[max(0, i - 1)];
-          campaign.party[1].position = Point(t1.x, t1.y);
-          if (campaign.party.length > 2 && i > 1) {
-            final t2 = path[max(0, i - 2)];
-            campaign.party[2].position = Point(t2.x, t2.y);
+          for (var c = 1; c < campaign.party.length; c++) {
+            final trailIdx = i - c;
+            if (trailIdx >= 0) {
+              final t = path[trailIdx];
+              campaign.party[c].position = Point(t.x, t.y);
+              visited.add('${t.x},${t.y}');
+              campaign.visitedTiles.add('${t.x},${t.y}');
+            }
           }
         }
       });
@@ -1167,6 +1245,7 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
       final desc = tile == m.TileType.door ? 'through the doorway' : 'into the chamber';
       _send('I traverse the corridor $desc.');
       _checkMapQuestProgression();
+      _checkSidequestProgression(atPos: playerPos);
     }
   }
 
@@ -2675,6 +2754,471 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
     _refreshSmartSuggestions();
   }
 
+  void _runCompanionAutonomousBehavior() {
+    if (!mounted || _isTraversing || _isGenerating) return;
+    final campaign = ref.read(campaignProvider);
+    if (campaign == null || campaign.party.length <= 1) return;
+
+    final rng = Random();
+    final companionIndex = 1 + rng.nextInt(campaign.party.length - 1);
+    final companion = campaign.party[companionIndex];
+    final currentPos = companion.position ?? campaign.partyPosition;
+
+    if (rng.nextDouble() < 0.55) {
+      final candidates = <m.Point>[
+        m.Point(currentPos.x + 1, currentPos.y),
+        m.Point(currentPos.x - 1, currentPos.y),
+        m.Point(currentPos.x, currentPos.y + 1),
+        m.Point(currentPos.x, currentPos.y - 1),
+      ].where((p) {
+        if (!_isWalkableTile(p.x, p.y)) return false;
+        return (p.x - playerPos.x).abs() <= 2 && (p.y - playerPos.y).abs() <= 2;
+      }).toList();
+
+      if (candidates.isNotEmpty) {
+        final nextTile = candidates[rng.nextInt(candidates.length)];
+        setState(() {
+          companion.position = Point(nextTile.x, nextTile.y);
+          visited.add('${nextTile.x},${nextTile.y}');
+          campaign.visitedTiles.add('${nextTile.x},${nextTile.y}');
+        });
+
+        final nearbyProp = _props.where((p) => (p.pos.x - nextTile.x).abs() + (p.pos.y - nextTile.y).abs() <= 1).firstOrNull;
+        if (nearbyProp != null) {
+          final remark = _getPropObservation(nearbyProp, companion);
+          _showCompanionSpeechBubble(companion.characterId, remark);
+        }
+      }
+    } else {
+      final banter = _getCompanionBanter(companion);
+      _showCompanionSpeechBubble(companion.characterId, banter);
+    }
+  }
+
+  void _showCompanionSpeechBubble(String characterId, String text) {
+    if (!mounted) return;
+    setState(() {
+      _companionSpeechBubbles[characterId] = text;
+    });
+    _companionSpeechTimer?.cancel();
+    _companionSpeechTimer = Timer(const Duration(milliseconds: 3800), () {
+      if (mounted) {
+        setState(() {
+          _companionSpeechBubbles.remove(characterId);
+        });
+      }
+    });
+  }
+
+  String _getPropObservation(MapProp prop, PartyMemberStatus companion) {
+    final asset = prop.asset.toLowerCase();
+    if (asset.contains('bookshelf') || asset.contains('lectern')) {
+      return 'Fascinating runes on this parchment...';
+    } else if (asset.contains('chest')) {
+      return 'An iron coffer! Checking for triggers...';
+    } else if (asset.contains('altar')) {
+      return 'I feel divine warmth radiating here.';
+    } else if (asset.contains('brazier') || asset.contains('torch')) {
+      return 'The flames hold the dark at bay.';
+    } else if (asset.contains('statue')) {
+      return 'Stalwart sentinel of stone.';
+    } else if (asset.contains('crystals')) {
+      return 'Resonating with planar mana!';
+    } else if (asset.contains('crates')) {
+      return 'Munitions left by previous delves.';
+    }
+    return 'Inspecting the stonework closely.';
+  }
+
+  String _getCompanionBanter(PartyMemberStatus companion) {
+    final race = companion.raceLabel.toLowerCase();
+    final role = companion.classLabel.toLowerCase();
+    final rng = Random();
+
+    if (race.contains('dwarf')) {
+      const dwarfBanter = [
+        'Solid dwarven flagstones beneath our feet.',
+        'Keep an eye on the roof vaults.',
+        'My shield arm is ready for whatever stalks here.',
+        'Smell that mineral draft? Hollow passage nearby.',
+      ];
+      return dwarfBanter[rng.nextInt(dwarfBanter.length)];
+    } else if (race.contains('elf')) {
+      const elfBanter = [
+        'Faint ethereal whispers ride the subterranean air.',
+        'My bow is strung and eager.',
+        'Ancient elven enchantments linger in the mortar.',
+        'Careful, the shadow geometry shifts ahead.',
+      ];
+      return elfBanter[rng.nextInt(elfBanter.length)];
+    } else if (race.contains('half') || role.contains('rogue')) {
+      const rogueBanter = [
+        'Quiet footsteps... listen for tripwires.',
+        'I have a feeling there\'s loot nearby.',
+        'Watching the blind corners!',
+        'No lock can keep us out for long.',
+      ];
+      return rogueBanter[rng.nextInt(rogueBanter.length)];
+    } else if (role.contains('paladin') || role.contains('cleric')) {
+      const holyBanter = [
+        'May the sacred light preserve us in this crypt.',
+        'Stand stalwart, victory is assured.',
+        'Evil retreats before our unity.',
+        'I shall guard our flank.',
+      ];
+      return holyBanter[rng.nextInt(holyBanter.length)];
+    } else {
+      const generalBanter = [
+        'Stay sharp, friend.',
+        'Covering the rear corridor!',
+        'We make a formidable company.',
+        'What lies beyond that doorway?',
+      ];
+      return generalBanter[rng.nextInt(generalBanter.length)];
+    }
+  }
+
+  void _showCompanionInteractionSheet(PartyMemberStatus member) {
+    AudioService.instance.playTap();
+    final chars = ref.read(savedCharactersProvider);
+    final charsById = {for (final c in chars) c.id: c};
+    final portrait = _portraitForMember(member, charsById);
+    final hpFactor = (member.hp / max(1, member.maxHp)).clamp(0.0, 1.0);
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: const Color(0xFF131122),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
+          border: Border.all(color: ArcaneTheme.secondary.withValues(alpha: 0.6), width: 1.5),
+          boxShadow: [
+            BoxShadow(color: ArcaneTheme.secondary.withValues(alpha: 0.25), blurRadius: 20, spreadRadius: 2),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: ArcaneTheme.secondary, width: 2),
+                    boxShadow: [
+                      BoxShadow(color: ArcaneTheme.secondary.withValues(alpha: 0.4), blurRadius: 10),
+                    ],
+                    image: DecorationImage(image: AssetImage(portrait), fit: BoxFit.cover),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        member.name,
+                        style: GoogleFonts.cinzel(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white),
+                      ),
+                      Text(
+                        '${member.raceLabel} • ${member.classLabel} (AC ${member.armorClass})',
+                        style: GoogleFonts.ibmPlexSans(fontSize: 12, fontWeight: FontWeight.w600, color: ArcaneTheme.secondary),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close_rounded, color: Colors.white60),
+                  onPressed: () => Navigator.pop(ctx),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('VITALITY', style: GoogleFonts.ibmPlexSans(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white70)),
+                    Text('${member.hp} / ${member.maxHp} HP', style: GoogleFonts.ibmPlexSans(fontSize: 11, fontWeight: FontWeight.w700, color: hpFactor > 0.35 ? const Color(0xFF3DD68C) : Colors.redAccent)),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: hpFactor,
+                    backgroundColor: Colors.white10,
+                    valueColor: AlwaysStoppedAnimation(hpFactor > 0.35 ? const Color(0xFF3DD68C) : Colors.redAccent),
+                    minHeight: 6,
+                  ),
+                ),
+              ],
+            ),
+            if (member.persona.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.black38,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.white12),
+                ),
+                child: Text(
+                  member.persona,
+                  style: GoogleFonts.spectral(fontSize: 12.5, fontStyle: FontStyle.italic, color: Colors.white70),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+            const SizedBox(height: 16),
+            Text('TACTICAL PARTY COMMANDS', style: GoogleFonts.cinzel(fontSize: 11, fontWeight: FontWeight.w800, color: ArcaneTheme.secondary, letterSpacing: 0.8)),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: ArcaneTheme.surfaceElevated,
+                      foregroundColor: Colors.white,
+                      side: BorderSide(color: ArcaneTheme.secondary.withValues(alpha: 0.5)),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    icon: const Icon(Icons.explore_rounded, size: 16, color: ArcaneTheme.secondary),
+                    label: const Text('Scout Ahead', style: TextStyle(fontSize: 12)),
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      _companionScoutAhead(member);
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: ArcaneTheme.surfaceElevated,
+                      foregroundColor: Colors.white,
+                      side: const BorderSide(color: Color(0xFF3DD68C)),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    icon: const Icon(Icons.shield_rounded, size: 16, color: Color(0xFF3DD68C)),
+                    label: const Text('Guard Vanguard', style: TextStyle(fontSize: 12)),
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      _companionGuardVanguard(member);
+                    },
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: ArcaneTheme.surfaceElevated,
+                      foregroundColor: Colors.white,
+                      side: const BorderSide(color: Color(0xFFFFB300)),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    icon: const Icon(Icons.search_rounded, size: 16, color: Color(0xFFFFB300)),
+                    label: const Text('Inspect Chamber', style: TextStyle(fontSize: 12)),
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      _companionInspectChamber(member);
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: ArcaneTheme.primary.withValues(alpha: 0.35),
+                      foregroundColor: Colors.white,
+                      side: const BorderSide(color: ArcaneTheme.primary),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    icon: const Icon(Icons.chat_bubble_rounded, size: 16, color: Colors.amberAccent),
+                    label: const Text('Banter / Chat', style: TextStyle(fontSize: 12)),
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      _mentionMember(member.name);
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _companionScoutAhead(PartyMemberStatus member) {
+    AudioService.instance.playTap();
+    final unvisited = <m.Point>[];
+
+    for (var dy = -2; dy <= 2; dy++) {
+      for (var dx = -2; dx <= 2; dx++) {
+        final nx = playerPos.x + dx;
+        final ny = playerPos.y + dy;
+        if (nx >= 0 && ny >= 0 && nx < _dungeon.width && ny < _dungeon.height) {
+          if (!visited.contains('$nx,$ny') && _isWalkableTile(nx, ny)) {
+            unvisited.add(m.Point(nx, ny));
+          }
+        }
+      }
+    }
+
+    if (unvisited.isNotEmpty) {
+      final target = unvisited.first;
+      setState(() {
+        member.position = Point(target.x, target.y);
+        for (final p in unvisited.take(3)) {
+          visited.add('${p.x},${p.y}');
+        }
+      });
+      _showCompanionSpeechBubble(member.characterId, 'Path cleared ahead!');
+      _appendDmNarration('${member.name} darts forward to scout the corridor, charting ${min(3, unvisited.length)} unexplored tiles ahead!');
+    } else {
+      _showCompanionSpeechBubble(member.characterId, 'Perimeter is secure!');
+    }
+  }
+
+  void _companionGuardVanguard(PartyMemberStatus member) {
+    AudioService.instance.playSuccess();
+    setState(() {
+      member.position = Point(playerPos.x, playerPos.y);
+    });
+    _showCompanionSpeechBubble(member.characterId, 'Shield raised! Holding the line.');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${member.name} assumes a protective vanguard stance (+2 AC defense)!', style: GoogleFonts.cinzel(fontWeight: FontWeight.w700, color: Colors.white)),
+        backgroundColor: const Color(0xFF1E3A2F),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+    _send('I order ${member.name} to form a defensive vanguard beside me.');
+  }
+
+  void _companionInspectChamber(PartyMemberStatus member) {
+    AudioService.instance.playTap();
+    final nearbyProp = _props.where((p) => (p.pos.x - playerPos.x).abs() + (p.pos.y - playerPos.y).abs() <= 3).firstOrNull;
+    if (nearbyProp != null) {
+      setState(() {
+        member.position = Point(nearbyProp.pos.x, nearbyProp.pos.y);
+      });
+      final text = _getPropObservation(nearbyProp, member);
+      _showCompanionSpeechBubble(member.characterId, text);
+      _appendDmNarration('${member.name} walks over to inspect the ${nearbyProp.name ?? "object"} closely: "$text"');
+    } else {
+      _showCompanionSpeechBubble(member.characterId, 'Searching the flagstones for traps...');
+      _appendDmNarration('${member.name} sweeps the stonework, confirming no immediate threats.');
+    }
+  }
+
+  void _checkSidequestProgression({m.Point? atPos, String? eventType}) {
+    final campaign = ref.read(campaignProvider);
+    if (campaign == null || campaign.sidequests.isEmpty) return;
+    final pos = atPos ?? playerPos;
+
+    for (final sq in campaign.sidequests) {
+      if (sq.isCompleted) continue;
+      bool completed = false;
+
+      if (sq.id == 'sq_altar_relic') {
+        final dist = (pos.x - sq.targetTile.x).abs() + (pos.y - sq.targetTile.y).abs();
+        final nearAltar = _props.any((p) => (p.asset.contains('altar') || p.asset.contains('pillar')) && (p.pos.x - pos.x).abs() + (p.pos.y - pos.y).abs() <= 1);
+        if (dist <= 1 || nearAltar) {
+          completed = true;
+        }
+      } else if (sq.id == 'sq_crypt_scavenge') {
+        if (eventType == 'loot' || _props.any((p) => p.asset.contains('chest_open'))) {
+          completed = true;
+        }
+      } else if (sq.id == 'sq_beast_cull') {
+        if (campaign.defeatedEnemies.length >= 2 || eventType == 'enemy_slain') {
+          completed = true;
+        }
+      } else if (sq.id == 'sq_cartographer') {
+        if (visited.length >= 25 || _discoveredRoomIds.length >= 2) {
+          completed = true;
+        }
+      }
+
+      if (completed) {
+        sq.isCompleted = true;
+        ref.read(campaignProvider.notifier).completeSidequest(sq.id);
+        if (sq.rewardItem != null && campaign.party.isNotEmpty) {
+          ref.read(campaignProvider.notifier).addItem(campaign.party.first.characterId, sq.rewardItem!);
+        }
+        AudioService.instance.playSuccess();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.stars_rounded, color: Colors.amberAccent, size: 22),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('SIDEQUEST COMPLETED: ${sq.title.toUpperCase()}!', style: GoogleFonts.cinzel(fontWeight: FontWeight.w800, color: Colors.amberAccent, fontSize: 12.5)),
+                      Text('Objective Achieved: ${sq.objective}\nReward Claimed: ${sq.rewardDescription}', style: GoogleFonts.ibmPlexSans(color: Colors.white, fontSize: 11)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: const Color(0xFF1E2638),
+            duration: const Duration(seconds: 4),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        _appendDmNarration('✨ SIDEQUEST COMPLETED! The party accomplishes "${sq.title}": ${sq.objective}. Claimed reward: ${sq.rewardDescription}!');
+        _broadcastTvState();
+        break;
+      }
+    }
+  }
+
+  List<SidequestMarker> _getSidequestMarkers(CampaignState? campaign) {
+    if (campaign == null || campaign.sidequests.isEmpty) return const [];
+    return [
+      for (final sq in campaign.sidequests)
+        if (!sq.isCompleted)
+          SidequestMarker(
+            pos: m.Point(sq.targetTile.x, sq.targetTile.y),
+            title: sq.title,
+            icon: sq.category == 'combat' ? '⚔️' : (sq.category == 'puzzle' ? '✨' : '📜'),
+            onTap: () {
+              AudioService.instance.playTap();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('📜 ${sq.title}: ${sq.objective} (Reward: ${sq.rewardDescription})', style: GoogleFonts.ibmPlexSans()),
+                  backgroundColor: const Color(0xFF1F2433),
+                  duration: const Duration(seconds: 3),
+                ),
+              );
+            },
+          ),
+    ];
+  }
+
   Widget _buildSmartAiSuggestionsBar() {
     if (_smartSuggestions.isEmpty) return const SizedBox.shrink();
 
@@ -2948,91 +3492,241 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
     );
   }
 
-  void _showExplorationCodex() {
+  void _showExplorationCodex({int initialTab = 0}) {
     AudioService.instance.playTap();
+    final campaign = ref.read(campaignProvider);
     showModalBottomSheet(
       context: context,
       backgroundColor: const Color(0xFF121520),
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (ctx) => Container(
-        constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.75),
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Row(
-                    children: [
-                      const Icon(Icons.explore_rounded, color: ArcaneTheme.secondary, size: 20),
-                      const SizedBox(width: 8),
-                      Flexible(
-                        child: Text(
-                          'DUNGEON EXPLORATION CODEX',
-                          style: GoogleFonts.cinzel(fontSize: 14, fontWeight: FontWeight.w800, color: Colors.white),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(color: ArcaneTheme.secondary.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(6)),
-                  child: Text(
-                    '${_discoveredRoomIds.length}/${_dungeon.rooms.length} Charted',
-                    style: GoogleFonts.ibmPlexSans(fontSize: 11, fontWeight: FontWeight.w700, color: ArcaneTheme.secondary),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Expanded(
-              child: ListView.separated(
-                itemCount: _dungeon.rooms.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 8),
-                itemBuilder: (context, idx) {
-                  final room = _dungeon.rooms[idx];
-                  final isDiscovered = _discoveredRoomIds.contains(room.id);
-                  return Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: isDiscovered ? const Color(0xFF1C2232) : Colors.black26,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: isDiscovered ? ArcaneTheme.secondary.withValues(alpha: 0.5) : Colors.white10),
-                    ),
+      builder: (ctx) => DefaultTabController(
+        length: 2,
+        initialIndex: initialTab,
+        child: Container(
+          constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.8),
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
                     child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(isDiscovered ? room.type.icon : '❓', style: const TextStyle(fontSize: 22)),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                isDiscovered ? room.name : 'Uncharted Crypt Chamber',
-                                style: GoogleFonts.cinzel(fontSize: 13, fontWeight: FontWeight.w700, color: isDiscovered ? Colors.white : Colors.white38),
-                              ),
-                              const SizedBox(height: 3),
-                              Text(
-                                isDiscovered ? room.description : 'Veiled in damp dungeon gloom. Delve further into the corridors to chart this chamber.',
-                                style: GoogleFonts.ibmPlexSans(fontSize: 11, color: isDiscovered ? Colors.white70 : Colors.white30),
-                              ),
-                            ],
+                        const Icon(Icons.explore_rounded, color: ArcaneTheme.secondary, size: 20),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            'DUNGEON EXPLORATION & QUESTS',
+                            style: GoogleFonts.cinzel(fontSize: 14, fontWeight: FontWeight.w800, color: Colors.white),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
                     ),
-                  );
-                },
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(color: ArcaneTheme.secondary.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(6)),
+                    child: Text(
+                      '${_discoveredRoomIds.length}/${_dungeon.rooms.length} Charted',
+                      style: GoogleFonts.ibmPlexSans(fontSize: 11, fontWeight: FontWeight.w700, color: ArcaneTheme.secondary),
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ],
+              const SizedBox(height: 12),
+              TabBar(
+                indicatorColor: ArcaneTheme.secondary,
+                labelColor: ArcaneTheme.secondary,
+                unselectedLabelColor: Colors.white60,
+                tabs: [
+                  Tab(
+                    icon: const Icon(Icons.meeting_room_rounded, size: 16),
+                    text: 'CHAMBERS (${_discoveredRoomIds.length}/${_dungeon.rooms.length})',
+                  ),
+                  Tab(
+                    icon: const Icon(Icons.assignment_rounded, size: 16),
+                    text: 'SIDEQUESTS (${campaign?.sidequests.where((s) => s.isCompleted).length ?? 0}/${campaign?.sidequests.length ?? 0})',
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Expanded(
+                child: TabBarView(
+                  children: [
+                    // Tab 1: Chambers
+                    ListView.separated(
+                      itemCount: _dungeon.rooms.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 8),
+                      itemBuilder: (context, idx) {
+                        final room = _dungeon.rooms[idx];
+                        final isDiscovered = _discoveredRoomIds.contains(room.id);
+                        return Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: isDiscovered ? const Color(0xFF1C2232) : Colors.black26,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: isDiscovered ? ArcaneTheme.secondary.withValues(alpha: 0.5) : Colors.white10),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(isDiscovered ? room.type.icon : '❓', style: const TextStyle(fontSize: 22)),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      isDiscovered ? room.name : 'Uncharted Crypt Chamber',
+                                      style: GoogleFonts.cinzel(fontSize: 13, fontWeight: FontWeight.w700, color: isDiscovered ? Colors.white : Colors.white38),
+                                    ),
+                                    const SizedBox(height: 3),
+                                    Text(
+                                      isDiscovered ? room.description : 'Veiled in damp dungeon gloom. Delve further into the corridors to chart this chamber.',
+                                      style: GoogleFonts.ibmPlexSans(fontSize: 11, color: isDiscovered ? Colors.white70 : Colors.white30),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                    // Tab 2: Sidequests
+                    if (campaign == null || campaign.sidequests.isEmpty)
+                      Center(
+                        child: Text(
+                          'No active sidequests discovered in this dungeon yet.',
+                          style: GoogleFonts.ibmPlexSans(color: Colors.white54),
+                        ),
+                      )
+                    else
+                      ListView.separated(
+                        itemCount: campaign.sidequests.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 10),
+                        itemBuilder: (context, idx) {
+                          final sq = campaign.sidequests[idx];
+                          final isDone = sq.isCompleted;
+                          return Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: isDone ? const Color(0xFF16251E) : const Color(0xFF1C2232),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: isDone ? const Color(0xFF3DD68C).withValues(alpha: 0.6) : ArcaneTheme.secondary.withValues(alpha: 0.5),
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Text(
+                                      sq.category == 'combat' ? '⚔️' : (sq.category == 'puzzle' ? '✨' : '📜'),
+                                      style: const TextStyle(fontSize: 20),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            sq.title,
+                                            style: GoogleFonts.cinzel(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w700,
+                                              color: isDone ? const Color(0xFF3DD68C) : Colors.white,
+                                            ),
+                                          ),
+                                          Text(
+                                            'TYPE: ${sq.category.toUpperCase()} • TARGET: (${sq.targetTile.x}, ${sq.targetTile.y})',
+                                            style: GoogleFonts.ibmPlexSans(
+                                              fontSize: 9.5,
+                                              letterSpacing: 0.5,
+                                              color: isDone ? Colors.white60 : ArcaneTheme.secondary,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                                      decoration: BoxDecoration(
+                                        color: isDone ? const Color(0xFF3DD68C).withValues(alpha: 0.2) : Colors.amberAccent.withValues(alpha: 0.15),
+                                        borderRadius: BorderRadius.circular(6),
+                                        border: Border.all(
+                                          color: isDone ? const Color(0xFF3DD68C) : Colors.amberAccent,
+                                          width: 0.8,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        isDone ? 'COMPLETED' : 'ACTIVE',
+                                        style: GoogleFonts.cinzel(
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.w800,
+                                          color: isDone ? const Color(0xFF3DD68C) : Colors.amberAccent,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  sq.objective,
+                                  style: GoogleFonts.ibmPlexSans(fontSize: 11.5, color: Colors.white),
+                                ),
+                                const SizedBox(height: 6),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.card_giftcard_rounded, size: 14, color: Colors.amberAccent),
+                                    const SizedBox(width: 4),
+                                    Expanded(
+                                      child: Text(
+                                        'Reward: ${sq.rewardDescription}',
+                                        style: GoogleFonts.ibmPlexSans(fontSize: 10.5, color: Colors.amberAccent),
+                                      ),
+                                    ),
+                                    if (!isDone)
+                                      TextButton.icon(
+                                        style: TextButton.styleFrom(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                          minimumSize: Size.zero,
+                                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                          backgroundColor: ArcaneTheme.secondary.withValues(alpha: 0.15),
+                                        ),
+                                        icon: const Icon(Icons.my_location_rounded, size: 12, color: ArcaneTheme.secondary),
+                                        label: Text('Locate', style: GoogleFonts.cinzel(fontSize: 10, color: ArcaneTheme.secondary, fontWeight: FontWeight.w700)),
+                                        onPressed: () {
+                                          Navigator.pop(ctx);
+                                          _recenterOnTile(m.Point(sq.targetTile.x, sq.targetTile.y));
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text('Focusing map on sidequest: ${sq.title}', style: GoogleFonts.ibmPlexSans()),
+                                              duration: const Duration(seconds: 2),
+                                              backgroundColor: const Color(0xFF1E2638),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -3471,6 +4165,11 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
                       openedDoors: _openedDoors,
                       activePath: _activePath,
                       targetWaypoint: _targetWaypoint,
+                      sidequestMarkers: _getSidequestMarkers(campaign),
+                      onPartyMemberTap: (visual) {
+                        final member = campaign?.party.where((m) => m.name == visual.name).firstOrNull;
+                        if (member != null) _showCompanionInteractionSheet(member);
+                      },
                       onTileTap: _handleTileTap,
                       onPropTap: _handlePropTap,
                       onNpcTap: _handleNpcTap,
@@ -3482,7 +4181,7 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
               );
             }),
             // Live Quest Objective HUD overlay
-            if (campaign != null && campaign.questLog.isNotEmpty)
+            if (campaign != null && (campaign.questLog.isNotEmpty || campaign.sidequests.isNotEmpty))
               Positioned(
                 top: 8,
                 left: 8,
@@ -3491,58 +4190,99 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
                   final activeBeat = campaign.questLog.where((q) => q.status == 'active').firstOrNull;
                   final beatIdx = activeBeat != null ? campaign.questLog.indexOf(activeBeat) + 1 : campaign.questLog.length;
                   final title = activeBeat?.title ?? 'Dungeon Cleansed';
-                  return Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: _showExplorationCodex,
+                  final completedSq = campaign.sidequests.where((s) => s.isCompleted).length;
+                  final totalSq = campaign.sidequests.length;
+                  return Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF10121A).withValues(alpha: 0.90),
                       borderRadius: BorderRadius.circular(10),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF10121A).withValues(alpha: 0.90),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: ArcaneTheme.secondary.withValues(alpha: 0.6)),
-                          boxShadow: [
-                            BoxShadow(color: Colors.black.withValues(alpha: 0.5), blurRadius: 8),
-                          ],
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.explore_rounded, size: 16, color: ArcaneTheme.secondary),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    'QUEST BEAT $beatIdx/${campaign.questLog.length}',
-                                    style: GoogleFonts.cinzel(fontSize: 9.5, fontWeight: FontWeight.w800, color: ArcaneTheme.secondary, letterSpacing: 0.8),
-                                  ),
-                                  Text(
-                                    title,
-                                    style: GoogleFonts.ibmPlexSans(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
+                      border: Border.all(color: ArcaneTheme.secondary.withValues(alpha: 0.6)),
+                      boxShadow: [
+                        BoxShadow(color: Colors.black.withValues(alpha: 0.5), blurRadius: 8),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: () => _showExplorationCodex(initialTab: 0),
+                              borderRadius: BorderRadius.horizontal(
+                                left: const Radius.circular(10),
+                                right: totalSq == 0 ? const Radius.circular(10) : Radius.zero,
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.explore_rounded, size: 16, color: ArcaneTheme.secondary),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            'QUEST BEAT $beatIdx/${campaign.questLog.length}',
+                                            style: GoogleFonts.cinzel(fontSize: 9.5, fontWeight: FontWeight.w800, color: ArcaneTheme.secondary, letterSpacing: 0.8),
+                                          ),
+                                          Text(
+                                            title,
+                                            style: GoogleFonts.ibmPlexSans(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                                      decoration: BoxDecoration(
+                                        color: ArcaneTheme.secondary.withValues(alpha: 0.2),
+                                        borderRadius: BorderRadius.circular(6),
+                                        border: Border.all(color: ArcaneTheme.secondary.withValues(alpha: 0.4)),
+                                      ),
+                                      child: Text(
+                                        '${_discoveredRoomIds.length}/${_dungeon.rooms.length}',
+                                        style: GoogleFonts.ibmPlexSans(fontSize: 9.5, color: ArcaneTheme.secondary, fontWeight: FontWeight.w700),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: ArcaneTheme.secondary.withValues(alpha: 0.2),
-                                borderRadius: BorderRadius.circular(6),
-                                border: Border.all(color: ArcaneTheme.secondary.withValues(alpha: 0.4)),
-                              ),
-                              child: Text(
-                                '${_discoveredRoomIds.length}/${_dungeon.rooms.length} rooms',
-                                style: GoogleFonts.ibmPlexSans(fontSize: 9.5, color: ArcaneTheme.secondary, fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                        if (totalSq > 0) ...[
+                          Container(width: 1, height: 26, color: ArcaneTheme.secondary.withValues(alpha: 0.3)),
+                          Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: () => _showExplorationCodex(initialTab: 1),
+                              borderRadius: const BorderRadius.horizontal(right: Radius.circular(10)),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Text('📜', style: TextStyle(fontSize: 12)),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      '$completedSq/$totalSq SQ',
+                                      style: GoogleFonts.ibmPlexSans(
+                                        fontSize: 9.5,
+                                        fontWeight: FontWeight.w700,
+                                        color: completedSq == totalSq ? const Color(0xFF3DD68C) : ArcaneTheme.secondary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
-                          ],
-                        ),
-                      ),
+                          ),
+                        ],
+                      ],
                     ),
                   );
                 }),
@@ -3631,7 +4371,7 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
                 final hpFrac = m.maxHp <= 0 ? 0.0 : (m.hp / m.maxHp).clamp(0.0, 1.0);
                 final hpColor = hpFrac > 0.5 ? ArcaneTheme.secondary : (hpFrac > 0.2 ? Colors.orange : Colors.redAccent);
                 return PressableScale(
-                  onTap: isLead ? null : () => _mentionMember(m.name),
+                  onTap: isLead ? null : () => _showCompanionInteractionSheet(m),
                   onLongPress: () => showInventorySheet(context, ref, m),
                   child: Column(mainAxisSize: MainAxisSize.min, children: [
                   CircleAvatar(

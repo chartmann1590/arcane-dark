@@ -477,6 +477,74 @@ const _wanderingNpcArchetypes = [
     shopItems: ['Lockpick Kit', 'Smokebomb', 'Dagger of Keen Edge'],
     canRecruit: true,
   ),
+  _WanderingNpcArchetype(
+    name: 'Thorna Ironbreaker',
+    role: 'Dwarven Tinkerer',
+    portraitAsset: 'assets/avatar/portraits/dwarf.png',
+    greeting: 'Stone and steel! The masonry down here is buckling under old dwarven pressure seals. Mind your footing around the tripwires.',
+    dialogueOptions: [
+      'Can you help disarm any mechanical traps ahead?',
+      'Do you have sturdy armaments or shield plating for trade?',
+      'Lend your hammer to our party vanguard!',
+    ],
+    shopItems: ['Whetstone of Keen Edge', 'Heavy Iron Shield (+2 AC)', 'Dwarven Stout Ale'],
+    healPower: 6,
+    canRecruit: true,
+  ),
+  _WanderingNpcArchetype(
+    name: 'Elaria Moonwhisper',
+    role: 'Wayfinder Scout',
+    portraitAsset: 'assets/avatar/portraits/elf.png',
+    greeting: 'The winds carrying through these fissures sing of ancient vaulted sanctuaries and slumbering guardians.',
+    dialogueOptions: [
+      'Which corridors lead towards the central sanctuary?',
+      'Have you tracked any restless spirits or shadow beasts?',
+      'Join our expedition as our vanguard scout.',
+    ],
+    shopItems: ['Elven Trail Rations', 'Quiver of Silvered Arrows', 'Boots of Stealth'],
+    healPower: 8,
+    canRecruit: true,
+  ),
+  _WanderingNpcArchetype(
+    name: 'Master Craig',
+    role: 'Traveling Relic Merchant',
+    portraitAsset: 'assets/avatar/portraits/human.png',
+    greeting: 'Riches and curios from forgotten crypts! Gold speaks every dialect, my friends. What ancient treasure do you seek?',
+    dialogueOptions: [
+      'Show us your most potent enchanted wares.',
+      'Have you heard rumors of legendary relics buried nearby?',
+      'Will you purchase our salvaged crypt spoils?',
+    ],
+    shopItems: ['Ring of Feather Fall', 'Scroll of Magic Missile', 'Greater Health Draught', 'Amulet of Ward'],
+    canRecruit: false,
+  ),
+  _WanderingNpcArchetype(
+    name: 'Vael the Scavenger',
+    role: 'Hollow Crypt Hermit',
+    portraitAsset: 'assets/avatar/portraits/orc.png',
+    greeting: 'Another foolish company delved down into the maw! Beware the red-eyed stalkers that hunt when your torch gutters.',
+    dialogueOptions: [
+      'What rumors or secrets can you share of this floor?',
+      'Where can we find clean water or safe resting alcoves?',
+      'Fight with us to clear a path to the surface!',
+    ],
+    shopItems: ['Smoked Meat Pack', 'Fire Starting Flint', 'Rusted Cleaver (+1 ATK)'],
+    canRecruit: true,
+  ),
+  _WanderingNpcArchetype(
+    name: 'Sister Teresa',
+    role: 'Radiant Templar',
+    portraitAsset: 'assets/avatar/portraits/tiefling.png',
+    greeting: 'The sacred flame shall not falter in this hollow tomb. Stand firm in faith, travelers, and let darkness be purged.',
+    dialogueOptions: [
+      'Bestow a healing prayer upon our wounded companions.',
+      'What dark magic binds the dead to these flagstones?',
+      'We welcome your holy blade and radiant prayers in our party!',
+    ],
+    shopItems: ['Vial of Consecrated Oil', 'Potion of Greater Healing', 'Radiant Symbol'],
+    healPower: 14,
+    canRecruit: true,
+  ),
 ];
 
 /// Generates friendly and neutral interactive adventurers, merchants, and clerics
@@ -492,7 +560,7 @@ List<MapNpc> generateDungeonRoamingNpcs(DungeonMap dungeon, {Set<String> excludi
   spots.shuffle(rng);
 
   final archetypes = List.of(_wanderingNpcArchetypes)..shuffle(rng);
-  final spawnCount = min(spots.length, (2 + (rng.nextDouble() < 0.5 ? 1 : 0)).clamp(2, archetypes.length));
+  final spawnCount = min(spots.length, (4 + rng.nextInt(3)).clamp(4, archetypes.length));
 
   for (var i = 0; i < spawnCount; i++) {
     final spot = spots[i];

@@ -172,6 +172,18 @@ class CampaignNotifier extends StateNotifier<CampaignState?> {
     _persist();
   }
 
+  void completeSidequest(String sidequestId) {
+    final cur = state;
+    if (cur == null) return;
+    for (final sq in cur.sidequests) {
+      if (sq.id == sidequestId) {
+        sq.isCompleted = true;
+      }
+    }
+    state = cur;
+    _persist();
+  }
+
   void newFloor({required int newSeed, required Point entryPoint, String environment = 'dungeon'}) {
     final cur = state;
     if (cur == null) return;

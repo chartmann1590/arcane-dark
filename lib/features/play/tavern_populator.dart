@@ -164,6 +164,12 @@ class MapAnimal {
         return '🦊';
       case 'bat':
         return '🦇';
+      case 'rat':
+        return '🐀';
+      case 'beetle':
+        return '🪲';
+      case 'frog':
+        return '🐸';
       default:
         return '🐾';
     }
@@ -434,9 +440,49 @@ List<MapAnimal> generateDungeonAnimals(DungeonMap dungeon, {required Set<String>
       'The fox chirps curiously and cocks its head, intrigued by your gleaming equipment.',
       'astral_falcon',
     ),
+    (
+      'Chitter',
+      'Cavern Echo Bat',
+      'bat',
+      'A leathery-winged cave bat roosting along the archway, twitching its ears to the party\'s footsteps.',
+      'Squeak-chitter! It flits its wings and hovers gently over your torch before landing.',
+      'spectral_owl',
+    ),
+    (
+      'Scamp',
+      'Whiskered Crypt Rat',
+      'rat',
+      'A plump, intelligent silver-furred rat with lively twitching whiskers sniffing for trail rations.',
+      'Squeak! Scamp sits up on hind legs and rubs his whiskers with rapid front paws.',
+      'hearth_cat',
+    ),
+    (
+      'Khepri',
+      'Luminous Scarab',
+      'beetle',
+      'An iridescent emerald jewel beetle crawling slowly over damp flagstones, shimmering in the torchlight.',
+      'Click-click... Khepri taps its antenna gently against your greave, radiating faint warmth.',
+      'tavern_hound',
+    ),
+    (
+      'Grom',
+      'Ancient Moss Toad',
+      'frog',
+      'A fat emerald moss toad perched atop a damp stone, its throat sac puffing with deep cavern resonance.',
+      'Croaaak... Grom blinks golden vertical pupils and lets out a resonant, soothing croak.',
+      'hearth_cat',
+    ),
+    (
+      'Bones',
+      'Wandering Crypt Hound',
+      'hound',
+      'A hardy subterranean hound with scarred gray fur, trotting loyally along the crypt flagstones.',
+      'Woof! Bones wags his tail low and nudges your hand with a warm, comforting nose.',
+      'tavern_hound',
+    ),
   ];
 
-  final count = min(2, spots.length);
+  final count = min(spots.length, (4 + rng.nextInt(4)).clamp(4, 7));
   for (var i = 0; i < count; i++) {
     final t = archetypes[i % archetypes.length];
     animals.add(
