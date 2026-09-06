@@ -748,10 +748,10 @@ class IsoMapView extends StatelessWidget {
 
   static const _clusterOffsets = [
     Offset(0, 0),
-    Offset(-9, 3),
-    Offset(9, 3),
-    Offset(-7, -4),
-    Offset(7, -4),
+    Offset(-6, 2),
+    Offset(6, 2),
+    Offset(-4, -3),
+    Offset(4, -3),
   ];
 
   Widget _buildPartyMember(PartyMemberVisual member, int index, double originX, double originY) {
@@ -774,10 +774,10 @@ class IsoMapView extends StatelessWidget {
 
     final isLead = index == 0;
     final tokenSize = isLead ? 30.0 : 26.0;
-    // Grounding: tile diamond center floor line is origin.dy + 18.0.
-    // Miniature token stands upright from the floor slab:
+    // Grounding: tile diamond center floor line is origin.dy + 16.0.
+    // Miniature token stands upright planted firmly on the floor slab:
     final tokenLeft = origin.dx + tileW / 2 - tokenSize / 2 + offset.dx;
-    final tokenTop = origin.dy + 18.0 - tokenSize + offset.dy;
+    final tokenTop = origin.dy + 16.0 - tokenSize + offset.dy;
 
     final token = _PartyToken(
       portraitAsset: member.portraitAsset,
@@ -798,7 +798,7 @@ class IsoMapView extends StatelessWidget {
             onPartyMemberTap!(member);
           }
         },
-        child: isLead ? Pulse(child: token) : token,
+        child: token,
       ),
     );
   }
@@ -932,6 +932,75 @@ class _NpcToken extends StatelessWidget {
   }
 }
 
+class _IsoMiniatureBasePainter extends CustomPainter {
+  final Color ringColor;
+  final bool isLead;
+
+  const _IsoMiniatureBasePainter({
+    required this.ringColor,
+    required this.isLead,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final cx = size.width / 2;
+    final cy = size.height / 2;
+    final w = size.width;
+    final h = size.height;
+
+    // 1. Isometric 2:1 Contact Drop Shadow firmly on the floor slab
+    final shadowPaint = Paint()
+      ..color = Colors.black.withValues(alpha: 0.70)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.5);
+    canvas.drawOval(
+      Rect.fromCenter(center: Offset(cx, cy + 2.5), width: w * 0.98, height: h * 0.88),
+      shadowPaint,
+    );
+
+    // 2. 3D Miniature Figurine Plinth Vertical Rim (beveled side extrusion)
+    final rimPaint = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: isLead
+            ? [const Color(0xFFC67C00), const Color(0xFF4A2E00)]
+            : [const Color(0xFF00838F), const Color(0xFF003830)],
+      ).createShader(Rect.fromLTWH(0, cy, w, 4.0));
+    canvas.drawOval(
+      Rect.fromCenter(center: Offset(cx, cy + 1.5), width: w * 0.88, height: h * 0.74),
+      rimPaint,
+    );
+
+    // 3. 3D Beveled Top Plinth Face (isometric tabletop miniature base plate)
+    final topPlinthPaint = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: isLead
+            ? [const Color(0xFFFFE082), const Color(0xFFFFD54F), const Color(0xFFFFA000)]
+            : [const Color(0xFFB2EBF2), const Color(0xFF80DEEA), const Color(0xFF26C6DA)],
+      ).createShader(Rect.fromLTWH(0, 0, w, h));
+    canvas.drawOval(
+      Rect.fromCenter(center: Offset(cx, cy - 0.5), width: w * 0.84, height: h * 0.68),
+      topPlinthPaint,
+    );
+
+    // 4. Metallic Highlight Bevel Ring
+    final bevelPaint = Paint()
+      ..color = Colors.white.withValues(alpha: isLead ? 0.70 : 0.45)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.9;
+    canvas.drawOval(
+      Rect.fromCenter(center: Offset(cx, cy - 0.5), width: w * 0.84, height: h * 0.68),
+      bevelPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _IsoMiniatureBasePainter old) =>
+      old.ringColor != ringColor || old.isLead != isLead;
+}
+
 class _PartyToken extends StatelessWidget {
   final String? portraitAsset;
   final bool isLead;
@@ -952,43 +1021,36 @@ class _PartyToken extends StatelessWidget {
       clipBehavior: Clip.none,
       alignment: Alignment.center,
       children: [
-        // 1. Isometric Ground Drop Shadow firmly resting on the floor slab
+        // 1. Isometric 2:1 Tabletop Plinth Base & Floor Contact Shadow
         Positioned(
           bottom: -4,
-          child: Container(
-            width: size * 0.95,
-            height: 7,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.black.withValues(alpha: 0.65),
-              boxShadow: [
-                BoxShadow(color: Colors.black.withValues(alpha: 0.5), blurRadius: 4, spreadRadius: 1),
-              ],
+          child: CustomPaint(
+            size: Size(size * 1.15, size * 0.58),
+            painter: _IsoMiniatureBasePainter(
+              ringColor: color,
+              isLead: isLead,
             ),
           ),
         ),
-        // 2. 3D Miniature Figurine Beveled Pedestal Base Ring
-        Positioned(
-          bottom: -2,
-          child: Container(
-            width: size * 0.88,
-            height: 5,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: isLead
-                    ? [const Color(0xFFFFE082), const Color(0xFFC67C00)]
-                    : [const Color(0xFF80DEEA), const Color(0xFF00838F)],
-              ),
-              border: Border.all(
-                color: isLead ? const Color(0xFFFFD54F) : const Color(0xFF4DD0E1),
-                width: 0.8,
+        // 2. Lead Hero Soft Breathing Aura (glows gently without lifting token off base)
+        if (isLead)
+          Positioned.fill(
+            child: Pulse(
+              duration: const Duration(milliseconds: 1600),
+              child: Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFFFD54F).withValues(alpha: 0.50),
+                      blurRadius: 14,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
-        ),
         // 3. Upright Character Portrait Avatar Token
         Container(
           width: size,
@@ -999,7 +1061,7 @@ class _PartyToken extends StatelessWidget {
             boxShadow: [
               BoxShadow(
                 color: color.withValues(alpha: isLead ? 0.65 : 0.45),
-                blurRadius: isLead ? 12 : 7,
+                blurRadius: isLead ? 10 : 6,
                 spreadRadius: isLead ? 1 : 0,
               ),
               const BoxShadow(

@@ -33,6 +33,7 @@ import '../../widgets/inventory_sheet.dart';
 import '../../widgets/tactical_combat_sheet.dart';
 import '../../widgets/npc_interaction_sheet.dart';
 import '../../widgets/tv_cast_sheet.dart';
+import '../../widgets/world_map_sheet.dart';
 import 'castle_populator.dart';
 import 'cave_populator.dart';
 import 'city_populator.dart';
@@ -4638,317 +4639,42 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
     AudioService.instance.playSuccess();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Traveled to $regionTitle!'),
-        backgroundColor: const Color(0xFF1B1429),
-        duration: const Duration(seconds: 2),
+        content: Row(
+          children: [
+            const Icon(Icons.bolt_rounded, color: Color(0xFFFFD54F), size: 18),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Fast traveled to $regionTitle! Party arrived safely across charted roads.',
+                style: GoogleFonts.ibmPlexSans(fontWeight: FontWeight.w600, color: Colors.white),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: const Color(0xFF131726),
+        duration: const Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
       ),
     );
   }
 
-  void _showWorldTravelSheet() {
+  void _showWorldMap() {
     AudioService.instance.playTap();
+    final campaign = ref.read(campaignProvider);
     final currentEnv = _currentEnvironment ?? 'dungeon';
 
-    final realms = <({
-      String id,
-      String name,
-      String type,
-      IconData icon,
-      Color color,
-      String desc,
-      List<String> features,
-    })>[
-      (
-        id: 'forest',
-        name: 'Whispering Woods',
-        type: 'Wilderness Canopy & Rivers',
-        icon: Icons.forest_rounded,
-        color: const Color(0xFF4E9A51),
-        desc: 'Ancient towering canopy trees, sun-dappled winding dirt trails, crystal river footbridges, and wild fauna.',
-        features: const ['3D Trees', 'River Bridges', 'Wildlife & Scouts', 'Wild Deer & Wolves'],
-      ),
-      (
-        id: 'village',
-        name: 'Oakhaven Village',
-        type: 'Civilized Town & Bazaar',
-        icon: Icons.location_city_rounded,
-        color: const Color(0xFFE5A93C),
-        desc: 'Cobblestone avenues, town square water fountain, blacksmith forge, merchant houses, guards, and townsfolk.',
-        features: const ['Cobblestone Streets', 'Town Fountain', 'Blacksmith & Houses', 'Villagers & Dogs'],
-      ),
-      (
-        id: 'city',
-        name: 'Highgate Metropolis',
-        type: 'Grand City & Harbor Canal',
-        icon: Icons.apartment_rounded,
-        color: const Color(0xFFE5A93C),
-        desc: 'Broad paved avenues, canal waterways with stone bridges, bustling Grand Bazaar stalls, and Cathedral of the Sun.',
-        features: const ['Canal Waterway', 'Bazaar Stalls', 'Sun Cathedral', 'Merchant Prince & Watch'],
-      ),
-      (
-        id: 'castle',
-        name: 'Valoria Citadel',
-        type: 'Royal Fortress & Stronghold',
-        icon: Icons.fort_rounded,
-        color: const Color(0xFFAB47BC),
-        desc: 'Deep moat, stone drawbridge, sovereign Lion Throne, Kingsguard armory, feast banquet hall, and high wizard spire.',
-        features: const ['Moat & Drawbridge', 'Golden Throne', 'Royal Banquet Hall', 'King & Kingsguard'],
-      ),
-      (
-        id: 'cave',
-        name: 'Crystalline Caverns',
-        type: 'Subterranean Abyss',
-        icon: Icons.terrain_rounded,
-        color: const Color(0xFF5B8DEF),
-        desc: 'Organic winding rock chambers, luminous geode crystals, subterranean pools, cave bats, and dwarven miners.',
-        features: const ['Rock Chambers', 'Glowing Geodes', 'Cave Bats & Spiders', 'Dwarven Miners'],
-      ),
-      (
-        id: 'tavern',
-        name: 'The Gilded Goblet',
-        type: 'Tavern Sanctuary',
-        icon: Icons.sports_bar_rounded,
-        color: const Color(0xFFD97706),
-        desc: 'Warm timber hearth, roaring fire, bustling tavern patrons, bardic melodies, and friendly companions.',
-        features: const ['Timber Hearth', 'Barkeep & Bards', 'Sanctuary & Rest', 'Companion Banter'],
-      ),
-      (
-        id: 'dungeon',
-        name: 'Ancient Catacombs',
-        type: 'Stone Dungeon & Crypts',
-        icon: Icons.castle_rounded,
-        color: const Color(0xFF9E77ED),
-        desc: 'Sprawling subterranean fortress with carved flagstones, locked iron gates, spiked traps, and roaming undead.',
-        features: const ['Stone Halls', 'Locked Gates', 'Treasure Chests', 'Undead Warlords'],
-      ),
-    ];
-
-    showModalBottomSheet(
+    WorldMapSheet.show(
       context: context,
-      backgroundColor: const Color(0xFF10121A),
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) {
-        return Container(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.85,
-          ),
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 36,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.white24,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFD54F).withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: const Color(0xFFFFD54F).withValues(alpha: 0.4)),
-                    ),
-                    child: const Icon(Icons.travel_explore_rounded, color: Color(0xFFFFD54F), size: 22),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'REALM TRAVEL & EXPLORATION',
-                          style: GoogleFonts.cinzel(fontSize: 15, fontWeight: FontWeight.w800, color: Colors.white),
-                        ),
-                        Text(
-                          'Choose an environment to travel to with your party',
-                          style: GoogleFonts.ibmPlexSans(fontSize: 11, color: Colors.white60),
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close_rounded, color: Colors.white60, size: 20),
-                    onPressed: () => Navigator.pop(ctx),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Flexible(
-                child: ListView.separated(
-                  shrinkWrap: true,
-                  itemCount: realms.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 10),
-                  itemBuilder: (context, i) {
-                    final r = realms[i];
-                    final isCurrent = r.id == currentEnv;
-                    return Material(
-                      color: isCurrent
-                          ? r.color.withValues(alpha: 0.18)
-                          : const Color(0xFF161A26),
-                      borderRadius: BorderRadius.circular(12),
-                      clipBehavior: Clip.antiAlias,
-                      child: InkWell(
-                        onTap: isCurrent
-                            ? null
-                            : () {
-                                Navigator.pop(ctx);
-                                _travelToEnvironment(r.id, r.name);
-                              },
-                        child: Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                              color: isCurrent
-                                  ? r.color
-                                  : Colors.white.withValues(alpha: 0.08),
-                              width: isCurrent ? 1.5 : 1.0,
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(8),
-                                    decoration: BoxDecoration(
-                                      color: r.color.withValues(alpha: 0.2),
-                                      shape: BoxShape.circle,
-                                      border: Border.all(color: r.color.withValues(alpha: 0.5)),
-                                    ),
-                                    child: Icon(r.icon, color: r.color, size: 20),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
-                                          children: [
-                                            Text(
-                                              r.name,
-                                              style: GoogleFonts.cinzel(
-                                                fontSize: 13,
-                                                fontWeight: FontWeight.w700,
-                                                color: Colors.white,
-                                              ),
-                                            ),
-                                            if (isCurrent) ...[
-                                              const SizedBox(width: 8),
-                                              Container(
-                                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                                decoration: BoxDecoration(
-                                                  color: r.color.withValues(alpha: 0.3),
-                                                  borderRadius: BorderRadius.circular(4),
-                                                  border: Border.all(color: r.color),
-                                                ),
-                                                child: Text(
-                                                  'ACTIVE REALM',
-                                                  style: GoogleFonts.ibmPlexSans(
-                                                    fontSize: 8.5,
-                                                    fontWeight: FontWeight.w800,
-                                                    color: r.color,
-                                                    letterSpacing: 0.6,
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ],
-                                        ),
-                                        Text(
-                                          r.type,
-                                          style: GoogleFonts.ibmPlexSans(
-                                            fontSize: 10.5,
-                                            fontWeight: FontWeight.w500,
-                                            color: r.color,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  if (!isCurrent)
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                      decoration: BoxDecoration(
-                                        color: r.color.withValues(alpha: 0.2),
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(color: r.color.withValues(alpha: 0.6)),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Text(
-                                            'Travel',
-                                            style: GoogleFonts.ibmPlexSans(
-                                              fontSize: 11,
-                                              fontWeight: FontWeight.w700,
-                                              color: Colors.white,
-                                            ),
-                                          ),
-                                          const SizedBox(width: 4),
-                                          const Icon(Icons.arrow_forward_rounded, size: 13, color: Colors.white),
-                                        ],
-                                      ),
-                                    ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                r.desc,
-                                style: GoogleFonts.ibmPlexSans(
-                                  fontSize: 11,
-                                  color: Colors.white70,
-                                  height: 1.3,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Wrap(
-                                spacing: 6,
-                                runSpacing: 4,
-                                children: [
-                                  for (final feat in r.features)
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white.withValues(alpha: 0.06),
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                      child: Text(
-                                        feat,
-                                        style: GoogleFonts.ibmPlexSans(
-                                          fontSize: 9.5,
-                                          color: Colors.white60,
-                                        ),
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        );
+      campaign: campaign,
+      currentEnvironment: currentEnv,
+      onFastTravel: (realmId, realmName) {
+        _travelToEnvironment(realmId, realmName);
       },
     );
+  }
+
+  void _showWorldTravelSheet() {
+    _showWorldMap();
   }
 
   @override
@@ -5276,9 +5002,9 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
                 ),
                 const SizedBox(height: 5),
                 _MapBtn(
-                  icon: Icons.travel_explore_rounded,
+                  icon: Icons.public_rounded,
                   color: const Color(0xFFFFD54F),
-                  onTap: _showWorldTravelSheet,
+                  onTap: _showWorldMap,
                 ),
                 const SizedBox(height: 5),
                 _MapBtn(icon: Icons.map_rounded, onTap: _showMinimap),

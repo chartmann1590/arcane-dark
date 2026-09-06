@@ -276,6 +276,27 @@ class CampaignState {
     worldFlags['defeatedEnemies'] = enemies.toList();
   }
 
+  /// Visited realm IDs across the entire campaign world map (e.g. 'city', 'castle', 'forest', 'village').
+  Set<String> get visitedRealms {
+    final fromFlags = worldFlags['visitedRealms'];
+    final set = fromFlags != null ? Set<String>.from(fromFlags as List) : <String>{};
+    set.add(mapEnvironment);
+    set.addAll(locationSeeds.keys.where((k) => !k.startsWith('dungeon_')));
+    return set;
+  }
+
+  set visitedRealms(Set<String> realms) {
+    worldFlags['visitedRealms'] = realms.toList();
+  }
+
+  bool isRealmVisited(String realmId) => visitedRealms.contains(realmId);
+
+  void discoverRealm(String realmId) {
+    final set = visitedRealms;
+    set.add(realmId);
+    visitedRealms = set;
+  }
+
   /// The seed to use for [env] — reuses whatever this campaign already
   /// generated for that environment, or rolls (and remembers) a fresh one.
   int seedForEnvironment(String env) => locationSeeds.putIfAbsent(env, () => Random().nextInt(1 << 30));

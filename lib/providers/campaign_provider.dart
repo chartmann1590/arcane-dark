@@ -207,6 +207,9 @@ class CampaignNotifier extends StateNotifier<CampaignState?> {
     final cur = state;
     if (cur == null) return;
     cur.mapEnvironment = environment;
+    final visited = cur.visitedRealms;
+    visited.add(environment);
+    cur.visitedRealms = visited;
     if (seed != null) {
       cur.locationSeeds[environment] = seed;
       cur.mapSeed = seed;
@@ -228,6 +231,18 @@ class CampaignNotifier extends StateNotifier<CampaignState?> {
     }
     state = cur;
     _persist();
+  }
+
+  void discoverRealm(String realmId) {
+    final cur = state;
+    if (cur == null) return;
+    final visited = cur.visitedRealms;
+    if (!visited.contains(realmId)) {
+      visited.add(realmId);
+      cur.visitedRealms = visited;
+      state = cur;
+      _persist();
+    }
   }
 
   void addSidequest(Sidequest sq) {
