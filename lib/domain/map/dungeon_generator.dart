@@ -96,7 +96,93 @@ class DungeonGenerator {
       }
     }
 
-    return DungeonMap(tiles: tiles, rooms: rooms, entryPoint: entry, seed: seed, width: width, height: height);
+    // Assign rich thematic roles, names, and descriptions to each room
+    final themedRooms = _assignRoomThemes(rooms, rng);
+
+    return DungeonMap(tiles: tiles, rooms: themedRooms, entryPoint: entry, seed: seed, width: width, height: height);
+  }
+
+  List<Room> _assignRoomThemes(List<Room> rawRooms, Random rng) {
+    if (rawRooms.isEmpty) return rawRooms;
+    final result = <Room>[];
+
+    final themePool = [
+      (
+        RoomType.alchemistLab,
+        'The Forsaken Laboratory',
+        'Shattered vials and a bubbling alchemical cauldron line stone benches. Pungent vapors linger in the chilly air.'
+      ),
+      (
+        RoomType.ancientLibrary,
+        'Forbidden Archive',
+        'Towering stone shelves holding dust-laden grimoires and an arcane lectern pulsing with ancient runes.'
+      ),
+      (
+        RoomType.armory,
+        'Old Vanguard Armory',
+        'Rusted weapon racks and discarded iron pavises flank the mossy walls, relics of a long-vanished legion.'
+      ),
+      (
+        RoomType.floodedCrypt,
+        'Flooded Sepulcher',
+        'Dark shallow waters lap against carved stone sarcophagi. Whispers echo from the shadowy corners.'
+      ),
+      (
+        RoomType.shrineSanctum,
+        'Sanctuary of the Silver Flame',
+        'A consecrated chamber crowned with a runic stone altar and blazing brazier. Warm holy energy dispels the darkness.'
+      ),
+      (
+        RoomType.treasureVault,
+        'The Gilded Vault',
+        'Ornate chests with gold filigree and lockboxes rest upon raised flagstone pedestals.'
+      ),
+    ];
+
+    final shuffledThemes = List.of(themePool)..shuffle(rng);
+
+    for (var i = 0; i < rawRooms.length; i++) {
+      final r = rawRooms[i];
+      if (i == 0) {
+        result.add(Room(
+          r.id,
+          r.x,
+          r.y,
+          r.w,
+          r.h,
+          type: RoomType.entryVestibule,
+          name: 'The Descent Antechamber',
+          description: 'A cold vaulted hall with ancient stone steps leading to the surface. Moisture trickles down mossy walls.',
+          containsSecret: false,
+        ));
+      } else if (i == rawRooms.length - 1 && rawRooms.length > 2) {
+        result.add(Room(
+          r.id,
+          r.x,
+          r.y,
+          r.w,
+          r.h,
+          type: RoomType.bossChamber,
+          name: 'Sanctum of the Crypt Lord',
+          description: 'A towering subterranean hall framed by monolithic pillars. An imposing central dais marks the seat of subterranean dominion.',
+          containsSecret: rng.nextBool(),
+        ));
+      } else {
+        final theme = shuffledThemes[(i - 1) % shuffledThemes.length];
+        result.add(Room(
+          r.id,
+          r.x,
+          r.y,
+          r.w,
+          r.h,
+          type: theme.$1,
+          name: theme.$2,
+          description: theme.$3,
+          containsSecret: rng.nextDouble() < 0.35,
+        ));
+      }
+    }
+    return result;
   }
 
   bool _overlaps(Room a, Room b, int pad) {

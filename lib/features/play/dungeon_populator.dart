@@ -15,83 +15,244 @@ const _dungeonPropAssets = [
   'assets/tiles/prop_chest.png',
   'assets/tiles/prop_pillar.png',
   'assets/tiles/prop_moss.png',
+  'assets/tiles/prop_brazier.png',
+  'assets/tiles/prop_statue.png',
+  'assets/tiles/prop_crystals.png',
+  'assets/tiles/prop_crates.png',
 ];
 
-/// Eight to eighteen decorations scattered across the dungeon's rooms —
-/// scales with how many rooms the generated layout actually has, so a
-/// sprawling multi-room dungeon reads as a lived-in ruin, not endless bare
-/// stone corridors.
+/// Generates thematic room centerpiece props matching each room's RoomType,
+/// alongside ambient torches, rubble, and moss scattered across corridors.
 List<MapProp> generateDungeonProps(DungeonMap dungeon) {
   final taken = {'${dungeon.entryPoint.x},${dungeon.entryPoint.y}'};
-  final spots = _floorSpots(dungeon, excluding: taken);
-  if (spots.isEmpty) return [];
-  final rng = Random(dungeon.seed ^ 0x44554E47); // "DUNG"
-  spots.shuffle(rng);
-  final target = (dungeon.rooms.length * (1 + rng.nextInt(2)) + 4).clamp(8, 18);
-  final count = target.clamp(0, spots.length);
   final props = <MapProp>[];
+  final rng = Random(dungeon.seed ^ 0x44554E47); // "DUNG"
 
-  // Guaranteed ancient altar in one of the deeper rooms
-  if (dungeon.rooms.length > 2 && spots.isNotEmpty) {
-    final altarRoom = dungeon.rooms[dungeon.rooms.length ~/ 2];
-    final altarPos = Point(altarRoom.centerX, altarRoom.centerY);
-    props.add(MapProp(
-      pos: altarPos,
-      asset: 'assets/tiles/prop_altar.png',
-      isSolid: true,
-      name: 'Runic Stone Shrine',
-      interactionText: 'An ominous stone shrine carved with elder draconic runes. Kneeling here fills your spirit with renewed courage.',
-    ));
-    taken.add('${altarPos.x},${altarPos.y}');
+  // 1. Thematic Centerpiece Props for each room
+  for (final room in dungeon.rooms) {
+    final center = Point(room.centerX, room.centerY);
+    final centerKey = '${center.x},${center.y}';
+    if (taken.contains(centerKey)) continue;
+
+    switch (room.type) {
+      case RoomType.entryVestibule:
+        final torchPos = Point(room.x + 1, room.y + 1);
+        if (!taken.contains('${torchPos.x},${torchPos.y}')) {
+          props.add(MapProp(
+            pos: torchPos,
+            asset: 'assets/tiles/prop_torch.png',
+            isSolid: false,
+            name: 'Vestibule Wall Torch',
+            interactionText: 'A torch flickering brightly at the entrance steps, illuminating the way down.',
+          ));
+          taken.add('${torchPos.x},${torchPos.y}');
+        }
+        break;
+
+      case RoomType.alchemistLab:
+        props.add(MapProp(
+          pos: center,
+          asset: 'assets/tiles/prop_cauldron.png',
+          isSolid: true,
+          name: 'Bubbling Alchemical Cauldron',
+          interactionText: 'A blackened iron cauldron bubbling with glowing emerald brew. Sweet and herbal vapors restore vitality, and inspecting the cauldron yields an elixir.',
+        ));
+        taken.add(centerKey);
+        final crystalPos = Point(room.x + 1, room.y + 1);
+        if (!taken.contains('${crystalPos.x},${crystalPos.y}')) {
+          props.add(MapProp(
+            pos: crystalPos,
+            asset: 'assets/tiles/prop_crystals.png',
+            isSolid: false,
+            name: 'Alchemical Mana Crystal',
+            interactionText: 'Luminescent mana crystals used to distill volatile arcane reagents.',
+          ));
+          taken.add('${crystalPos.x},${crystalPos.y}');
+        }
+        break;
+
+      case RoomType.ancientLibrary:
+        props.add(MapProp(
+          pos: center,
+          asset: 'assets/tiles/prop_lectern.png',
+          isSolid: true,
+          name: 'Arcane Runic Lectern',
+          interactionText: 'A carved wooden lectern holding an ancient grimoire pulsing with glowing planar runes. Deciphering it grants deep arcane insight.',
+        ));
+        taken.add(centerKey);
+        final shelfPos = Point(room.x + 1, room.y + 1);
+        if (!taken.contains('${shelfPos.x},${shelfPos.y}')) {
+          props.add(MapProp(
+            pos: shelfPos,
+            asset: 'assets/tiles/prop_bookshelf.png',
+            isSolid: true,
+            name: 'Archive Bookshelf',
+            interactionText: 'Dusty stone shelves holding treatises on planar binding, forgotten dialects, and star charts.',
+          ));
+          taken.add('${shelfPos.x},${shelfPos.y}');
+        }
+        break;
+
+      case RoomType.armory:
+        props.add(MapProp(
+          pos: center,
+          asset: 'assets/tiles/prop_weapon_rack.png',
+          isSolid: true,
+          name: 'Old Vanguard Weapon Rack',
+          interactionText: 'A stout timber rack stacked with steel broadswords, crossguards, and iron kite shields from the crypt vanguard.',
+        ));
+        taken.add(centerKey);
+        final cratesPos = Point(room.x + 1, room.y + 1);
+        if (!taken.contains('${cratesPos.x},${cratesPos.y}')) {
+          props.add(MapProp(
+            pos: cratesPos,
+            asset: 'assets/tiles/prop_crates.png',
+            isSolid: true,
+            name: 'Armory Storage Munitions',
+            interactionText: 'Heavy timber crates and iron-hooped barrels filled with oil, whetstones, and crossbow bolts.',
+          ));
+          taken.add('${cratesPos.x},${cratesPos.y}');
+        }
+        break;
+
+      case RoomType.floodedCrypt:
+        props.add(MapProp(
+          pos: center,
+          asset: 'assets/tiles/prop_sarcophagus.png',
+          isSolid: true,
+          name: 'Carved Stone Sarcophagus',
+          interactionText: 'An ancient limestone tomb etched with funerary death masks. Prying the lid requires strength, but may hold sacred burial relics.',
+        ));
+        taken.add(centerKey);
+        final bonesPos = Point(room.x + 1, room.y + 1);
+        if (!taken.contains('${bonesPos.x},${bonesPos.y}')) {
+          props.add(MapProp(
+            pos: bonesPos,
+            asset: 'assets/tiles/prop_bones.png',
+            isSolid: false,
+            name: 'Crypt Skeletal Remains',
+            interactionText: 'The bleached bones of an ancient sentinel guarding the tomb.',
+          ));
+          taken.add('${bonesPos.x},${bonesPos.y}');
+        }
+        break;
+
+      case RoomType.shrineSanctum:
+        props.add(MapProp(
+          pos: center,
+          asset: 'assets/tiles/prop_altar.png',
+          isSolid: true,
+          name: 'Sanctuary of the Silver Flame',
+          interactionText: 'A consecrated runic altar radiating serene warmth. Kneeling in prayer restores vitality and shields against the shadows.',
+        ));
+        taken.add(centerKey);
+        final statuePos = Point(room.x + 1, room.y + 1);
+        if (!taken.contains('${statuePos.x},${statuePos.y}')) {
+          props.add(MapProp(
+            pos: statuePos,
+            asset: 'assets/tiles/prop_statue.png',
+            isSolid: true,
+            name: 'Sanctum Knight Guardian',
+            interactionText: 'A solemn limestone statue of a knight with blade held reverently tip-down.',
+          ));
+          taken.add('${statuePos.x},${statuePos.y}');
+        }
+        break;
+
+      case RoomType.treasureVault:
+        props.add(MapProp(
+          pos: center,
+          asset: 'assets/tiles/prop_chest_gilded.png',
+          isSolid: true,
+          name: 'Gilded Vault Coffer',
+          interactionText: 'An ornate royal coffer bound in gold filigree and locked with an intricate runic tumbler. Rare treasures await inside.',
+        ));
+        taken.add(centerKey);
+        break;
+
+      case RoomType.bossChamber:
+        props.add(MapProp(
+          pos: center,
+          asset: 'assets/tiles/prop_pillar.png',
+          isSolid: true,
+          name: 'Monolithic Crypt Pillar',
+          interactionText: 'A monolithic carved stone pillar marking the depth descent.',
+        ));
+        taken.add(centerKey);
+        final statuePos = Point(room.x + 1, room.y + 1);
+        if (!taken.contains('${statuePos.x},${statuePos.y}')) {
+          props.add(MapProp(
+            pos: statuePos,
+            asset: 'assets/tiles/prop_statue.png',
+            isSolid: true,
+            name: 'Vanguard Colossus Statue',
+            interactionText: 'A towering stone effigy of an ancient war-monarch standing vigil over the boss chamber.',
+          ));
+          taken.add('${statuePos.x},${statuePos.y}');
+        }
+        break;
+    }
   }
 
-  for (var i = 0; i < count && spots.isNotEmpty; i++) {
-    final spot = spots.removeLast();
-    final asset = _dungeonPropAssets[rng.nextInt(_dungeonPropAssets.length)];
-    final isPillar = asset.contains('pillar');
-    final isTorch = asset.contains('torch');
-    final isChest = asset.contains('chest');
-    final isBones = asset.contains('bones');
-    final isRubble = asset.contains('rubble');
+  // 2. Ambient props scattered across floor spots
+  final spots = _floorSpots(dungeon, excluding: taken);
+  if (spots.isNotEmpty) {
+    spots.shuffle(rng);
+    final count = (dungeon.rooms.length * 2).clamp(6, min(14, spots.length));
+    for (var i = 0; i < count && spots.isNotEmpty; i++) {
+      final spot = spots.removeLast();
+      final asset = _dungeonPropAssets[rng.nextInt(_dungeonPropAssets.length)];
+      final isTorch = asset.contains('torch');
+      final isBrazier = asset.contains('brazier');
+      final isChest = asset.contains('chest');
+      final isBones = asset.contains('bones');
+      final isRubble = asset.contains('rubble');
+      final isStatue = asset.contains('statue');
+      final isCrystals = asset.contains('crystals');
+      final isCrates = asset.contains('crates');
 
-    props.add(MapProp(
-      pos: spot,
-      asset: asset,
-      isSolid: isPillar,
-      name: isPillar
-          ? 'Fluted Stone Pillar'
-          : isTorch
-              ? 'Torch Sconce'
-              : isChest
-                  ? 'Weathered Iron Chest'
-                  : isBones
-                      ? 'Fallen Adventurer Skeletal Remains'
-                      : isRubble
-                          ? 'Crumbling Masonry Rubble'
-                          : 'Luminescent Cave Moss',
-      interactionText: isPillar
-          ? 'A massive fluted pillar supporting the subterranean vaulted ceiling.'
-          : isTorch
-              ? 'A glowing torch illuminating damp obsidian walls.'
-              : isChest
-                  ? 'An iron-reinforced chest with a heavy brass clasp.'
-                  : isBones
-                      ? 'The ancient bones of an explorer who succumbed to the crypt\'s perils.'
-                      : isRubble
-                          ? 'Broken flagstones and shattered masonry.'
-                          : 'Gently glowing cave moss pulsing with cold verdant light.',
-    ));
+      props.add(MapProp(
+        pos: spot,
+        asset: asset,
+        isSolid: isBrazier || isStatue || isCrates,
+        name: isTorch
+            ? 'Torch Sconce'
+            : isBrazier
+                ? 'Corridor Brazier'
+                : isChest
+                    ? 'Weathered Iron Chest'
+                    : isBones
+                        ? 'Fallen Explorer Remains'
+                        : isRubble
+                            ? 'Crumbling Masonry Rubble'
+                            : isStatue
+                                ? 'Sentinel Knight Statue'
+                                : isCrystals
+                                    ? 'Mana Crystal Spire'
+                                    : isCrates
+                                        ? 'Supply Crates & Barrel'
+                                        : 'Luminescent Cave Moss',
+        interactionText: isTorch
+            ? 'A glowing wall torch illuminating damp stone walls.'
+            : isBrazier
+                ? 'A bronze basin with crackling embers warming the corridor.'
+                : isChest
+                    ? 'An iron-reinforced chest nestled in the crypt shadows.'
+                    : isBones
+                        ? 'The ancient remains of a fallen explorer.'
+                        : isRubble
+                            ? 'Broken flagstones and shattered masonry.'
+                            : isStatue
+                                ? 'A chiseled limestone statue of a crypt guardian knight.'
+                                : isCrystals
+                                    ? 'Prismatic mana crystals radiating arcane luminescence.'
+                                    : isCrates
+                                        ? 'Weathered wooden supply crates bound with iron hoop barrels.'
+                                        : 'Luminescent cave moss glowing with gentle emerald light.',
+      ));
+    }
   }
-  if (dungeon.rooms.length > 1) {
-    final exitRoom = dungeon.rooms.last;
-    props.add(MapProp(
-      pos: Point(exitRoom.centerX, exitRoom.centerY),
-      asset: 'assets/tiles/prop_pillar.png',
-      isSolid: true,
-      name: 'Central Vault Pillar',
-      interactionText: 'A monolithic carved stone pillar marking the depth descent.',
-    ));
-  }
+
   return props;
 }
 
@@ -119,13 +280,13 @@ class _MonsterArchetype {
 const _monsterArchetypes = [
   _MonsterArchetype(
     name: 'Skeleton Sentry',
-    role: 'Undead Guardian',
+    role: 'Armored Sentry',
     portraitAsset: 'assets/tiles/prop_bones.png',
-    hp: 12,
-    ac: 13,
+    hp: 14,
+    ac: 14,
     attackBonus: 4,
     damageDice: 6,
-    attackName: 'Rusted Scythe',
+    attackName: 'Shield Bash',
   ),
   _MonsterArchetype(
     name: 'Goblin Skulker',
@@ -139,7 +300,7 @@ const _monsterArchetypes = [
   ),
   _MonsterArchetype(
     name: 'Orc Marauder',
-    role: 'Brute',
+    role: 'Brute Berserker',
     portraitAsset: 'assets/avatar/portraits/orc.png',
     hp: 18,
     ac: 13,
@@ -149,13 +310,23 @@ const _monsterArchetypes = [
   ),
   _MonsterArchetype(
     name: 'Shadow Cultist',
-    role: 'Acolyte of Shadows',
+    role: 'Shadow Caster',
     portraitAsset: 'assets/avatar/portraits/tiefling.png',
     hp: 14,
     ac: 12,
     attackBonus: 4,
     damageDice: 8,
-    attackName: 'Dark Pulse',
+    attackName: 'Dark Siphon',
+  ),
+  _MonsterArchetype(
+    name: 'Crypt Wraith',
+    role: 'Undead Specter',
+    portraitAsset: 'assets/avatar/portraits/drow.png',
+    hp: 16,
+    ac: 13,
+    attackBonus: 5,
+    damageDice: 8,
+    attackName: 'Life Drain',
   ),
 ];
 

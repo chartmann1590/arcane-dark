@@ -58,6 +58,7 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
   final Set<String> _openedDoors = {};
   final Set<String> _traps = {};
   final Set<String> _revealedTraps = {};
+  final Set<int> _discoveredRoomIds = {};
   bool _isTraversing = false;
   List<Map<String, String>> chat = [];
 
@@ -206,6 +207,21 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
         _traps.add(t);
       }
     }
+
+    // Initialize discovered rooms
+    _discoveredRoomIds.clear();
+    for (final r in _dungeon.rooms) {
+      if (r.contains(playerPos) ||
+          visited.any((v) {
+            final p = v.split(',');
+            final vx = int.tryParse(p[0]) ?? -1;
+            final vy = int.tryParse(p[1]) ?? -1;
+            return r.contains(m.Point(vx, vy));
+          })) {
+        _discoveredRoomIds.add(r.id);
+      }
+    }
+
     _mapInitialized = true;
     _mapCentered = false;
   }
@@ -770,6 +786,15 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
     _roamNpcs();
     _roamAnimals();
 
+    // Check newly discovered rooms
+    for (final room in _dungeon.rooms) {
+      if (room.contains(m.Point(nx, ny)) && !_discoveredRoomIds.contains(room.id)) {
+        _discoveredRoomIds.add(room.id);
+        _onRoomDiscovered(room);
+        break;
+      }
+    }
+
     // Tavern Hound trap detection alert
     if (activePet?.id == 'tavern_hound') {
       final nearbyTrap = _traps.firstWhere(
@@ -999,6 +1024,15 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
           }
         }
       });
+
+      // Check newly discovered rooms
+      for (final room in _dungeon.rooms) {
+        if (room.contains(step) && !_discoveredRoomIds.contains(room.id)) {
+          _discoveredRoomIds.add(room.id);
+          _onRoomDiscovered(room);
+          break;
+        }
+      }
 
       if (i % 2 == 0) {
         AudioService.instance.playTap();
@@ -1531,8 +1565,24 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
       _showDescentDialog();
     } else if (prop.asset.contains('altar') || (prop.asset.contains('pillar') && _dungeon.rooms.length > 2 && prop.pos.x == _dungeon.rooms[1].centerX && prop.pos.y == _dungeon.rooms[1].centerY)) {
       _showAltarDialog(prop);
+    } else if (prop.asset.contains('chest_gilded')) {
+      _showGildedChestDialog(prop);
     } else if (prop.asset.contains('chest')) {
       _showLootChestDialog(prop);
+    } else if (prop.asset.contains('cauldron')) {
+      _showCauldronDialog(prop);
+    } else if (prop.asset.contains('lectern')) {
+      _showLecternDialog(prop);
+    } else if (prop.asset.contains('sarcophagus')) {
+      _showSarcophagusDialog(prop);
+    } else if (prop.asset.contains('brazier')) {
+      _showBrazierDialog(prop);
+    } else if (prop.asset.contains('statue')) {
+      _showStatueDialog(prop);
+    } else if (prop.asset.contains('crystals')) {
+      _showCrystalDialog(prop);
+    } else if (prop.asset.contains('crates')) {
+      _showCratesDialog(prop);
     } else if (prop.asset.contains('campfire')) {
       _triggerCampfireBanter();
     } else if (prop.asset.contains('torch')) {
@@ -1691,6 +1741,659 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
             ),
           ]),
         ]),
+      ),
+    );
+  }
+
+  void _showCauldronDialog(MapProp prop) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: ArcaneTheme.surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(color: const Color(0xFF00E676).withValues(alpha: 0.2), borderRadius: BorderRadius.circular(10)),
+              child: const Icon(Icons.bubble_chart_rounded, color: Color(0xFF00E676), size: 24),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('ALCHEMICAL CAULDRON', style: GoogleFonts.cinzel(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white)),
+                Text('A blackened iron pot brimming with bubbling verdant brew.', style: GoogleFonts.ibmPlexSans(fontSize: 12, color: ArcaneTheme.textSecondary)),
+              ]),
+            ),
+          ]),
+          const SizedBox(height: 16),
+          Text('Aromatic vapors rise in spirals, invigorating all who stand near. How does the party interact with the brew?', style: GoogleFonts.ibmPlexSans(fontSize: 13, color: Colors.white70)),
+          const SizedBox(height: 16),
+          Row(children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.science_rounded, size: 16),
+                label: const Text('Study Brew'),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  _send('I analyze the boiling ingredients and herb mixtures inside the alchemical cauldron (Nature / Arcana check).');
+                },
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.liquor_rounded, size: 16),
+                label: const Text('Bottle Elixir'),
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00E676), foregroundColor: Colors.black),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  final campaign = ref.read(campaignProvider);
+                  if (campaign != null && campaign.party.isNotEmpty) {
+                    ref.read(campaignProvider.notifier).updateHp(campaign.party.first.characterId, 8);
+                    ref.read(campaignProvider.notifier).addItem(campaign.party.first.characterId, 'Draught of Vitality (+10 HP)');
+                  }
+                  AudioService.instance.playSuccess();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Elixir distilled! +8 HP restored and Draught of Vitality added to inventory.', style: GoogleFonts.cinzel(fontWeight: FontWeight.w700, color: Colors.white)),
+                      backgroundColor: const Color(0xFF00E676),
+                      duration: const Duration(seconds: 3),
+                    ),
+                  );
+                  _send('I distill a steaming vial of the emerald elixir! The fumes restore +8 HP, and we bottle a Draught of Vitality.');
+                },
+              ),
+            ),
+          ]),
+        ]),
+      ),
+    );
+  }
+
+  void _showLecternDialog(MapProp prop) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: ArcaneTheme.surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(color: const Color(0xFF64B5F6).withValues(alpha: 0.2), borderRadius: BorderRadius.circular(10)),
+              child: const Icon(Icons.auto_stories_rounded, color: Color(0xFF64B5F6), size: 24),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('ARCANE RUNIC LECTERN', style: GoogleFonts.cinzel(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white)),
+                Text('An ancient grimoire resting on carved oak, pulsing with planar sigils.', style: GoogleFonts.ibmPlexSans(fontSize: 12, color: ArcaneTheme.textSecondary)),
+              ]),
+            ),
+          ]),
+          const SizedBox(height: 16),
+          Text('Glowing draconic runes drift off the parchment like golden dust. How do you commune with the text?', style: GoogleFonts.ibmPlexSans(fontSize: 13, color: Colors.white70)),
+          const SizedBox(height: 16),
+          Row(children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.visibility_rounded, size: 16),
+                label: const Text('Decipher Runes'),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  setState(() {
+                    _revealedTraps.addAll(_traps);
+                    _traps.clear();
+                  });
+                  AudioService.instance.playSuccess();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Planar insight gained! All concealed crypt traps have been revealed on the map.', style: GoogleFonts.cinzel(fontWeight: FontWeight.w700, color: Colors.white)),
+                      backgroundColor: const Color(0xFF64B5F6),
+                      duration: const Duration(seconds: 3),
+                    ),
+                  );
+                  _send('I chant the elder draconic verses inscribed upon the lectern! Arcane insight floods our minds, revealing hidden dungeon mechanisms.');
+                },
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.menu_book_rounded, size: 16),
+                label: const Text('Transcribe Spell'),
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF64B5F6), foregroundColor: Colors.black),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  final campaign = ref.read(campaignProvider);
+                  if (campaign != null && campaign.party.isNotEmpty) {
+                    ref.read(campaignProvider.notifier).addItem(campaign.party.first.characterId, 'Scroll of Thunderwave (2d6 Thunder)');
+                  }
+                  AudioService.instance.playSuccess();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Spell transcribed! Scroll of Thunderwave added to party inventory.', style: GoogleFonts.cinzel(fontWeight: FontWeight.w700, color: Colors.white)),
+                      backgroundColor: const Color(0xFF64B5F6),
+                      duration: const Duration(seconds: 3),
+                    ),
+                  );
+                  _send('I transcribe the resonant runes into our spellbook, creating a Scroll of Thunderwave (+20 XP)!');
+                },
+              ),
+            ),
+          ]),
+        ]),
+      ),
+    );
+  }
+
+  void _showSarcophagusDialog(MapProp prop) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: ArcaneTheme.surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(color: const Color(0xFFFFB300).withValues(alpha: 0.2), borderRadius: BorderRadius.circular(10)),
+              child: const Icon(Icons.masks_rounded, color: Color(0xFFFFB300), size: 24),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('CARVED STONE SARCOPHAGUS', style: GoogleFonts.cinzel(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white)),
+                Text('A heavy limestone tomb etched with ancient funerary death masks.', style: GoogleFonts.ibmPlexSans(fontSize: 12, color: ArcaneTheme.textSecondary)),
+              ]),
+            ),
+          ]),
+          const SizedBox(height: 16),
+          Text('Lead seals hold the massive lid shut. Prying it open might reveal ancient crypt relics—or awaken guardian horrors.', style: GoogleFonts.ibmPlexSans(fontSize: 13, color: Colors.white70)),
+          const SizedBox(height: 16),
+          Row(children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.search_rounded, size: 16),
+                label: const Text('Examine Epitaph'),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  _send('I carefully trace the faded epitaph on the limestone sarcophagus to honor the fallen noble (History check).');
+                },
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.hardware_rounded, size: 16),
+                label: const Text('Pry Open Lid'),
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFFB300), foregroundColor: Colors.black),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  final d20 = Random().nextInt(20) + 1;
+                  final total = d20 + 3; // +3 athletics
+                  if (total >= 11) {
+                    final relics = ['Amulet of Health (+4 HP)', 'Ring of Protection (+1 AC)', 'Silvered Dagger of the Tomb', 'Pouch of 80 Ancient Coins'];
+                    final relic = relics[Random().nextInt(relics.length)];
+                    final campaign = ref.read(campaignProvider);
+                    if (campaign != null && campaign.party.isNotEmpty) {
+                      ref.read(campaignProvider.notifier).addItem(campaign.party.first.characterId, relic);
+                    }
+                    AudioService.instance.playSuccess();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Athletics [$total]: SUCCESS! Unsealed sarcophagus and retrieved $relic!', style: GoogleFonts.cinzel(fontWeight: FontWeight.w700, color: Colors.white)),
+                        backgroundColor: const Color(0xFF3DD68C),
+                        duration: const Duration(seconds: 3),
+                      ),
+                    );
+                    _send('With a heave of muscle (Athletics: $total), I pry loose the stone slab and unearth $relic!');
+                  } else {
+                    AudioService.instance.playError();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Athletics [$total]: The stone slab slips! A guardian shriek echoes in the crypt!', style: GoogleFonts.cinzel(fontWeight: FontWeight.w700, color: Colors.white)),
+                        backgroundColor: Colors.redAccent,
+                        duration: const Duration(seconds: 3),
+                      ),
+                    );
+                    _send('I attempt to pry open the heavy tomb lid (Athletics: $total), but the stone resists, and a haunting moan echoes from below!');
+                  }
+                },
+              ),
+            ),
+          ]),
+        ]),
+      ),
+    );
+  }
+
+  void _showGildedChestDialog(MapProp prop) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: ArcaneTheme.surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(color: const Color(0xFFFFD54F).withValues(alpha: 0.2), borderRadius: BorderRadius.circular(10)),
+              child: const Icon(Icons.workspace_premium_rounded, color: Color(0xFFFFD54F), size: 24),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('GILDED ROYAL COFFER', style: GoogleFonts.cinzel(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white)),
+                Text('An ornate strongbox bound in gold filigree and royal heraldry.', style: GoogleFonts.ibmPlexSans(fontSize: 12, color: ArcaneTheme.textSecondary)),
+              ]),
+            ),
+          ]),
+          const SizedBox(height: 16),
+          Text('A complex runic cylinder secures the coffer. Legendary riches of the crypt vault are locked inside.', style: GoogleFonts.ibmPlexSans(fontSize: 13, color: Colors.white70)),
+          const SizedBox(height: 16),
+          Row(children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.key_rounded, size: 16),
+                label: const Text('Pick Cylinder'),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  _send('I use my finest thieves\' tools to manipulate the runic tumblers on the gilded coffer (Sleight of Hand).');
+                },
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.stars_rounded, size: 16),
+                label: const Text('Unlock Vault Loot'),
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFFD54F), foregroundColor: Colors.black),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  final items = [
+                    'Royal Sunblade (+2 ATK, Radiant)',
+                    'Robe of the Archmagi (+2 AC, +10 HP)',
+                    'Ring of Spell Storing',
+                    'Belt of Dwarven Might (+2 CON)',
+                    'Chest of 150 Royal Gold Pieces'
+                  ];
+                  final loot = items[Random().nextInt(items.length)];
+                  final campaign = ref.read(campaignProvider);
+                  if (campaign != null && campaign.party.isNotEmpty) {
+                    ref.read(campaignProvider.notifier).addItem(campaign.party.first.characterId, loot);
+                  }
+                  AudioService.instance.playSuccess();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('VAULT UNLOCKED: Claimed $loot!', style: GoogleFonts.cinzel(fontWeight: FontWeight.w800, color: Colors.white)),
+                      backgroundColor: const Color(0xFFFFD54F),
+                      duration: const Duration(seconds: 4),
+                    ),
+                  );
+                  _send('I turn the final golden tumbler and swing open the gilded coffer, claiming $loot!');
+                },
+              ),
+            ),
+          ]),
+        ]),
+      ),
+    );
+  }
+
+  void _showBrazierDialog(MapProp prop) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: ArcaneTheme.surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(color: const Color(0xFFFF6D00).withValues(alpha: 0.2), borderRadius: BorderRadius.circular(10)),
+              child: const Icon(Icons.local_fire_department_rounded, color: Color(0xFFFF6D00), size: 24),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('CONSECRATED BRAZIER', style: GoogleFonts.cinzel(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white)),
+                Text('Perpetual holy flames crackling in an ancient bronze basin.', style: GoogleFonts.ibmPlexSans(fontSize: 12, color: ArcaneTheme.textSecondary)),
+              ]),
+            ),
+          ]),
+          const SizedBox(height: 16),
+          Text('The flames radiate comforting holy warmth that cuts right through subterranean despair. How does the party tend to the flame?', style: GoogleFonts.ibmPlexSans(fontSize: 13, color: Colors.white70)),
+          const SizedBox(height: 16),
+          Row(children: [
+            Expanded(
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.wb_sunny_rounded, size: 16),
+                label: const Text('Warm the Party (+4 HP)'),
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF6D00), foregroundColor: Colors.white),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  final campaign = ref.read(campaignProvider);
+                  if (campaign != null) {
+                    for (final hero in campaign.party) {
+                      ref.read(campaignProvider.notifier).updateHp(hero.characterId, 4);
+                    }
+                  }
+                  AudioService.instance.playSuccess();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Comforting holy warmth dispels fatigue! +4 HP restored to all companions.', style: GoogleFonts.cinzel(fontWeight: FontWeight.w700, color: Colors.white)),
+                      backgroundColor: const Color(0xFFFF6D00),
+                      duration: const Duration(seconds: 3),
+                    ),
+                  );
+                  _send('The party gathers around the consecrated bronze brazier, soaking in the holy warmth to mend cuts and fatigue (+4 HP to all).');
+                },
+              ),
+            ),
+          ]),
+        ]),
+      ),
+    );
+  }
+
+  void _showStatueDialog(MapProp prop) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: ArcaneTheme.surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(color: const Color(0xFF635A7A).withValues(alpha: 0.2), borderRadius: BorderRadius.circular(10)),
+              child: const Icon(Icons.shield_rounded, color: Color(0xFFB8AFD1), size: 24),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('SENTINEL KNIGHT STATUE', style: GoogleFonts.cinzel(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white)),
+                Text('A chiseled limestone warrior standing silent eternal vigil.', style: GoogleFonts.ibmPlexSans(fontSize: 12, color: ArcaneTheme.textSecondary)),
+              ]),
+            ),
+          ]),
+          const SizedBox(height: 16),
+          Text('The weathered effigy clutches an iron-trimmed greatsword planted firmly into the flagstones. An ancient knightly inscription is etched at its base.', style: GoogleFonts.ibmPlexSans(fontSize: 13, color: Colors.white70)),
+          const SizedBox(height: 16),
+          Row(children: [
+            Expanded(
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.favorite_rounded, size: 16),
+                label: const Text('Kneel in Reverence (+4 HP)'),
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF5A5270), foregroundColor: Colors.white),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  final campaign = ref.read(campaignProvider);
+                  if (campaign != null && campaign.party.isNotEmpty) {
+                    for (final hero in campaign.party) {
+                      ref.read(campaignProvider.notifier).updateHp(hero.characterId, 4);
+                    }
+                  }
+                  AudioService.instance.playSuccess();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('The spirit of the ancient sentinel honors your resolve! +4 HP to all heroes.', style: GoogleFonts.cinzel(fontWeight: FontWeight.w700, color: Colors.white)),
+                      backgroundColor: const Color(0xFF5A5270),
+                      duration: const Duration(seconds: 3),
+                    ),
+                  );
+                  _send('The party bows before the Sentinel Knight Statue, feeling centuries of ancient valor surge through their veins (+4 HP to all).');
+                },
+              ),
+            ),
+          ]),
+        ]),
+      ),
+    );
+  }
+
+  void _showCrystalDialog(MapProp prop) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: ArcaneTheme.surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(color: const Color(0xFF00E5FF).withValues(alpha: 0.2), borderRadius: BorderRadius.circular(10)),
+              child: const Icon(Icons.auto_awesome_rounded, color: Color(0xFF00E5FF), size: 24),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('MANA CRYSTAL SPIRE', style: GoogleFonts.cinzel(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white)),
+                Text('Prismatic planar crystal humming with pure ley energy.', style: GoogleFonts.ibmPlexSans(fontSize: 12, color: ArcaneTheme.textSecondary)),
+              ]),
+            ),
+          ]),
+          const SizedBox(height: 16),
+          Text('Resonant ethereal vibrations radiate from the crystal facets, soothing psychic fatigue and cleansing subterranean gloom.', style: GoogleFonts.ibmPlexSans(fontSize: 13, color: Colors.white70)),
+          const SizedBox(height: 16),
+          Row(children: [
+            Expanded(
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.bolt_rounded, size: 16),
+                label: const Text('Channel Ley Energy (+6 HP)'),
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00B0FF), foregroundColor: Colors.black),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  final campaign = ref.read(campaignProvider);
+                  if (campaign != null && campaign.party.isNotEmpty) {
+                    ref.read(campaignProvider.notifier).updateHp(campaign.party.first.characterId, 6);
+                  }
+                  AudioService.instance.playSuccess();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Arcane resonance flows into your soul! +6 HP restored.', style: GoogleFonts.cinzel(fontWeight: FontWeight.w700, color: Colors.white)),
+                      backgroundColor: const Color(0xFF00B0FF),
+                      duration: const Duration(seconds: 3),
+                    ),
+                  );
+                  _send('I channel the resonant vibrations of the Mana Crystal Spire, feeling fresh arcane vitality restore my strength (+6 HP).');
+                },
+              ),
+            ),
+          ]),
+        ]),
+      ),
+    );
+  }
+
+  void _showCratesDialog(MapProp prop) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: ArcaneTheme.surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(color: const Color(0xFF8D6E63).withValues(alpha: 0.2), borderRadius: BorderRadius.circular(10)),
+              child: const Icon(Icons.inventory_2_rounded, color: Color(0xFFBCAAA4), size: 24),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('SUPPLY CRATES & BARREL', style: GoogleFonts.cinzel(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white)),
+                Text('Stout timber containers bound in forged iron hoops.', style: GoogleFonts.ibmPlexSans(fontSize: 12, color: ArcaneTheme.textSecondary)),
+              ]),
+            ),
+          ]),
+          const SizedBox(height: 16),
+          Text('These supply munitions were abandoned by ancient crypt delve expeditions. Prying the lids open may reveal preserved supplies.', style: GoogleFonts.ibmPlexSans(fontSize: 13, color: Colors.white70)),
+          const SizedBox(height: 16),
+          Row(children: [
+            Expanded(
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.search_rounded, size: 16),
+                label: const Text('Scavenge Supplies (+15 Gold)'),
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6D4C41), foregroundColor: Colors.white),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  final campaign = ref.read(campaignProvider);
+                  if (campaign != null && campaign.party.isNotEmpty) {
+                    ref.read(campaignProvider.notifier).addItem(campaign.party.first.characterId, 'Pouch of Ancient Coins (15 GP)');
+                  }
+                  AudioService.instance.playSuccess();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Rummaging yields useful delve supplies and +15 Gold pieces!', style: GoogleFonts.cinzel(fontWeight: FontWeight.w700, color: Colors.white)),
+                      backgroundColor: const Color(0xFF6D4C41),
+                      duration: const Duration(seconds: 3),
+                    ),
+                  );
+                  _send('I pry open the heavy wooden crates and barrel, uncovering rations, replacement torch pitch, and 15 ancient gold coins!');
+                },
+              ),
+            ),
+          ]),
+        ]),
+      ),
+    );
+  }
+
+  void _onRoomDiscovered(m.Room room) {
+    AudioService.instance.playSuccess();
+    final campaign = ref.read(campaignProvider);
+    if (campaign != null && campaign.party.isNotEmpty) {
+      ref.read(campaignProvider.notifier).updateHp(campaign.party.first.characterId, 2);
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Text(room.type.icon, style: const TextStyle(fontSize: 22)),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('DISCOVERED: ${room.name.toUpperCase()} (+15 XP)',
+                      style: GoogleFonts.cinzel(fontWeight: FontWeight.w800, color: Colors.amberAccent, fontSize: 12.5)),
+                  Text(room.description,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.ibmPlexSans(color: Colors.white70, fontSize: 11)),
+                ],
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: const Color(0xFF1E2638),
+        duration: const Duration(seconds: 4),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+
+    _send('The party breaches ${room.name} (${room.type.icon}): ${room.description}');
+  }
+
+  void _showExplorationCodex() {
+    AudioService.instance.playTap();
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF121520),
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => Container(
+        constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.75),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Row(
+                    children: [
+                      const Icon(Icons.explore_rounded, color: ArcaneTheme.secondary, size: 20),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          'DUNGEON EXPLORATION CODEX',
+                          style: GoogleFonts.cinzel(fontSize: 14, fontWeight: FontWeight.w800, color: Colors.white),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(color: ArcaneTheme.secondary.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(6)),
+                  child: Text(
+                    '${_discoveredRoomIds.length}/${_dungeon.rooms.length} Charted',
+                    style: GoogleFonts.ibmPlexSans(fontSize: 11, fontWeight: FontWeight.w700, color: ArcaneTheme.secondary),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Expanded(
+              child: ListView.separated(
+                itemCount: _dungeon.rooms.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 8),
+                itemBuilder: (context, idx) {
+                  final room = _dungeon.rooms[idx];
+                  final isDiscovered = _discoveredRoomIds.contains(room.id);
+                  return Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: isDiscovered ? const Color(0xFF1C2232) : Colors.black26,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: isDiscovered ? ArcaneTheme.secondary.withValues(alpha: 0.5) : Colors.white10),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(isDiscovered ? room.type.icon : '❓', style: const TextStyle(fontSize: 22)),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                isDiscovered ? room.name : 'Uncharted Crypt Chamber',
+                                style: GoogleFonts.cinzel(fontSize: 13, fontWeight: FontWeight.w700, color: isDiscovered ? Colors.white : Colors.white38),
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                isDiscovered ? room.description : 'Veiled in damp dungeon gloom. Delve further into the corridors to chart this chamber.',
+                                style: GoogleFonts.ibmPlexSans(fontSize: 11, color: isDiscovered ? Colors.white70 : Colors.white30),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -2013,6 +2716,12 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
       _npcs = [...floorEnemies, ...floorRoaming];
       _openedDoors.clear();
       _activePath = null;
+      _discoveredRoomIds.clear();
+      for (final r in newDungeon.rooms) {
+        if (r.contains(playerPos)) {
+          _discoveredRoomIds.add(r.id);
+        }
+      }
     });
     if (campaign != null) {
       ref.read(campaignProvider.notifier).newFloor(newSeed: newSeed, entryPoint: entry);
@@ -2044,6 +2753,7 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
         centerTitle: true,
         leading: IconButton(icon: const Icon(Icons.casino_rounded, size: 18), onPressed: _regenerate),
         actions: [
+          IconButton(icon: const Icon(Icons.explore_rounded, size: 20), onPressed: _showExplorationCodex, tooltip: 'Exploration Codex'),
           IconButton(icon: const Icon(Icons.auto_stories_rounded, size: 20), onPressed: _showCampaignJournal, tooltip: 'Campaign Codex & Rest'),
           IconButton(icon: const Icon(Icons.refresh_rounded, size: 18), onPressed: _regenerate, tooltip: 'New Dungeon'),
           PopupMenuButton<String>(
@@ -2120,50 +2830,58 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
                   final activeBeat = campaign.questLog.where((q) => q.status == 'active').firstOrNull;
                   final beatIdx = activeBeat != null ? campaign.questLog.indexOf(activeBeat) + 1 : campaign.questLog.length;
                   final title = activeBeat?.title ?? 'Dungeon Cleansed';
-                  return Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF10121A).withValues(alpha: 0.90),
+                  return Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: _showExplorationCodex,
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: ArcaneTheme.secondary.withValues(alpha: 0.6)),
-                      boxShadow: [
-                        BoxShadow(color: Colors.black.withValues(alpha: 0.5), blurRadius: 8),
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.flag_circle_rounded, size: 16, color: ArcaneTheme.secondary),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                'QUEST BEAT $beatIdx/${campaign.questLog.length}',
-                                style: GoogleFonts.cinzel(fontSize: 9.5, fontWeight: FontWeight.w800, color: ArcaneTheme.secondary, letterSpacing: 0.8),
-                              ),
-                              Text(
-                                title,
-                                style: GoogleFonts.ibmPlexSans(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF10121A).withValues(alpha: 0.90),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: ArcaneTheme.secondary.withValues(alpha: 0.6)),
+                          boxShadow: [
+                            BoxShadow(color: Colors.black.withValues(alpha: 0.5), blurRadius: 8),
+                          ],
                         ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: ArcaneTheme.surfaceElevated,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            '${visited.length} explored',
-                            style: GoogleFonts.ibmPlexSans(fontSize: 9.5, color: Colors.white70, fontWeight: FontWeight.w600),
-                          ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.explore_rounded, size: 16, color: ArcaneTheme.secondary),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    'QUEST BEAT $beatIdx/${campaign.questLog.length}',
+                                    style: GoogleFonts.cinzel(fontSize: 9.5, fontWeight: FontWeight.w800, color: ArcaneTheme.secondary, letterSpacing: 0.8),
+                                  ),
+                                  Text(
+                                    title,
+                                    style: GoogleFonts.ibmPlexSans(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: ArcaneTheme.secondary.withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(color: ArcaneTheme.secondary.withValues(alpha: 0.4)),
+                              ),
+                              child: Text(
+                                '${_discoveredRoomIds.length}/${_dungeon.rooms.length} rooms',
+                                style: GoogleFonts.ibmPlexSans(fontSize: 9.5, color: ArcaneTheme.secondary, fontWeight: FontWeight.w700),
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
                   );
                 }),

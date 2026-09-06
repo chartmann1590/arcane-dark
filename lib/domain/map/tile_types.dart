@@ -21,12 +21,54 @@ extension TileTypeExt on TileType {
       };
 }
 
+enum RoomType {
+  entryVestibule,
+  alchemistLab,
+  armory,
+  ancientLibrary,
+  floodedCrypt,
+  shrineSanctum,
+  treasureVault,
+  bossChamber,
+}
+
+extension RoomTypeExt on RoomType {
+  String get icon => switch (this) {
+        RoomType.entryVestibule => '🚪',
+        RoomType.alchemistLab => '🧪',
+        RoomType.armory => '⚔️',
+        RoomType.ancientLibrary => '📜',
+        RoomType.floodedCrypt => '💀',
+        RoomType.shrineSanctum => '✨',
+        RoomType.treasureVault => '👑',
+        RoomType.bossChamber => '🔥',
+      };
+}
+
 class Room {
   final int x, y, w, h;
   final int id;
-  Room(this.id, this.x, this.y, this.w, this.h);
+  final RoomType type;
+  final String name;
+  final String description;
+  final bool containsSecret;
+
+  Room(
+    this.id,
+    this.x,
+    this.y,
+    this.w,
+    this.h, {
+    this.type = RoomType.entryVestibule,
+    this.name = 'Stone Chamber',
+    this.description = 'A cold stone chamber beneath the earth, torchlight flickering on damp walls.',
+    this.containsSecret = false,
+  });
+
   int get centerX => x + w ~/ 2;
   int get centerY => y + h ~/ 2;
+
+  bool contains(Point p) => p.x >= x && p.x < x + w && p.y >= y && p.y < y + h;
 }
 
 class DungeonMap {
@@ -46,7 +88,7 @@ class DungeonMap {
   String describeRoom(int roomId) {
     final r = rooms.firstWhere((e) => e.id == roomId, orElse: () => rooms.first);
     final sizeLabel = (r.w * r.h) > 80 ? 'vast' : (r.w * r.h) > 40 ? 'spacious' : 'cramped';
-    return 'a $sizeLabel stone chamber (${r.w}x${r.h}), torchlight flickering on damp walls';
+    return '${r.name} (${r.type.icon}): ${r.description} ($sizeLabel, ${r.w}x${r.h})';
   }
 }
 

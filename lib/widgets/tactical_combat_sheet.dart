@@ -9,6 +9,54 @@ import '../features/play/tavern_populator.dart';
 import '../services/audio_service.dart';
 import 'fx.dart';
 
+enum StatusType {
+  burning,
+  poisoned,
+  stunned,
+  shielded,
+  enraged,
+  blessed,
+}
+
+class CombatStatusEffect {
+  final StatusType type;
+  int remainingRounds;
+  final int magnitude;
+
+  CombatStatusEffect({
+    required this.type,
+    this.remainingRounds = 2,
+    this.magnitude = 2,
+  });
+
+  String get icon => switch (type) {
+        StatusType.burning => '🔥',
+        StatusType.poisoned => '🧪',
+        StatusType.stunned => '⚡',
+        StatusType.shielded => '🛡️',
+        StatusType.enraged => '💢',
+        StatusType.blessed => '✨',
+      };
+
+  String get label => switch (type) {
+        StatusType.burning => 'Burning',
+        StatusType.poisoned => 'Poisoned',
+        StatusType.stunned => 'Stunned',
+        StatusType.shielded => 'Shielded',
+        StatusType.enraged => 'Enraged',
+        StatusType.blessed => 'Blessed',
+      };
+
+  Color get color => switch (type) {
+        StatusType.burning => Colors.orangeAccent,
+        StatusType.poisoned => Colors.greenAccent,
+        StatusType.stunned => Colors.amberAccent,
+        StatusType.shielded => Colors.blueAccent,
+        StatusType.enraged => Colors.redAccent,
+        StatusType.blessed => Colors.cyanAccent,
+      };
+}
+
 class Combatant {
   final String id;
   final String name;
@@ -26,6 +74,7 @@ class Combatant {
   String attackName;
   final PartyMemberStatus? partyMember;
   bool isDefending;
+  final List<CombatStatusEffect> statuses = [];
 
   Combatant({
     required this.id,
@@ -45,6 +94,22 @@ class Combatant {
     this.partyMember,
     this.isDefending = false,
   });
+
+  bool get isStunned => statuses.any((s) => s.type == StatusType.stunned);
+  bool get isShielded => statuses.any((s) => s.type == StatusType.shielded);
+  bool get isEnraged => statuses.any((s) => s.type == StatusType.enraged);
+  bool get isBurning => statuses.any((s) => s.type == StatusType.burning);
+  bool get isPoisoned => statuses.any((s) => s.type == StatusType.poisoned);
+  bool get isBlessed => statuses.any((s) => s.type == StatusType.blessed);
+
+  void addStatus(StatusType type, {int rounds = 2, int magnitude = 2}) {
+    statuses.removeWhere((s) => s.type == type);
+    statuses.add(CombatStatusEffect(type: type, remainingRounds: rounds, magnitude: magnitude));
+  }
+
+  void removeStatus(StatusType type) {
+    statuses.removeWhere((s) => s.type == type);
+  }
 }
 
 class TacticalCombatSheet extends StatefulWidget {
@@ -87,6 +152,8 @@ class _TacticalCombatSheetState extends State<TacticalCombatSheet> with SingleTi
   String? _floatingEnemyText;
   Color _floatingEnemyColor = Colors.redAccent;
   final Map<String, String> _floatingPartyTexts = {};
+  String? _telegraphedEnemyIntent;
+  String? _lastComboActor;
 
   @override
   void initState() {
@@ -204,11 +271,47 @@ class _TacticalCombatSheetState extends State<TacticalCombatSheet> with SingleTi
     for (final c in _combatants) {
       _battleLog.add('• ${c.name} (Init: ${c.initiative})');
     }
+    _prepareNextEnemyIntent();
 
     // Check if the first combatant is an AI
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkTriggerAiTurn();
     });
+  }
+
+  void _prepareNextEnemyIntent() {
+    final enemy = _enemyCombatant;
+    if (enemy == null || enemy.currentHp <= 0) {
+      _telegraphedEnemyIntent = null;
+      return;
+    }
+
+    final role = enemy.role.toLowerCase();
+    final name = enemy.name.toLowerCase();
+
+    if (role.contains('caster') || role.contains('shadow') || name.contains('cultist') || name.contains('wraith')) {
+      if (enemy.currentHp < enemy.maxHp * 0.6) {
+        _telegraphedEnemyIntent = '🔮 Dark Siphon (Leeching Life)';
+      } else {
+        _telegraphedEnemyIntent = '💀 Shadow Curse (Inflicts Poison)';
+      }
+    } else if (role.contains('sentry') || role.contains('guardian') || name.contains('skeleton') || name.contains('golem')) {
+      if (!enemy.isShielded && enemy.currentHp < enemy.maxHp * 0.7) {
+        _telegraphedEnemyIntent = '🛡️ Phalanx Bulwark (+4 AC & Guard)';
+      } else {
+        _telegraphedEnemyIntent = '⚡ Heavy Shield Slam (Chance to Stun)';
+      }
+    } else if (role.contains('brute') || role.contains('berserker') || name.contains('orc')) {
+      if (enemy.currentHp < enemy.maxHp * 0.5 && !enemy.isEnraged) {
+        _telegraphedEnemyIntent = '💢 Building Blood Frenzy (Enrage imminent!)';
+      } else {
+        _telegraphedEnemyIntent = '🪓 Reckless Cleave (Heavy damage windup)';
+      }
+    } else if (role.contains('raider') || role.contains('skulker') || name.contains('goblin')) {
+      _telegraphedEnemyIntent = '🧪 Dipping Blade in Venom (Poison Ambush)';
+    } else {
+      _telegraphedEnemyIntent = '⚔️ Aggressive Strike (Direct assault)';
+    }
   }
 
   Combatant get _activeCombatant {
@@ -250,7 +353,7 @@ class _TacticalCombatSheetState extends State<TacticalCombatSheet> with SingleTi
     }
   }
 
-  void _advanceTurn() {
+  void _advanceTurn() async {
     final enemy = _enemyCombatant;
     if (enemy == null || enemy.currentHp <= 0) return;
 
@@ -261,6 +364,79 @@ class _TacticalCombatSheetState extends State<TacticalCombatSheet> with SingleTi
     if (nextIdx == 0) {
       _roundNumber++;
       _battleLog.insert(0, '⚔️ --- ROUND $_roundNumber ---');
+      _prepareNextEnemyIntent();
+    }
+
+    final nextCombatant = _combatants[nextIdx];
+
+    // Status effect ticks at turn start:
+    // 1. Burning tick
+    if (nextCombatant.isBurning && nextCombatant.currentHp > 0) {
+      const burnDmg = 2;
+      nextCombatant.currentHp = max(0, nextCombatant.currentHp - burnDmg);
+      if (nextCombatant.isEnemy) {
+        _enemyNpc = _enemyNpc.copyWith(currentHp: nextCombatant.currentHp);
+        widget.onEnemyUpdated(_enemyNpc);
+        _floatingEnemyText = '-$burnDmg 🔥';
+        _floatingEnemyColor = Colors.orangeAccent;
+      } else {
+        _floatingPartyTexts[nextCombatant.id] = '-$burnDmg 🔥';
+        if (nextCombatant.partyMember != null) {
+          widget.onHeroDamaged(nextCombatant.id, burnDmg);
+        }
+      }
+      _battleLog.insert(0, '🔥 ${nextCombatant.name} takes $burnDmg fire damage from burning!');
+      if (nextCombatant.isEnemy && nextCombatant.currentHp <= 0) {
+        _handleVictory('Lingering flames');
+        return;
+      }
+    }
+
+    // 2. Poison tick
+    if (nextCombatant.isPoisoned && nextCombatant.currentHp > 0) {
+      const poisonDmg = 2;
+      nextCombatant.currentHp = max(0, nextCombatant.currentHp - poisonDmg);
+      if (nextCombatant.isEnemy) {
+        _enemyNpc = _enemyNpc.copyWith(currentHp: nextCombatant.currentHp);
+        widget.onEnemyUpdated(_enemyNpc);
+        _floatingEnemyText = '-$poisonDmg 🧪';
+        _floatingEnemyColor = Colors.greenAccent;
+      } else {
+        _floatingPartyTexts[nextCombatant.id] = '-$poisonDmg 🧪';
+        if (nextCombatant.partyMember != null) {
+          widget.onHeroDamaged(nextCombatant.id, poisonDmg);
+        }
+      }
+      _battleLog.insert(0, '🧪 ${nextCombatant.name} suffers $poisonDmg poison damage!');
+      if (nextCombatant.isEnemy && nextCombatant.currentHp <= 0) {
+        _handleVictory('Deadly poison');
+        return;
+      }
+    }
+
+    // Decrement status effect durations and remove expired
+    for (var i = nextCombatant.statuses.length - 1; i >= 0; i--) {
+      final st = nextCombatant.statuses[i];
+      st.remainingRounds--;
+      if (st.remainingRounds <= 0) {
+        nextCombatant.statuses.removeAt(i);
+        _battleLog.insert(0, '✨ ${nextCombatant.name} recovered from ${st.label}.');
+      }
+    }
+
+    // 3. Stun check: skips action
+    if (nextCombatant.isStunned) {
+      setState(() {
+        _currentTurnIndex = nextIdx;
+        _bannerText = '⚡ ${nextCombatant.name} is STUNNED and reels, skipping turn!';
+        _bannerColor = Colors.amberAccent;
+        _battleLog.insert(0, '⚡ ${nextCombatant.name} is stunned and unable to act this turn!');
+      });
+      AudioService.instance.playError();
+      await Future.delayed(const Duration(milliseconds: 700));
+      if (!mounted) return;
+      _advanceTurn();
+      return;
     }
 
     setState(() {
@@ -313,6 +489,13 @@ class _TacticalCombatSheetState extends State<TacticalCombatSheet> with SingleTi
         }
       }
 
+      // Combo Stagger bonus when alternating party attacks
+      if (_lastComboActor != null && _lastComboActor != hero.id) {
+        dmg += 3;
+        _battleLog.insert(0, '⚡ COMBO STAGGER! ${hero.name} chains off ally hit (+3 Combo DMG)!');
+      }
+      _lastComboActor = hero.id;
+
       final newEnemyHp = max(0, enemy.currentHp - dmg).toInt();
       enemy.currentHp = newEnemyHp;
       _enemyNpc = _enemyNpc.copyWith(currentHp: newEnemyHp);
@@ -333,6 +516,7 @@ class _TacticalCombatSheetState extends State<TacticalCombatSheet> with SingleTi
         return;
       }
     } else {
+      _lastComboActor = null;
       AudioService.instance.playError();
       setState(() {
         _floatingEnemyText = 'PARRIED!';
@@ -348,7 +532,7 @@ class _TacticalCombatSheetState extends State<TacticalCombatSheet> with SingleTi
     _advanceTurn();
   }
 
-  Future<void> _executeCastSpell(String spellName, int diceCount, int diceSides, int bonus, {bool isHeal = false}) async {
+  Future<void> _executeCastSpell(String spellName, int diceCount, int diceSides, int bonus, {bool isHeal = false, StatusType? inflictStatus}) async {
     final enemy = _enemyCombatant;
     if (_isActing || enemy == null || enemy.currentHp <= 0) return;
     final hero = _activeCombatant;
@@ -369,34 +553,39 @@ class _TacticalCombatSheetState extends State<TacticalCombatSheet> with SingleTi
     if (!mounted) return;
 
     if (isHeal) {
-      // Heal lowest party member
+      // Heal lowest party member & cleanse negative statuses
       final wounded = _partyCombatants..sort((a, b) => (a.currentHp / a.maxHp).compareTo(b.currentHp / b.maxHp));
       final target = wounded.first;
+      target.statuses.removeWhere((s) => s.type == StatusType.poisoned || s.type == StatusType.burning);
       final newHp = min(target.maxHp, target.currentHp + amount);
       target.currentHp = newHp;
       if (target.partyMember != null) {
-        widget.onHeroDamaged(target.id, -amount); // negative damage heals
+        widget.onHeroDamaged(target.id, -amount);
       }
 
       setState(() {
-        _floatingPartyTexts[target.id] = '+$amount HP';
-        _bannerText = '✨ $spellName restores +$amount HP to ${target.name}!';
+        _floatingPartyTexts[target.id] = '+$amount HP (Purified)';
+        _bannerText = '✨ $spellName restores +$amount HP to ${target.name} & purifies afflictions!';
         _bannerColor = Colors.cyanAccent;
         _battleLog.insert(0, '${hero.name} casts $spellName restoring $amount HP to ${target.name}!');
       });
     } else {
       // Offensive spell
+      if (inflictStatus != null) {
+        enemy.addStatus(inflictStatus, rounds: 2);
+      }
       final newEnemyHp = max(0, enemy.currentHp - amount).toInt();
       enemy.currentHp = newEnemyHp;
       _enemyNpc = _enemyNpc.copyWith(currentHp: newEnemyHp);
       widget.onEnemyUpdated(_enemyNpc);
 
+      final statusText = inflictStatus != null ? ' [${inflictStatus.name.toUpperCase()}!]' : '';
       setState(() {
-        _floatingEnemyText = '-$amount HP';
+        _floatingEnemyText = '-$amount HP$statusText';
         _floatingEnemyColor = Colors.purpleAccent;
-        _bannerText = '⚡ $spellName blasts ${enemy.name} for $amount damage!';
+        _bannerText = '⚡ $spellName blasts ${enemy.name} for $amount damage$statusText!';
         _bannerColor = Colors.purpleAccent;
-        _battleLog.insert(0, '${hero.name} unleashes $spellName for $amount damage!');
+        _battleLog.insert(0, '${hero.name} unleashes $spellName for $amount damage$statusText!');
       });
 
       if (newEnemyHp <= 0) {
@@ -424,7 +613,8 @@ class _TacticalCombatSheetState extends State<TacticalCombatSheet> with SingleTi
 
   void _executeUsePotion() {
     final hero = _activeCombatant;
-    final heal = 10;
+    final heal = 12;
+    hero.statuses.removeWhere((s) => s.type == StatusType.poisoned || s.type == StatusType.burning);
     final newHp = min(hero.maxHp, hero.currentHp + heal);
     hero.currentHp = newHp;
     if (hero.partyMember != null) {
@@ -433,10 +623,10 @@ class _TacticalCombatSheetState extends State<TacticalCombatSheet> with SingleTi
 
     AudioService.instance.playSuccess();
     setState(() {
-      _floatingPartyTexts[hero.id] = '+$heal HP';
-      _bannerText = '🧪 Quaffed Potion of Healing! (+10 HP)';
+      _floatingPartyTexts[hero.id] = '+$heal HP (Cleanse)';
+      _bannerText = '🧪 Quaffed Potion of Healing! (+12 HP & Cleansed)';
       _bannerColor = Colors.greenAccent;
-      _battleLog.insert(0, '${hero.name} drinks a potion, mending $heal HP.');
+      _battleLog.insert(0, '${hero.name} drinks an elixir, mending $heal HP and cleansing afflictions.');
     });
     _advanceTurn();
   }
@@ -695,7 +885,12 @@ class _TacticalCombatSheetState extends State<TacticalCombatSheet> with SingleTi
       final d20 = Random().nextInt(20) + 1;
       final total = d20 + companion.attackBonus;
       if (d20 == 20 || total >= enemy.armorClass) {
-        final dmg = Random().nextInt(companion.damageDice) + 1 + 3;
+        var dmg = Random().nextInt(companion.damageDice) + 1 + 3;
+        if (_lastComboActor != null && _lastComboActor != companion.id) {
+          dmg += 3;
+          _battleLog.insert(0, '⚡ COMBO STAGGER! ${companion.name} chains off previous hit (+3 Combo DMG)!');
+        }
+        _lastComboActor = companion.id;
         final newHp = max(0, enemy.currentHp - dmg);
         enemy.currentHp = newHp;
         _enemyNpc = _enemyNpc.copyWith(currentHp: newHp);
@@ -715,6 +910,7 @@ class _TacticalCombatSheetState extends State<TacticalCombatSheet> with SingleTi
           return;
         }
       } else {
+        _lastComboActor = null;
         AudioService.instance.playError();
         setState(() {
           _bannerText = '🛡️ ${companion.name}\'s swing was blocked!';
@@ -732,59 +928,243 @@ class _TacticalCombatSheetState extends State<TacticalCombatSheet> with SingleTi
   // --- AUTONOMOUS ENEMY AI TURN ---
 
   Future<void> _executeEnemyTurn() async {
+    _lastComboActor = null;
     final enemy = _enemyCombatant;
     if (enemy == null || enemy.currentHp <= 0) return;
 
     setState(() {
       _isActing = true;
-      _bannerText = '⚠️ ${enemy.name} is choosing an attack target...';
+      _bannerText = '⚠️ ${enemy.name} executes tactical intent...';
       _bannerColor = Colors.redAccent;
     });
 
     await Future.delayed(const Duration(milliseconds: 550));
     if (!mounted) return;
 
-    // AI target selection: 50% target lowest AC hero, 30% target lowest HP, 20% random
     final livingParty = _partyCombatants.where((c) => c.currentHp > 0).toList();
     if (livingParty.isEmpty) return;
 
-    livingParty.sort((a, b) => a.armorClass.compareTo(b.armorClass));
-    final target = livingParty.first;
-    final effectiveAc = target.armorClass + (target.isDefending ? 3 : 0);
+    final role = enemy.role.toLowerCase();
+    final name = enemy.name.toLowerCase();
 
-    final d20 = Random().nextInt(20) + 1;
-    final totalAtk = d20 + enemy.attackBonus;
-    final isCrit = d20 == 20;
-    final isHit = isCrit || (d20 > 1 && totalAtk >= effectiveAc);
+    // 1. Shadow Caster / Wraith AI: Dark Siphon or Shadow Curse
+    if (role.contains('caster') || role.contains('shadow') || name.contains('cultist') || name.contains('wraith')) {
+      if (enemy.currentHp < enemy.maxHp * 0.65) {
+        // Dark Siphon (Leech Life)
+        livingParty.sort((a, b) => a.currentHp.compareTo(b.currentHp));
+        final target = livingParty.first;
+        final d20 = Random().nextInt(20) + 1;
+        final effectiveAc = target.armorClass + (target.isDefending ? 3 : 0);
 
-    if (isHit) {
-      AudioService.instance.playError();
-      var dmg = Random().nextInt(enemy.damageDice) + 1 + 2;
-      if (isCrit) dmg *= 2;
+        if (d20 == 20 || d20 + enemy.attackBonus >= effectiveAc) {
+          final dmg = Random().nextInt(6) + 3;
+          final targetHp = max(0, target.currentHp - dmg);
+          target.currentHp = targetHp;
+          if (target.partyMember != null) widget.onHeroDamaged(target.id, dmg);
 
-      final newTargetHp = max(0, target.currentHp - dmg);
-      target.currentHp = newTargetHp;
-      if (target.partyMember != null) {
-        widget.onHeroDamaged(target.id, dmg);
+          // Leech HP back
+          final healedHp = min(enemy.maxHp, enemy.currentHp + dmg);
+          enemy.currentHp = healedHp;
+          _enemyNpc = _enemyNpc.copyWith(currentHp: healedHp);
+          widget.onEnemyUpdated(_enemyNpc);
+
+          AudioService.instance.playSend();
+          setState(() {
+            _floatingPartyTexts[target.id] = '-$dmg HP';
+            _floatingEnemyText = '+$dmg HP';
+            _floatingEnemyColor = Colors.purpleAccent;
+            _bannerText = '🔮 Dark Siphon! ${enemy.name} drains $dmg HP from ${target.name} and heals!';
+            _bannerColor = Colors.purpleAccent;
+            _battleLog.insert(0, '${enemy.name} channels Dark Siphon, draining $dmg HP from ${target.name}!');
+          });
+        } else {
+          AudioService.instance.playTap();
+          setState(() {
+            _bannerText = '🛡️ ${target.name} resisted Dark Siphon!';
+            _bannerColor = Colors.white60;
+            _battleLog.insert(0, '${target.name} resisted ${enemy.name}\'s dark siphon.');
+          });
+        }
+      } else {
+        // Shadow Curse: Inflicts Poison
+        livingParty.sort((a, b) => a.armorClass.compareTo(b.armorClass));
+        final target = livingParty.first;
+        target.addStatus(StatusType.poisoned, rounds: 2);
+        AudioService.instance.playSend();
+        setState(() {
+          _floatingPartyTexts[target.id] = 'POISONED!';
+          _bannerText = '💀 Shadow Curse! ${target.name} is afflicted with Poison!';
+          _bannerColor = Colors.greenAccent;
+          _battleLog.insert(0, '${enemy.name} blights ${target.name} with dark poison!');
+        });
       }
-
-      setState(() {
-        _floatingPartyTexts[target.id] = '-$dmg HP';
-        _bannerText = isCrit
-            ? '💀 CRITICAL RETALIATION! ${enemy.name} savagely hits ${target.name} for $dmg damage!'
-            : '🩸 ${enemy.name} lashes out with ${enemy.attackName}! Hits ${target.name} for $dmg damage!';
-        _bannerColor = Colors.redAccent;
-        _battleLog.insert(0, '${enemy.name} strikes ${target.name} with ${enemy.attackName} dealing $dmg damage!');
-      });
-    } else {
-      AudioService.instance.playTap();
-      setState(() {
-        _floatingPartyTexts[target.id] = 'DEFLECTED!';
-        _bannerText = '🛡️ ${target.name} deflects ${enemy.name}\'s ${enemy.attackName}!';
-        _bannerColor = Colors.blueAccent;
-        _battleLog.insert(0, '${enemy.name} attempts ${enemy.attackName} on ${target.name}, but the blow was parried!');
-      });
     }
+    // 2. Armored Sentry / Skeleton AI: Phalanx Bulwark or Shield Bash (Stun)
+    else if (role.contains('sentry') || role.contains('guardian') || name.contains('skeleton') || name.contains('golem')) {
+      if (!enemy.isShielded && enemy.currentHp < enemy.maxHp * 0.7 && Random().nextDouble() < 0.5) {
+        enemy.addStatus(StatusType.shielded, rounds: 2);
+        AudioService.instance.playSend();
+        setState(() {
+          _floatingEnemyText = '+4 AC (GUARD)';
+          _floatingEnemyColor = Colors.blueAccent;
+          _bannerText = '🛡️ ${enemy.name} fortifies Phalanx Bulwark (+4 AC)!';
+          _bannerColor = Colors.blueAccent;
+          _battleLog.insert(0, '${enemy.name} braces behind its shield, bolstering defenses (+4 AC)!');
+        });
+      } else {
+        // Shield Bash with Stun chance
+        livingParty.sort((a, b) => a.armorClass.compareTo(b.armorClass));
+        final target = livingParty.first;
+
+        // Tank Intercept Check
+        final tank = _partyCombatants.where((c) => c.isCompanion && c.currentHp > 0 && (c.role.toLowerCase().contains('paladin') || c.role.toLowerCase().contains('fighter') || c.role.toLowerCase().contains('barbarian'))).firstOrNull;
+        if (tank != null && target.isPlayer && Random().nextDouble() < 0.35) {
+          final dmg = Random().nextInt(enemy.damageDice) + 1;
+          tank.currentHp = max(0, tank.currentHp - dmg);
+          AudioService.instance.playTap();
+          setState(() {
+            _floatingPartyTexts[tank.id] = '-$dmg HP (INTERCEPT!)';
+            _bannerText = '🛡️ ${tank.name} leaps forward and INTERCEPTS the blow meant for ${target.name}!';
+            _bannerColor = Colors.cyanAccent;
+            _battleLog.insert(0, '🛡️ ${tank.name} heroically blocks ${enemy.name}\'s bash for ${target.name}!');
+          });
+        } else {
+          final d20 = Random().nextInt(20) + 1;
+          final effectiveAc = target.armorClass + (target.isDefending ? 3 : 0);
+          if (d20 == 20 || d20 + enemy.attackBonus >= effectiveAc) {
+            final dmg = Random().nextInt(enemy.damageDice) + 2;
+            final newHp = max(0, target.currentHp - dmg);
+            target.currentHp = newHp;
+            if (target.partyMember != null) widget.onHeroDamaged(target.id, dmg);
+
+            final didStun = Random().nextDouble() < 0.45;
+            if (didStun) target.addStatus(StatusType.stunned, rounds: 1);
+
+            AudioService.instance.playError();
+            setState(() {
+              _floatingPartyTexts[target.id] = didStun ? '-$dmg HP (STUN!)' : '-$dmg HP';
+              _bannerText = didStun
+                  ? '⚡ SHIELD SLAM! ${target.name} takes $dmg dmg and is STUNNED!'
+                  : '🛡️ ${enemy.name} bashes ${target.name} for $dmg damage!';
+              _bannerColor = didStun ? Colors.amberAccent : Colors.redAccent;
+              _battleLog.insert(0, '${enemy.name} slams ${target.name} with its shield for $dmg damage${didStun ? " (STUNNED!)" : ""}!');
+            });
+          } else {
+            AudioService.instance.playTap();
+            setState(() {
+              _floatingPartyTexts[target.id] = 'DEFLECTED!';
+              _bannerText = '🛡️ ${target.name} deflected the shield bash!';
+              _bannerColor = Colors.white60;
+              _battleLog.insert(0, '${target.name} deflected ${enemy.name}\'s shield slam.');
+            });
+          }
+        }
+      }
+    }
+    // 3. Brute / Berserker / Orc AI: Blood Frenzy Enrage
+    else if (role.contains('brute') || role.contains('berserker') || name.contains('orc')) {
+      if (enemy.currentHp < enemy.maxHp * 0.5 && !enemy.isEnraged) {
+        enemy.addStatus(StatusType.enraged, rounds: 3);
+        AudioService.instance.playError();
+        setState(() {
+          _floatingEnemyText = 'ENRAGED! (+3 DMG)';
+          _floatingEnemyColor = Colors.redAccent;
+          _bannerText = '💢 BLOOD FRENZY! ${enemy.name} enters Enrage (+3 Damage)!';
+          _bannerColor = Colors.redAccent;
+          _battleLog.insert(0, '${enemy.name} howls in bloodthirsty rage! Eyes blazing with frenzy (+3 DMG)!');
+        });
+      } else {
+        livingParty.shuffle();
+        final target = livingParty.first;
+        final d20 = Random().nextInt(20) + 1;
+        final effectiveAc = target.armorClass + (target.isDefending ? 3 : 0);
+        if (d20 == 20 || d20 + enemy.attackBonus >= effectiveAc) {
+          final frenzyBonus = enemy.isEnraged ? 3 : 0;
+          final dmg = Random().nextInt(enemy.damageDice) + 2 + frenzyBonus;
+          final newHp = max(0, target.currentHp - dmg);
+          target.currentHp = newHp;
+          if (target.partyMember != null) widget.onHeroDamaged(target.id, dmg);
+
+          AudioService.instance.playError();
+          setState(() {
+            _floatingPartyTexts[target.id] = '-$dmg HP';
+            _bannerText = '🪓 ${enemy.name} cleaves ${target.name} for $dmg damage!';
+            _bannerColor = Colors.redAccent;
+            _battleLog.insert(0, '${enemy.name} drives a brutal cleaver into ${target.name} for $dmg damage!');
+          });
+        } else {
+          AudioService.instance.playTap();
+          setState(() {
+            _floatingPartyTexts[target.id] = 'DODGED!';
+            _bannerText = '💨 ${target.name} dodged ${enemy.name}\'s wild cleave!';
+            _bannerColor = Colors.white60;
+            _battleLog.insert(0, '${target.name} dodged ${enemy.name}\'s wild cleave.');
+          });
+        }
+      }
+    }
+    // 4. Skulker / Raider / Goblin AI: Poison Ambush on lowest HP hero
+    else if (role.contains('raider') || role.contains('skulker') || name.contains('goblin')) {
+      livingParty.sort((a, b) => a.currentHp.compareTo(b.currentHp));
+      final target = livingParty.first;
+      final d20 = Random().nextInt(20) + 1;
+      final effectiveAc = target.armorClass + (target.isDefending ? 3 : 0);
+      if (d20 == 20 || d20 + enemy.attackBonus >= effectiveAc) {
+        final dmg = Random().nextInt(enemy.damageDice) + 1;
+        final newHp = max(0, target.currentHp - dmg);
+        target.currentHp = newHp;
+        if (target.partyMember != null) widget.onHeroDamaged(target.id, dmg);
+
+        target.addStatus(StatusType.poisoned, rounds: 2);
+
+        AudioService.instance.playError();
+        setState(() {
+          _floatingPartyTexts[target.id] = '-$dmg HP (POISON)';
+          _bannerText = '🧪 ${enemy.name} stabs ${target.name} for $dmg dmg and inflicts Poison!';
+          _bannerColor = Colors.greenAccent;
+          _battleLog.insert(0, '${enemy.name} ambushes ${target.name} with a poisoned stiletto!');
+        });
+      } else {
+        AudioService.instance.playTap();
+        setState(() {
+          _floatingPartyTexts[target.id] = 'PARRIED!';
+          _bannerText = '🛡️ ${target.name} parried ${enemy.name}\'s dagger!';
+          _bannerColor = Colors.white60;
+          _battleLog.insert(0, '${target.name} parried ${enemy.name}\'s dagger strike.');
+        });
+      }
+    }
+    // Default melee attack
+    else {
+      livingParty.sort((a, b) => a.armorClass.compareTo(b.armorClass));
+      final target = livingParty.first;
+      final d20 = Random().nextInt(20) + 1;
+      final effectiveAc = target.armorClass + (target.isDefending ? 3 : 0);
+      if (d20 == 20 || d20 + enemy.attackBonus >= effectiveAc) {
+        final dmg = Random().nextInt(enemy.damageDice) + 2;
+        final newHp = max(0, target.currentHp - dmg);
+        target.currentHp = newHp;
+        if (target.partyMember != null) widget.onHeroDamaged(target.id, dmg);
+
+        AudioService.instance.playError();
+        setState(() {
+          _floatingPartyTexts[target.id] = '-$dmg HP';
+          _bannerText = '⚔️ ${enemy.name} strikes ${target.name} for $dmg damage!';
+          _bannerColor = Colors.redAccent;
+          _battleLog.insert(0, '${enemy.name} strikes ${target.name} with ${enemy.attackName} dealing $dmg damage!');
+        });
+      } else {
+        AudioService.instance.playTap();
+        setState(() {
+          _floatingPartyTexts[target.id] = 'DEFLECTED!';
+          _bannerText = '🛡️ ${target.name} deflected ${enemy.name}\'s attack!';
+          _bannerColor = Colors.blueAccent;
+          _battleLog.insert(0, '${enemy.name}\'s attack was deflected by ${target.name}.');
+        });
+      }
+    }
+
+    _prepareNextEnemyIntent();
 
     await Future.delayed(const Duration(milliseconds: 700));
     if (!mounted) return;
@@ -833,16 +1213,25 @@ class _TacticalCombatSheetState extends State<TacticalCombatSheet> with SingleTi
             ListTile(
               leading: const Icon(Icons.local_fire_department_rounded, color: Colors.orangeAccent),
               title: const Text('Firebolt (Incendiary Ray)'),
-              subtitle: const Text('1d10 + 2 heavy fire damage'),
+              subtitle: const Text('1d10 + 2 fire damage • Inflicts Burning 🔥'),
               onTap: () {
                 Navigator.pop(ctx);
-                _executeCastSpell('Firebolt', 1, 10, 2);
+                _executeCastSpell('Firebolt', 1, 10, 2, inflictStatus: StatusType.burning);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.waves_rounded, color: Colors.amberAccent),
+              title: const Text('Thunderwave (Concussive Blast)'),
+              subtitle: const Text('2d6 + 2 thunder damage • Inflicts Stun ⚡'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _executeCastSpell('Thunderwave', 2, 6, 2, inflictStatus: StatusType.stunned);
               },
             ),
             ListTile(
               leading: const Icon(Icons.favorite_rounded, color: Colors.greenAccent),
               title: const Text('Healing Touch (Divine Restoration)'),
-              subtitle: const Text('2d8 + 2 healing to lowest HP party member'),
+              subtitle: const Text('2d8 + 2 healing to lowest HP ally • Cleanses afflictions'),
               onTap: () {
                 Navigator.pop(ctx);
                 _executeCastSpell('Healing Touch', 2, 8, 2, isHeal: true);
@@ -1076,7 +1465,40 @@ class _TacticalCombatSheetState extends State<TacticalCombatSheet> with SingleTi
             ),
           ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
+
+          // ENEMY INTENT RADAR BANNER
+          if (enemy != null && _telegraphedEnemyIntent != null)
+            Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: Colors.red.shade900.withValues(alpha: 0.35),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.redAccent.withValues(alpha: 0.7), width: 1),
+              ),
+              child: Row(
+                children: [
+                  Pulse(
+                    duration: const Duration(milliseconds: 1100),
+                    child: const Icon(Icons.warning_amber_rounded, size: 14, color: Colors.amberAccent),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'ENEMY INTENT: ',
+                    style: GoogleFonts.cinzel(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.amberAccent),
+                  ),
+                  Expanded(
+                    child: Text(
+                      _telegraphedEnemyIntent!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.ibmPlexSans(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white),
+                    ),
+                  ),
+                ],
+              ),
+            ),
 
           // ENEMY ARENA CARD
           if (enemy != null)
@@ -1127,7 +1549,7 @@ class _TacticalCombatSheetState extends State<TacticalCombatSheet> with SingleTi
                                 borderRadius: BorderRadius.circular(4),
                                 border: Border.all(color: Colors.redAccent, width: 0.8),
                               ),
-                              child: Text('🛡️ AC ${enemy.armorClass}', style: GoogleFonts.ibmPlexSans(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.redAccent)),
+                              child: Text('🛡️ AC ${enemy.armorClass + (enemy.isShielded ? 4 : 0)}', style: GoogleFonts.ibmPlexSans(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.redAccent)),
                             ),
                           ],
                         ),
@@ -1153,6 +1575,25 @@ class _TacticalCombatSheetState extends State<TacticalCombatSheet> with SingleTi
                             Text('${enemy.currentHp}/${enemy.maxHp} HP', style: GoogleFonts.ibmPlexSans(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white)),
                           ],
                         ),
+                        if (enemy.statuses.isNotEmpty) ...[
+                          const SizedBox(height: 5),
+                          Wrap(
+                            spacing: 4,
+                            runSpacing: 2,
+                            children: enemy.statuses.map((st) => Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                              decoration: BoxDecoration(
+                                color: st.color.withValues(alpha: 0.25),
+                                borderRadius: BorderRadius.circular(4),
+                                border: Border.all(color: st.color, width: 0.8),
+                              ),
+                              child: Text(
+                                '${st.icon} ${st.label} (${st.remainingRounds})',
+                                style: GoogleFonts.ibmPlexSans(fontSize: 9.5, fontWeight: FontWeight.w700, color: st.color),
+                              ),
+                            )).toList(),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -1181,7 +1622,7 @@ class _TacticalCombatSheetState extends State<TacticalCombatSheet> with SingleTi
           Text('PARTY FORMATION', style: GoogleFonts.cinzel(fontSize: 11, fontWeight: FontWeight.w700, color: ArcaneTheme.secondary)),
           const SizedBox(height: 6),
           SizedBox(
-            height: 74,
+            height: 82,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: _partyCombatants.length,
@@ -1242,6 +1683,16 @@ class _TacticalCombatSheetState extends State<TacticalCombatSheet> with SingleTi
                                 minHeight: 5,
                               ),
                             ),
+                            if (hero.statuses.isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 2),
+                                child: Row(
+                                  children: hero.statuses.map((s) => Padding(
+                                    padding: const EdgeInsets.only(right: 2),
+                                    child: Text(s.icon, style: const TextStyle(fontSize: 9)),
+                                  )).toList(),
+                                ),
+                              ),
                           ],
                         ),
                       ),
