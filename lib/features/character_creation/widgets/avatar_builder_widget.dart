@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../app/theme.dart';
 import '../../../domain/character.dart';
+import '../../../domain/pet_companion.dart';
 import '../../../services/audio_service.dart';
 
 class AvatarBuilderWidget extends StatelessWidget {
@@ -46,6 +47,33 @@ class AvatarBuilderWidget extends StatelessWidget {
     ('Longbow of Whispers', Icons.navigation_rounded),
     ('Thunder Hammer', Icons.gavel_rounded),
     ('Aegis & Blade', Icons.shield_rounded),
+  ];
+
+  static const _cloaks = [
+    'Midnight',
+    'Wanderer Cowl',
+    'Royal Velvet',
+    'Ranger Mantle',
+    'Frostweave',
+    'Shadowveil',
+  ];
+
+  static const _specialties = [
+    'Monster Slayer',
+    'Dungeon Cartographer',
+    'Relic Seeker',
+    'Trap Disarmer',
+    'Arcane Duelist',
+    'Hearthkeeper',
+  ];
+
+  static const _trinkets = [
+    'Glowing Moonstone',
+    'Carved Bone Dice',
+    'Phoenix Feather',
+    'Silver Dragon Fang',
+    'Four-Leaf Clover',
+    'Runic Compass',
   ];
 
   static const _battleCries = [
@@ -224,6 +252,58 @@ class AvatarBuilderWidget extends StatelessWidget {
                             ),
                           ),
                         ),
+                      ],
+                    ),
+                    const SizedBox(height: 5),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.7),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: Colors.white24),
+                          ),
+                          child: Text(
+                            '${config.cloak} Cloak',
+                            style: GoogleFonts.ibmPlexSans(fontSize: 9.5, color: Colors.white70, fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                        const SizedBox(width: 5),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.7),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: ArcaneTheme.secondary.withValues(alpha: 0.5)),
+                          ),
+                          child: Text(
+                            config.specialty,
+                            style: GoogleFonts.ibmPlexSans(fontSize: 9.5, color: ArcaneTheme.secondary, fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                        if (config.pet != 'none') ...[
+                          const SizedBox(width: 5),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.7),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: PetCompanion.fromId(config.pet).color.withValues(alpha: 0.7)),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(PetCompanion.fromId(config.pet).emoji, style: const TextStyle(fontSize: 11)),
+                                const SizedBox(width: 3),
+                                Text(
+                                  PetCompanion.fromId(config.pet).name,
+                                  style: GoogleFonts.ibmPlexSans(fontSize: 9.5, color: Colors.white, fontWeight: FontWeight.w600),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                     if (config.battleCry.isNotEmpty) ...[
@@ -511,6 +591,229 @@ class AvatarBuilderWidget extends StatelessWidget {
                 ),
               ),
           ],
+        ),
+
+        const SizedBox(height: 18),
+
+        // Animal Pet Companion
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'ANIMAL PET COMPANION',
+              style: GoogleFonts.ibmPlexSans(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.1,
+                color: ArcaneTheme.textMuted,
+              ),
+            ),
+            if (config.pet != 'none')
+              Text(
+                PetCompanion.fromId(config.pet).perkTitle.toUpperCase(),
+                style: GoogleFonts.ibmPlexSans(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  color: PetCompanion.fromId(config.pet).color,
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 108,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: PetCompanion.all.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            itemBuilder: (ctx, i) {
+              final pet = PetCompanion.all[i];
+              final isSel = config.pet == pet.id;
+              return InkWell(
+                onTap: () {
+                  AudioService.instance.playTap();
+                  onChanged(config.copyWith(pet: pet.id));
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: 155,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: isSel ? pet.color.withValues(alpha: 0.2) : ArcaneTheme.surfaceElevated,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: isSel ? pet.color : Colors.white12, width: isSel ? 1.8 : 1),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Row(
+                        children: [
+                          Text(pet.emoji, style: const TextStyle(fontSize: 18)),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              pet.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.cinzel(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w700,
+                                color: isSel ? Colors.white : Colors.white70,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        pet.perkTitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.ibmPlexSans(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: pet.color,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        pet.perkDescription,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.ibmPlexSans(
+                          fontSize: 9.5,
+                          color: Colors.white54,
+                          height: 1.2,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
+        // Cloak & Travel Garb
+        Text(
+          'CLOAK & TRAVEL GARB',
+          style: GoogleFonts.ibmPlexSans(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1.1,
+            color: ArcaneTheme.textMuted,
+          ),
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 36,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: _cloaks.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 8),
+            itemBuilder: (ctx, i) {
+              final cloak = _cloaks[i];
+              final isSel = config.cloak == cloak;
+              return ChoiceChip(
+                avatar: const Icon(Icons.dry_cleaning_rounded, size: 14, color: Colors.white70),
+                label: Text(cloak, style: GoogleFonts.ibmPlexSans(fontSize: 11.5, fontWeight: isSel ? FontWeight.w700 : FontWeight.w500)),
+                selected: isSel,
+                selectedColor: ArcaneTheme.primary.withValues(alpha: 0.35),
+                backgroundColor: ArcaneTheme.surfaceElevated,
+                side: BorderSide(color: isSel ? ArcaneTheme.primary : Colors.white12),
+                onSelected: (val) {
+                  if (val) {
+                    AudioService.instance.playTap();
+                    onChanged(config.copyWith(cloak: cloak));
+                  }
+                },
+              );
+            },
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
+        // Background Specialty
+        Text(
+          'BACKGROUND SPECIALTY',
+          style: GoogleFonts.ibmPlexSans(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1.1,
+            color: ArcaneTheme.textMuted,
+          ),
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 36,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: _specialties.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 8),
+            itemBuilder: (ctx, i) {
+              final spec = _specialties[i];
+              final isSel = config.specialty == spec;
+              return ChoiceChip(
+                avatar: const Icon(Icons.star_rounded, size: 14, color: ArcaneTheme.secondary),
+                label: Text(spec, style: GoogleFonts.ibmPlexSans(fontSize: 11.5, fontWeight: isSel ? FontWeight.w700 : FontWeight.w500)),
+                selected: isSel,
+                selectedColor: ArcaneTheme.secondary.withValues(alpha: 0.25),
+                backgroundColor: ArcaneTheme.surfaceElevated,
+                side: BorderSide(color: isSel ? ArcaneTheme.secondary : Colors.white12),
+                onSelected: (val) {
+                  if (val) {
+                    AudioService.instance.playTap();
+                    onChanged(config.copyWith(specialty: spec));
+                  }
+                },
+              );
+            },
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
+        // Lucky Trinket
+        Text(
+          'LUCKY TRINKET & TALISMAN',
+          style: GoogleFonts.ibmPlexSans(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1.1,
+            color: ArcaneTheme.textMuted,
+          ),
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 36,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: _trinkets.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 8),
+            itemBuilder: (ctx, i) {
+              final trinket = _trinkets[i];
+              final isSel = config.trinket == trinket;
+              return ChoiceChip(
+                avatar: const Icon(Icons.token_rounded, size: 14, color: Colors.amberAccent),
+                label: Text(trinket, style: GoogleFonts.ibmPlexSans(fontSize: 11.5, fontWeight: isSel ? FontWeight.w700 : FontWeight.w500)),
+                selected: isSel,
+                selectedColor: Colors.amber.withValues(alpha: 0.25),
+                backgroundColor: ArcaneTheme.surfaceElevated,
+                side: BorderSide(color: isSel ? Colors.amber : Colors.white12),
+                onSelected: (val) {
+                  if (val) {
+                    AudioService.instance.playTap();
+                    onChanged(config.copyWith(trinket: trinket));
+                  }
+                },
+              );
+            },
+          ),
         ),
       ],
     );

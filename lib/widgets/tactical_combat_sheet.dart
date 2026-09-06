@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../app/theme.dart';
 import '../domain/campaign_state.dart';
+import '../domain/pet_companion.dart';
 import '../features/play/tavern_populator.dart';
 import '../services/audio_service.dart';
 import 'fx.dart';
@@ -49,6 +50,7 @@ class Combatant {
 class TacticalCombatSheet extends StatefulWidget {
   final MapNpc initialEnemy;
   final CampaignState campaign;
+  final PetCompanion? activePet;
   final void Function(MapNpc updatedEnemy) onEnemyUpdated;
   final void Function(MapNpc defeatedEnemy) onEnemyDefeated;
   final void Function(String characterId, int damage) onHeroDamaged;
@@ -58,6 +60,7 @@ class TacticalCombatSheet extends StatefulWidget {
     super.key,
     required this.initialEnemy,
     required this.campaign,
+    this.activePet,
     required this.onEnemyUpdated,
     required this.onEnemyDefeated,
     required this.onHeroDamaged,
@@ -293,6 +296,22 @@ class _TacticalCombatSheetState extends State<TacticalCombatSheet> with SingleTi
       AudioService.instance.playSend();
       var dmg = Random().nextInt(hero.damageDice) + 1 + max(1, hero.attackBonus - 2);
       if (isCrit) dmg *= 2;
+
+      // Active pet companion perk bonuses
+      final pet = widget.activePet;
+      if (pet != null && pet.id != 'none') {
+        if (pet.id == 'shadow_wolf' && isCrit) {
+          dmg += 2;
+          _battleLog.insert(0, '🐺 Shadow Wolf pack instinct (+2 Crit DMG)!');
+        } else if (pet.id == 'pygmy_drake') {
+          dmg += 2;
+          _battleLog.insert(0, '🐉 Pygmy Drake breathes embers (+2 Fire DMG)!');
+        } else if (pet.id == 'tavern_hound') {
+          _battleLog.insert(0, '🐕 Tavern Hound distracts ${enemy.name}!');
+        } else if (pet.id == 'astral_falcon') {
+          _battleLog.insert(0, '🦅 Astral Falcon harries ${enemy.name} from above!');
+        }
+      }
 
       final newEnemyHp = max(0, enemy.currentHp - dmg).toInt();
       enemy.currentHp = newEnemyHp;
@@ -933,6 +952,41 @@ class _TacticalCombatSheetState extends State<TacticalCombatSheet> with SingleTi
               ),
             ],
           ),
+
+          if (widget.activePet != null && widget.activePet!.id != 'none') ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: widget.activePet!.color.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: widget.activePet!.color.withValues(alpha: 0.5)),
+              ),
+              child: Row(
+                children: [
+                  Text(widget.activePet!.emoji, style: const TextStyle(fontSize: 16)),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${widget.activePet!.name.toUpperCase()} • ${widget.activePet!.perkTitle.toUpperCase()}',
+                          style: GoogleFonts.cinzel(fontSize: 10.5, fontWeight: FontWeight.w700, color: widget.activePet!.color),
+                        ),
+                        Text(
+                          widget.activePet!.perkDescription,
+                          style: GoogleFonts.ibmPlexSans(fontSize: 10, color: Colors.white70),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
 
           const SizedBox(height: 10),
 

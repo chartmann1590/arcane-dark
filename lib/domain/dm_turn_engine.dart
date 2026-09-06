@@ -30,6 +30,8 @@ class DmTurnEngine {
     sb.writeln('You are a tabletop Dungeon Master. Narrate in second person, in-character, never break 4th wall.');
     sb.writeln('Campaign: ${state.seed.title} (${state.seed.setting}) | Scene: ${state.currentSceneDescription}');
     sb.writeln('Party position: ${state.partyPosition} on map ${state.currentMapId}');
+    sb.writeln('Exploration Progress: ${state.visitedTiles.length} tiles uncovered, ${state.openedDoors.length} doors opened, ${state.defeatedEnemies.length} enemies defeated, Dungeon Depth: ${state.worldFlags["dungeonDepth"] ?? 1}.');
+    sb.writeln('STRICT RULE: The party is actively exploring an isometric dungeon map. The player MUST physically walk corridors, unlock doors, disarm traps, and reach chamber targets on the map. The player CANNOT defeat distant bosses, loot far-away rooms, or finish campaign beats through chat alone from a distance without navigating the map first.');
 
     final cleanFlags = Map<String, dynamic>.from(state.worldFlags)
       ..remove('openedDoors')

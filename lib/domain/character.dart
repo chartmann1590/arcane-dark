@@ -57,6 +57,10 @@ class AvatarConfig {
   final String weapon;
   final String title;
   final String battleCry;
+  final String pet;
+  final String cloak;
+  final String specialty;
+  final String trinket;
 
   const AvatarConfig({
     this.body = 'body_1',
@@ -69,6 +73,10 @@ class AvatarConfig {
     this.weapon = 'Runed Greatsword',
     this.title = 'The Undaunted',
     this.battleCry = 'For glory and the dawn!',
+    this.pet = 'none',
+    this.cloak = 'Midnight',
+    this.specialty = 'Monster Slayer',
+    this.trinket = 'Glowing Moonstone',
   });
 
   AvatarConfig copyWith({
@@ -82,6 +90,10 @@ class AvatarConfig {
     String? weapon,
     String? title,
     String? battleCry,
+    String? pet,
+    String? cloak,
+    String? specialty,
+    String? trinket,
   }) =>
       AvatarConfig(
         body: body ?? this.body,
@@ -94,6 +106,10 @@ class AvatarConfig {
         weapon: weapon ?? this.weapon,
         title: title ?? this.title,
         battleCry: battleCry ?? this.battleCry,
+        pet: pet ?? this.pet,
+        cloak: cloak ?? this.cloak,
+        specialty: specialty ?? this.specialty,
+        trinket: trinket ?? this.trinket,
       );
 
   Map<String, dynamic> toJson() => {
@@ -107,6 +123,10 @@ class AvatarConfig {
         'weapon': weapon,
         'title': title,
         'battleCry': battleCry,
+        'pet': pet,
+        'cloak': cloak,
+        'specialty': specialty,
+        'trinket': trinket,
       };
   factory AvatarConfig.fromJson(Map<String, dynamic> j) => AvatarConfig(
         body: j['body'] as String? ?? 'body_1',
@@ -119,6 +139,10 @@ class AvatarConfig {
         weapon: j['weapon'] as String? ?? 'Runed Greatsword',
         title: j['title'] as String? ?? 'The Undaunted',
         battleCry: j['battleCry'] as String? ?? 'For glory and the dawn!',
+        pet: j['pet'] as String? ?? 'none',
+        cloak: j['cloak'] as String? ?? 'Midnight',
+        specialty: j['specialty'] as String? ?? 'Monster Slayer',
+        trinket: j['trinket'] as String? ?? 'Glowing Moonstone',
       );
 }
 

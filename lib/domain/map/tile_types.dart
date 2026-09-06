@@ -65,11 +65,19 @@ class Point {
 
 /// Computes the shortest walkable path between two points on the dungeon map via BFS.
 /// Respects [closedDoors] as passage blockers unless the door tile itself is the destination.
+/// Respects [blockedTiles] as impassable obstacles (e.g. solid furniture, pillars).
 /// Returns null if unreachable or if the target is non-walkable.
-List<Point>? findPath(DungeonMap map, Point start, Point target, {Set<String> closedDoors = const {}}) {
+List<Point>? findPath(
+  DungeonMap map,
+  Point start,
+  Point target, {
+  Set<String> closedDoors = const {},
+  Set<String> blockedTiles = const {},
+}) {
   if (start == target) return [];
   if (target.x < 0 || target.y < 0 || target.x >= map.width || target.y >= map.height) return null;
   if (!map.tileAt(target.x, target.y).walkable) return null;
+  if (blockedTiles.contains('${target.x},${target.y}')) return null;
 
   final queue = <Point>[start];
   final cameFrom = <Point, Point>{};
@@ -96,8 +104,13 @@ List<Point>? findPath(DungeonMap map, Point start, Point target, {Set<String> cl
 
     for (final d in deltas) {
       final next = Point(cur.x + d.x, cur.y + d.y);
-      if (next.x >= 0 && next.y >= 0 && next.x < map.width && next.y < map.height &&
-          !visited.contains(next) && map.tileAt(next.x, next.y).walkable) {
+      if (next.x >= 0 &&
+          next.y >= 0 &&
+          next.x < map.width &&
+          next.y < map.height &&
+          !visited.contains(next) &&
+          !blockedTiles.contains('${next.x},${next.y}') &&
+          map.tileAt(next.x, next.y).walkable) {
         visited.add(next);
         cameFrom[next] = cur;
         queue.add(next);

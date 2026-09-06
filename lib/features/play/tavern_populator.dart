@@ -77,12 +77,81 @@ class MapNpc {
   }
 }
 
-/// A purely decorative prop (table, barrel, bar counter) placed on a floor
-/// tile — makes an interior read as furnished instead of empty stone/wood.
+/// A decorative or interactive prop placed on a floor tile.
+/// [isSolid] determines whether player/NPC movement is blocked so characters
+/// never walk on top of tables, counters, or solid barricades.
 class MapProp {
   final Point pos;
   final String asset;
-  const MapProp({required this.pos, required this.asset});
+  final bool isSolid;
+  final String? name;
+  final String? interactionText;
+
+  const MapProp({
+    required this.pos,
+    required this.asset,
+    this.isSolid = true,
+    this.name,
+    this.interactionText,
+  });
+}
+
+/// A wild or domestic animal roaming maps independently with interactive actions.
+class MapAnimal {
+  final String id;
+  final String name;
+  final String species;
+  final Point pos;
+  final String iconType; // 'hound', 'cat', 'wolf', 'owl', 'fox', 'bat'
+  final String flavor;
+  final String dialogue;
+  final bool canAdopt;
+  final String petId;
+
+  const MapAnimal({
+    required this.id,
+    required this.name,
+    required this.species,
+    required this.pos,
+    required this.iconType,
+    required this.flavor,
+    required this.dialogue,
+    this.canAdopt = true,
+    required this.petId,
+  });
+
+  MapAnimal copyWith({Point? pos}) {
+    return MapAnimal(
+      id: id,
+      name: name,
+      species: species,
+      pos: pos ?? this.pos,
+      iconType: iconType,
+      flavor: flavor,
+      dialogue: dialogue,
+      canAdopt: canAdopt,
+      petId: petId,
+    );
+  }
+
+  String get emoji {
+    switch (iconType) {
+      case 'hound':
+        return '🐕';
+      case 'cat':
+        return '🐈';
+      case 'wolf':
+        return '🐺';
+      case 'owl':
+        return '🦉';
+      case 'fox':
+        return '🦊';
+      case 'bat':
+        return '🦇';
+      default:
+        return '🐾';
+    }
+  }
 }
 
 // Two portrait art styles exist today — "staff" (friendly, working the
@@ -103,8 +172,6 @@ const _patronNames = [
   ('A Nervous Merchant', 'Trader'),
 ];
 
-const _propAssets = ['assets/tiles/prop_bar_counter.png', 'assets/tiles/prop_table.png', 'assets/tiles/prop_barrel.png'];
-
 /// Three to seven tavern-goers so a bigger indoor scene never feels like a
 /// blank stage. Which names/roles appear, how many, and where — all deterministic
 /// from the dungeon's own seed (so revisiting the same building shows the
@@ -117,9 +184,6 @@ List<MapNpc> generateTavernNpcs(DungeonMap dungeon) {
   spots.shuffle(rng);
 
   final staffPick = (_staffNames.toList()..shuffle(rng)).first;
-  // Patron names repeat (with a numeral suffix past the first pass) once the
-  // pool is exhausted — bigger rooms call for a bigger crowd than four named
-  // strangers can cover on their own.
   final patronPool = (_patronNames.toList()..shuffle(rng));
   final count = (3 + rng.nextInt(5)).clamp(1, spots.length); // 3-7 NPCs total
 
@@ -178,20 +242,202 @@ List<MapNpc> generateTavernNpcs(DungeonMap dungeon) {
   return npcs;
 }
 
-/// Five to twelve furniture pieces scattered around the room — count and
-/// exact placement vary by seed so no two buildings feel identically staged.
+/// Rich furniture pieces scattered around the room — including bar counter,
+/// oak tables, barrels, bookshelves, weapon racks, velvet rugs, chairs, and hearth campfires.
 List<MapProp> generateTavernProps(DungeonMap dungeon, List<MapNpc> npcs) {
   final taken = {'${dungeon.entryPoint.x},${dungeon.entryPoint.y}', ...npcs.map((n) => '${n.pos.x},${n.pos.y}')};
   final spots = _floorSpots(dungeon, excluding: taken);
   if (spots.isEmpty) return [];
   final rng = Random(dungeon.seed ^ 0x50524F50);
   spots.shuffle(rng);
-  final count = (5 + rng.nextInt(8)).clamp(0, spots.length); // 5-12 props
+
   final props = <MapProp>[];
-  for (var i = 0; i < count; i++) {
-    props.add(MapProp(pos: spots[i], asset: _propAssets[rng.nextInt(_propAssets.length)]));
+
+  // Guaranteed Bar Counter & Stools near center
+  if (spots.isNotEmpty) {
+    props.add(MapProp(
+      pos: spots.removeLast(),
+      asset: 'assets/tiles/prop_bar_counter.png',
+      isSolid: true,
+      name: 'Oak Bar Counter',
+      interactionText: 'A sturdy carved oak counter polished smooth with centuries of spilled spiced mead.',
+    ));
   }
+
+  // Cozy Campfire / Hearth
+  if (spots.isNotEmpty) {
+    props.add(MapProp(
+      pos: spots.removeLast(),
+      asset: 'assets/tiles/prop_campfire.png',
+      isSolid: false,
+      name: 'Crackling Hearth Fire',
+      interactionText: 'A blazing stone hearth radiating comforting warmth and dancing amber embers.',
+    ));
+  }
+
+  // Ancient Lore Bookshelf
+  if (spots.isNotEmpty) {
+    props.add(MapProp(
+      pos: spots.removeLast(),
+      asset: 'assets/tiles/prop_bookshelf.png',
+      isSolid: true,
+      name: 'Innkeeper\'s Bookshelf',
+      interactionText: 'Filled with weathered travelers\' journals, leather-bound songbooks, and old regional maps.',
+    ));
+  }
+
+  // Weapon Rack
+  if (spots.isNotEmpty) {
+    props.add(MapProp(
+      pos: spots.removeLast(),
+      asset: 'assets/tiles/prop_weapon_rack.png',
+      isSolid: true,
+      name: 'Armory Rack',
+      interactionText: 'Racks holding polished iron blades, cross-spears, and notched heater shields.',
+    ));
+  }
+
+  // Decorative Velvet Rug
+  if (spots.isNotEmpty) {
+    props.add(MapProp(
+      pos: spots.removeLast(),
+      asset: 'assets/tiles/prop_rug.png',
+      isSolid: false,
+      name: 'Woven Velvet Rug',
+      interactionText: 'An intricate dwarven-woven wool runner bearing the seal of ancient clan masters.',
+    ));
+  }
+
+  // Additional tables and barrels
+  final additionalCount = (4 + rng.nextInt(6)).clamp(0, spots.length);
+  for (var i = 0; i < additionalCount; i++) {
+    final spot = spots.removeLast();
+    final roll = rng.nextInt(4);
+    if (roll == 0) {
+      props.add(MapProp(
+        pos: spot,
+        asset: 'assets/tiles/prop_table.png',
+        isSolid: true,
+        name: 'Tavern Table',
+        interactionText: 'A heavy pine table bearing candle wax, clay mugs, and dice gouges.',
+      ));
+    } else if (roll == 1) {
+      props.add(MapProp(
+        pos: spot,
+        asset: 'assets/tiles/prop_barrel.png',
+        isSolid: true,
+        name: 'Ale Cask',
+        interactionText: 'A banded oak cask sealed tight, smelling strongly of dark malted porter.',
+      ));
+    } else if (roll == 2) {
+      props.add(MapProp(
+        pos: spot,
+        asset: 'assets/tiles/prop_chair.png',
+        isSolid: false,
+        name: 'Wooden Stool',
+        interactionText: 'A simple carved stool pulled close to the tavern fire.',
+      ));
+    } else {
+      props.add(MapProp(
+        pos: spot,
+        asset: 'assets/tiles/prop_torch.png',
+        isSolid: false,
+        name: 'Wall Sconce Torch',
+        interactionText: 'A pitch torch casting flickering orange warmth across the floorboards.',
+      ));
+    }
+  }
+
   return props;
+}
+
+/// Generates friendly domestic animals roaming the tavern hearth.
+List<MapAnimal> generateTavernAnimals(DungeonMap dungeon, {required Set<String> excluding}) {
+  final spots = _floorSpots(dungeon, excluding: excluding);
+  if (spots.length < 2) return [];
+  final rng = Random(dungeon.seed ^ 0x414E494D); // "ANIM"
+  spots.shuffle(rng);
+
+  return [
+    MapAnimal(
+      id: 'animal_hound',
+      name: 'Barnaby the Tavern Hound',
+      species: 'Golden Tavern Hound',
+      pos: spots[0],
+      iconType: 'hound',
+      flavor: 'A friendly golden hound who trots around table legs, wagging his tail happily at everyone.',
+      dialogue: 'Woof! Barnaby leans his warm head against your hand and pants enthusiastically.',
+      canAdopt: true,
+      petId: 'tavern_hound',
+    ),
+    MapAnimal(
+      id: 'animal_cat',
+      name: 'Milo the Hearth Cat',
+      species: 'Calico Hearth Feline',
+      pos: spots[1],
+      iconType: 'cat',
+      flavor: 'A sleek calico cat perched comfortably near the warm hearth, lazily watching shadows.',
+      dialogue: 'Purrr... Milo stretches his paws, rubs against your greaves, and lets out a soft trill.',
+      canAdopt: true,
+      petId: 'hearth_cat',
+    ),
+  ];
+}
+
+/// Generates wild animals roaming dungeon ruins and caverns.
+List<MapAnimal> generateDungeonAnimals(DungeonMap dungeon, {required Set<String> excluding}) {
+  if (dungeon.rooms.length < 2) return [];
+  final spots = _floorSpots(dungeon, excluding: excluding);
+  if (spots.isEmpty) return [];
+  final rng = Random(dungeon.seed ^ 0x57494C44); // "WILD"
+  spots.shuffle(rng);
+
+  final animals = <MapAnimal>[];
+  final archetypes = [
+    (
+      'Frostfur',
+      'Shadow Wolf Pup',
+      'wolf',
+      'A sleek midnight wolf pup with silver eyes, watching your torches with curious intelligence.',
+      'A soft growl turns into an inquisitive whimper as it smells your provisions.',
+      'shadow_wolf',
+    ),
+    (
+      'Nocturna',
+      'Spectral Screech Owl',
+      'owl',
+      'A luminous horned owl perched on a stone pillar, swiveling its head with piercing amber gaze.',
+      'Hoo-hoo... The spectral owl rustles its shimmering feathers and studies your soul.',
+      'spectral_owl',
+    ),
+    (
+      'Ember',
+      'Highland Ember Fox',
+      'fox',
+      'A nimble crimson fox with large alert ears and a bushy snow-tipped tail darting through the rocks.',
+      'The fox chirps curiously and cocks its head, intrigued by your gleaming equipment.',
+      'astral_falcon',
+    ),
+  ];
+
+  final count = min(2, spots.length);
+  for (var i = 0; i < count; i++) {
+    final t = archetypes[i % archetypes.length];
+    animals.add(
+      MapAnimal(
+        id: 'wild_animal_$i',
+        name: '${t.$1} the ${t.$2}',
+        species: t.$2,
+        pos: spots[i],
+        iconType: t.$3,
+        flavor: t.$4,
+        dialogue: t.$5,
+        canAdopt: true,
+        petId: t.$6,
+      ),
+    );
+  }
+  return animals;
 }
 
 List<Point> _floorSpots(DungeonMap dungeon, {required Set<String> excluding}) {

@@ -15,6 +15,7 @@ import '../../domain/campaign_seed.dart';
 import '../../domain/campaign_state.dart';
 import '../../domain/character.dart';
 import '../../domain/dm_turn_engine.dart';
+import '../../domain/pet_companion.dart';
 import '../../services/audio_service.dart';
 import '../../services/session_repository.dart';
 import '../../services/tts_service.dart';
@@ -35,7 +36,7 @@ class GamePlayScreen extends ConsumerStatefulWidget {
 }
 
 class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
-  final _inputController = TextEditingController();
+  final TextEditingController _inputController = TextEditingController();
   final _inputFocus = FocusNode();
   final TransformationController _mapController = TransformationController();
   bool _isGenerating = false;
@@ -48,6 +49,7 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
   // navigating away from and back to this screen.
   late int _adHocSeed;
   List<MapNpc> _npcs = [];
+  List<MapAnimal> _animals = [];
   List<MapProp> _props = [];
   Set<String> visited = {};
   m.Point playerPos = const m.Point(5, 5);
@@ -58,6 +60,9 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
   final Set<String> _revealedTraps = {};
   bool _isTraversing = false;
   List<Map<String, String>> chat = [];
+
+  Set<String> get _solidPropPositions =>
+      _props.where((p) => p.isSolid).map((p) => '${p.pos.x},${p.pos.y}').toSet();
   // Guards a one-time rebuild of [chat] from the persisted campaign's
   // recentTurns — without this, leaving and returning to this screen
   // recreates a fresh State object with an empty `chat` list, even though
@@ -153,6 +158,11 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
     if ((campaign?.mapEnvironment ?? 'dungeon') == 'tavern') {
       _npcs = generateTavernNpcs(_dungeon);
       _props = generateTavernProps(_dungeon, _npcs);
+      _animals = generateTavernAnimals(_dungeon, excluding: {
+        '${playerPos.x},${playerPos.y}',
+        for (final p in _props) '${p.pos.x},${p.pos.y}',
+        for (final n in _npcs) '${n.pos.x},${n.pos.y}',
+      });
     } else {
       _props = generateDungeonProps(_dungeon);
       final allEnemies = generateDungeonEnemies(_dungeon, excluding: {
@@ -168,9 +178,14 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
         ...allEnemies.where((n) => !defeated.contains(n.id)),
         ...roamingNpcs.where((n) => !partyNames.contains(n.name)),
       ];
+      _animals = generateDungeonAnimals(_dungeon, excluding: {
+        '${playerPos.x},${playerPos.y}',
+        for (final p in _props) '${p.pos.x},${p.pos.y}',
+        for (final n in _npcs) '${n.pos.x},${n.pos.y}',
+      });
       for (final e in allEnemies) {
         if (defeated.contains(e.id)) {
-          _props.add(MapProp(pos: e.pos, asset: 'assets/tiles/prop_bones.png'));
+          _props.add(MapProp(pos: e.pos, asset: 'assets/tiles/prop_bones.png', isSolid: false));
         }
       }
       _traps.clear();
@@ -546,11 +561,23 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
     return '';
   }
 
+  PetCompanion? _getActivePet(CampaignState? campaign, List<Character> chars) {
+    if (campaign == null || campaign.party.isEmpty) return null;
+    for (final member in campaign.party) {
+      final ch = chars.where((c) => c.id == member.characterId).firstOrNull;
+      if (ch != null && ch.avatar.pet != 'none') {
+        return PetCompanion.fromId(ch.avatar.pet);
+      }
+    }
+    return null;
+  }
+
   bool _isWalkableTile(int x, int y) {
     if (x < 0 || y < 0 || x >= _dungeon.width || y >= _dungeon.height) return false;
     final tile = _dungeon.tileAt(x, y);
     if (tile == m.TileType.wall || tile == m.TileType.water) return false;
     if (tile == m.TileType.door && !_openedDoors.contains('$x,$y')) return false;
+    if (_solidPropPositions.contains('$x,$y')) return false;
     return true;
   }
 
@@ -639,28 +666,140 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
     });
   }
 
+  void _roamAnimals() {
+    if (_animals.isEmpty) return;
+    final rng = Random();
+    final occupied = <String>{
+      '${playerPos.x},${playerPos.y}',
+      for (final p in _props) '${p.pos.x},${p.pos.y}',
+      for (final n in _npcs) '${n.pos.x},${n.pos.y}',
+      ..._solidPropPositions,
+    };
+    final campaign = ref.read(campaignProvider);
+    if (campaign != null) {
+      for (final m in campaign.party) {
+        if (m.position != null) occupied.add('${m.position!.x},${m.position!.y}');
+      }
+    }
+
+    final updated = <MapAnimal>[];
+    const deltas = [m.Point(1, 0), m.Point(-1, 0), m.Point(0, 1), m.Point(0, -1)];
+
+    for (final animal in _animals) {
+      m.Point current = animal.pos;
+      m.Point target = current;
+
+      if (rng.nextDouble() < 0.35) {
+        final valid = <m.Point>[];
+        for (final d in deltas) {
+          final nx = current.x + d.x;
+          final ny = current.y + d.y;
+          if (_isWalkableTile(nx, ny) && !occupied.contains('$nx,$ny')) {
+            valid.add(m.Point(nx, ny));
+          }
+        }
+        if (valid.isNotEmpty) {
+          target = valid[rng.nextInt(valid.length)];
+        }
+      }
+
+      occupied.add('${target.x},${target.y}');
+      updated.add(animal.copyWith(pos: target));
+    }
+
+    setState(() {
+      _animals = updated;
+    });
+  }
+
   void _move(int dx, int dy) {
     final nx = playerPos.x + dx;
     final ny = playerPos.y + dy;
     if (nx < 0 || ny < 0 || nx >= _dungeon.width || ny >= _dungeon.height) return;
-    if (_dungeon.tileAt(nx, ny) == m.TileType.wall || _dungeon.tileAt(nx, ny) == m.TileType.water) return;
+    final tile = _dungeon.tileAt(nx, ny);
+    if (tile == m.TileType.wall || tile == m.TileType.water) return;
+
+    // Check closed door
+    if (tile == m.TileType.door && !_openedDoors.contains('$nx,$ny')) {
+      _showDoorInteractionDialog(m.Point(nx, ny));
+      return;
+    }
+
+    // Check solid furniture or obstacle
+    final prop = _props.where((p) => p.pos.x == nx && p.pos.y == ny).firstOrNull;
+    if (prop != null && prop.isSolid) {
+      _handlePropTap(prop);
+      return;
+    }
+
+    // Check animal on tile
+    final animal = _animals.where((a) => a.pos.x == nx && a.pos.y == ny).firstOrNull;
+    if (animal != null) {
+      _showAnimalInteractionDialog(animal);
+      return;
+    }
+
+    // Check NPC on tile
+    final npc = _npcs.where((n) => n.pos.x == nx && n.pos.y == ny).firstOrNull;
+    if (npc != null) {
+      _handleNpcTap(npc);
+      return;
+    }
+
+    final campaign = ref.read(campaignProvider);
+    final chars = ref.read(savedCharactersProvider);
+    final activePet = _getActivePet(campaign, chars);
+    final visionRad = activePet?.id == 'spectral_owl' ? 3 : 2;
+
     setState(() {
       playerPos = m.Point(nx, ny);
       visited.add('$nx,$ny');
+      for (var yOff = -visionRad; yOff <= visionRad; yOff++) {
+        for (var xOff = -visionRad; xOff <= visionRad; xOff++) {
+          final vx = nx + xOff;
+          final vy = ny + yOff;
+          if (vx >= 0 && vy >= 0 && vx < _dungeon.width && vy < _dungeon.height) {
+            visited.add('$vx,$vy');
+            campaign?.visitedTiles.add('$vx,$vy');
+          }
+        }
+      }
     });
     ref.read(campaignProvider.notifier).moveTo(Point(nx, ny));
     _recenterOnPlayer();
     _roamNpcs();
+    _roamAnimals();
+
+    // Tavern Hound trap detection alert
+    if (activePet?.id == 'tavern_hound') {
+      final nearbyTrap = _traps.firstWhere(
+        (t) {
+          final parts = t.split(',');
+          final tx = int.tryParse(parts[0]) ?? -99;
+          final ty = int.tryParse(parts[1]) ?? -99;
+          return (nx - tx).abs() + (ny - ty).abs() <= 2;
+        },
+        orElse: () => '',
+      );
+      if (nearbyTrap.isNotEmpty && !_revealedTraps.contains(nearbyTrap)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('🐕 Tavern Hound alerts! It sniffs the stone and whimpers softly — a trap is nearby!', style: GoogleFonts.ibmPlexSans()),
+            backgroundColor: const Color(0xFFFFA726),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    }
 
     // Check if player triggered an undiscovered trap
     final posKey = '$nx,$ny';
     if (_traps.contains(posKey) && !_revealedTraps.contains(posKey)) {
       _traps.remove(posKey);
       _revealedTraps.add(posKey);
-      _props.add(MapProp(pos: m.Point(nx, ny), asset: 'assets/tiles/prop_rubble.png'));
+      _props.add(MapProp(pos: m.Point(nx, ny), asset: 'assets/tiles/prop_rubble.png', isSolid: false));
       AudioService.instance.playError();
       final trapDmg = Random().nextInt(4) + 2;
-      final campaign = ref.read(campaignProvider);
       if (campaign != null && campaign.party.isNotEmpty) {
         ref.read(campaignProvider.notifier).updateHp(campaign.party.first.characterId, -trapDmg);
       }
@@ -677,6 +816,73 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
 
     // auto describe
     _send('I move to the next area.');
+    _checkMapQuestProgression();
+  }
+
+  void _checkMapQuestProgression() {
+    final campaign = ref.read(campaignProvider);
+    if (campaign == null || campaign.questLog.isEmpty) return;
+    final currentBeatIndex = campaign.questLog.indexWhere((q) => q.status == 'active');
+    if (currentBeatIndex == -1) return;
+
+    final tilesCount = visited.length;
+    final doorsCount = _openedDoors.length;
+    final defeatedCount = campaign.defeatedEnemies.length;
+    final depth = campaign.worldFlags['dungeonDepth'] as int? ?? 1;
+
+    bool shouldAdvance = false;
+    String milestoneText = '';
+
+    if (currentBeatIndex == 0) {
+      // Beat 1: Scout entrance / tavern (explore at least 12 tiles or open 1 door)
+      if (tilesCount >= 12 || doorsCount >= 1) {
+        shouldAdvance = true;
+        milestoneText = 'Corridor charted! You uncover the path into the depths.';
+      }
+    } else if (currentBeatIndex == 1) {
+      // Beat 2: Defeat a foe, disarm a trap, or uncover a chest
+      if (defeatedCount >= 1 || _revealedTraps.isNotEmpty || _props.any((p) => p.asset.contains('chest'))) {
+        shouldAdvance = true;
+        milestoneText = 'Perils overcome! The ancient mysteries begin to unravel.';
+      }
+    } else if (currentBeatIndex == 2) {
+      // Beat 3: Reach Depth 2 via stairs or commune with mystic shrine
+      if (depth >= 2 || _props.any((p) => (p.asset.contains('pillar') || p.asset.contains('altar')) && (p.pos.x - playerPos.x).abs() + (p.pos.y - playerPos.y).abs() <= 1)) {
+        shouldAdvance = true;
+        milestoneText = 'Sacred grounds reached! The binding sigils resonate.';
+      }
+    } else if (currentBeatIndex == 3) {
+      // Beat 4: Deep sanctum exploration & guardian encounter
+      if (depth >= 2 && (defeatedCount >= 2 || tilesCount >= 35)) {
+        shouldAdvance = true;
+        milestoneText = 'Deep sanctum breached! The final confrontation awaits.';
+      }
+    }
+
+    if (shouldAdvance && currentBeatIndex < campaign.questLog.length - 1) {
+      final nextBeat = currentBeatIndex + 1;
+      ref.read(campaignProvider.notifier).advanceQuestBeat(nextBeat);
+      AudioService.instance.playSuccess();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.stars_rounded, color: Colors.amberAccent, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'QUEST OBJECTIVE ADVANCED!\n$milestoneText',
+                  style: GoogleFonts.cinzel(fontWeight: FontWeight.w700, color: Colors.white, fontSize: 13),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: ArcaneTheme.primary,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+      _send('The party makes significant headway into the dungeon! $milestoneText');
+    }
   }
 
   Set<String> get _closedDoors {
@@ -695,6 +901,27 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
     if (_isTraversing) return;
     if (target.x == playerPos.x && target.y == playerPos.y) return;
 
+    // Check if tapping a prop directly
+    final prop = _props.where((p) => p.pos.x == target.x && p.pos.y == target.y).firstOrNull;
+    if (prop != null) {
+      _handlePropTap(prop);
+      return;
+    }
+
+    // Check if tapping an animal directly
+    final animal = _animals.where((a) => a.pos.x == target.x && a.pos.y == target.y).firstOrNull;
+    if (animal != null) {
+      _showAnimalInteractionDialog(animal);
+      return;
+    }
+
+    // Check if tapping an NPC directly
+    final npc = _npcs.where((n) => n.pos.x == target.x && n.pos.y == target.y).firstOrNull;
+    if (npc != null) {
+      _handleNpcTap(npc);
+      return;
+    }
+
     final isDoor = _dungeon.tileAt(target.x, target.y) == m.TileType.door;
     final isDoorClosed = isDoor && !_openedDoors.contains('${target.x},${target.y}');
     final distToTarget = (playerPos.x - target.x).abs() + (playerPos.y - target.y).abs();
@@ -704,11 +931,11 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
       return;
     }
 
-    final path = m.findPath(_dungeon, playerPos, target, closedDoors: _closedDoors);
+    final path = m.findPath(_dungeon, playerPos, target, closedDoors: _closedDoors, blockedTiles: _solidPropPositions);
     if (path == null || path.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Tile unreachable or blocked by stone barrier', style: GoogleFonts.ibmPlexSans()),
+          content: Text('Tile unreachable or blocked by stone barrier / solid furniture', style: GoogleFonts.ibmPlexSans()),
           duration: const Duration(milliseconds: 750),
           backgroundColor: ArcaneTheme.tertiary,
         ),
@@ -723,6 +950,9 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
     });
 
     final campaign = ref.read(campaignProvider);
+    final chars = ref.read(savedCharactersProvider);
+    final activePet = _getActivePet(campaign, chars);
+    final visionRad = activePet?.id == 'spectral_owl' ? 3 : 2;
 
     for (var i = 0; i < path.length; i++) {
       if (!mounted) break;
@@ -746,8 +976,8 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
           campaign.visitedTiles.add('${step.x},${step.y}');
         }
 
-        for (var dy = -2; dy <= 2; dy++) {
-          for (var dx = -2; dx <= 2; dx++) {
+        for (var dy = -visionRad; dy <= visionRad; dy++) {
+          for (var dx = -visionRad; dx <= visionRad; dx++) {
             final nx = step.x + dx;
             final ny = step.y + dy;
             if (nx >= 0 && ny >= 0 && nx < _dungeon.width && ny < _dungeon.height) {
@@ -779,7 +1009,7 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
       if (_traps.contains(stepKey) && !_revealedTraps.contains(stepKey)) {
         _traps.remove(stepKey);
         _revealedTraps.add(stepKey);
-        _props.add(MapProp(pos: step, asset: 'assets/tiles/prop_rubble.png'));
+        _props.add(MapProp(pos: step, asset: 'assets/tiles/prop_rubble.png', isSolid: false));
         AudioService.instance.playError();
         final trapDmg = Random().nextInt(4) + 2;
         if (campaign != null && campaign.party.isNotEmpty) {
@@ -822,11 +1052,135 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
       ref.read(campaignProvider.notifier).moveTo(Point(playerPos.x, playerPos.y));
       _recenterOnPlayer();
       _roamNpcs();
+      _roamAnimals();
 
       final tile = _dungeon.tileAt(playerPos.x, playerPos.y);
       final desc = tile == m.TileType.door ? 'through the doorway' : 'into the chamber';
       _send('I traverse the corridor $desc.');
+      _checkMapQuestProgression();
     }
+  }
+
+  void _showAnimalInteractionDialog(MapAnimal animal) {
+    AudioService.instance.playTap();
+    final campaign = ref.read(campaignProvider);
+    final chars = ref.read(savedCharactersProvider);
+    final activePet = _getActivePet(campaign, chars);
+    final isCurrentPet = activePet?.id == animal.petId;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: ArcaneTheme.surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(18))),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(18, 16, 18, 24),
+        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: ArcaneTheme.secondary.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: ArcaneTheme.secondary.withValues(alpha: 0.5)),
+              ),
+              child: Text(animal.emoji, style: const TextStyle(fontSize: 28)),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(animal.name.toUpperCase(), style: GoogleFonts.cinzel(fontSize: 17, fontWeight: FontWeight.w800, color: Colors.white)),
+                const SizedBox(height: 2),
+                Text('${animal.species.toUpperCase()} • ${animal.flavor}', style: GoogleFonts.ibmPlexSans(fontSize: 12, color: ArcaneTheme.secondary, fontWeight: FontWeight.w600)),
+              ]),
+            ),
+          ]),
+          const SizedBox(height: 14),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.35), borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.white10)),
+            child: Text('"${animal.dialogue}"', style: GoogleFonts.spectral(fontSize: 13.5, fontStyle: FontStyle.italic, color: Colors.white70)),
+          ),
+          const SizedBox(height: 18),
+          Row(children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.pets_rounded, size: 16),
+                label: const Text('Pet Gently'),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  AudioService.instance.playTap();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('You gently pet ${animal.name}. It leans into your touch with deep affection!', style: GoogleFonts.ibmPlexSans()),
+                      backgroundColor: ArcaneTheme.primary,
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
+                  _send('I reach out gently to pet ${animal.name}. It leans into my hand with warmth and comfort.');
+                },
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.lunch_dining_rounded, size: 16),
+                label: const Text('Feed Treat'),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  AudioService.instance.playSuccess();
+                  if (campaign != null && campaign.party.isNotEmpty) {
+                    ref.read(campaignProvider.notifier).updateHp(campaign.party.first.characterId, 2);
+                  }
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('You feed a treat to ${animal.name}! It happily munches and grants comfort (+2 HP).', style: GoogleFonts.ibmPlexSans()),
+                      backgroundColor: const Color(0xFF3DD68C),
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
+                  _send('I share a savory bit of travel rations with ${animal.name}. It munches the treat happily and perks up beside us.');
+                },
+              ),
+            ),
+          ]),
+          if (animal.canAdopt && animal.petId.isNotEmpty && !isCurrentPet) ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.volunteer_activism_rounded, size: 17),
+                label: Text('Adopt ${animal.name} as Pet Companion', style: GoogleFonts.cinzel(fontWeight: FontWeight.w700)),
+                style: ElevatedButton.styleFrom(backgroundColor: ArcaneTheme.primary, padding: const EdgeInsets.symmetric(vertical: 12)),
+                onPressed: () async {
+                  Navigator.pop(ctx);
+                  AudioService.instance.playSuccess();
+                  if (campaign != null && campaign.party.isNotEmpty) {
+                    final leadId = campaign.party.first.characterId;
+                    final leadChar = chars.where((c) => c.id == leadId).firstOrNull;
+                    if (leadChar != null) {
+                      final updated = leadChar.copyWith(avatar: leadChar.avatar.copyWith(pet: animal.petId));
+                      await ref.read(savedCharactersProvider.notifier).updateCharacter(updated);
+                    }
+                  }
+                  setState(() {
+                    _animals.removeWhere((a) => a.id == animal.id);
+                  });
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('${animal.name} is now your loyal Pet Companion! It will follow you through all dungeons and taverns.', style: GoogleFonts.cinzel(fontWeight: FontWeight.w700, color: Colors.white)),
+                      backgroundColor: ArcaneTheme.primary,
+                      duration: const Duration(seconds: 3),
+                    ),
+                  );
+                  _send('I kneel down and welcome ${animal.name} into our party as our loyal pet companion! It trots happily alongside us.');
+                },
+              ),
+            ),
+          ],
+        ]),
+      ),
+    );
   }
 
   void _showDoorInteractionDialog(m.Point doorPos) {
@@ -1000,6 +1354,7 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
       builder: (ctx) => TacticalCombatSheet(
         initialEnemy: enemy,
         campaign: campaign,
+        activePet: _getActivePet(campaign, ref.read(savedCharactersProvider)),
         onEnemyUpdated: (updatedEnemy) {
           setState(() {
             final idx = _npcs.indexWhere((n) => n.id == updatedEnemy.id);
@@ -1070,8 +1425,12 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
 
   void _performSearchAction() {
     AudioService.instance.playDiceRoll();
+    final campaign = ref.read(campaignProvider);
+    final chars = ref.read(savedCharactersProvider);
+    final activePet = _getActivePet(campaign, chars);
+    final houndBonus = activePet?.id == 'tavern_hound' ? 2 : 0;
     final d20 = Random().nextInt(20) + 1;
-    final total = d20 + 3; // +3 perception
+    final total = d20 + 3 + houndBonus; // +3 perception, +2 with Tavern Hound
     if (total >= 12) {
       AudioService.instance.playSuccess();
 
@@ -1092,11 +1451,11 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
         final tx = int.parse(parts[0]);
         final ty = int.parse(parts[1]);
         setState(() {
-          _props.add(MapProp(pos: m.Point(tx, ty), asset: 'assets/tiles/prop_rubble.png'));
+          _props.add(MapProp(pos: m.Point(tx, ty), asset: 'assets/tiles/prop_rubble.png', isSolid: false));
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Perception [$total]: TRAP DETECTED! You spot a concealed tripwire at ($tx,$ty)! (Marked with rubble)', style: GoogleFonts.ibmPlexSans()),
+            content: Text('Perception [$total${houndBonus > 0 ? " (+2 Hound)" : ""}]: TRAP DETECTED! You spot a concealed tripwire at ($tx,$ty)! (Marked with rubble)', style: GoogleFonts.ibmPlexSans()),
             backgroundColor: ArcaneTheme.secondary,
             duration: const Duration(seconds: 3),
           ),
@@ -1117,7 +1476,7 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
         final hasProp = _props.any((p) => p.pos.x == stashSpot.x && p.pos.y == stashSpot.y);
         if (!hasProp) {
           setState(() {
-            _props.add(MapProp(pos: stashSpot, asset: 'assets/tiles/prop_chest.png'));
+            _props.add(MapProp(pos: stashSpot, asset: 'assets/tiles/prop_chest.png', isSolid: true, name: 'Dungeon Chest'));
           });
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -1133,7 +1492,7 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Perception [$total]: SUCCESS! No hidden traps detected along the floor.', style: GoogleFonts.ibmPlexSans()),
+          content: Text('Perception [$total${houndBonus > 0 ? " (+2 Hound)" : ""}]: SUCCESS! No hidden traps detected along the floor.', style: GoogleFonts.ibmPlexSans()),
           backgroundColor: ArcaneTheme.primary,
           duration: const Duration(seconds: 2),
         ),
@@ -1154,17 +1513,28 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
 
   void _handlePropTap(MapProp prop) {
     final dist = (playerPos.x - prop.pos.x).abs() + (playerPos.y - prop.pos.y).abs();
-    if (dist > 2) {
-      _handleTileTap(prop.pos);
+    if (dist > 1) {
+      final neighbors = [
+        m.Point(prop.pos.x + 1, prop.pos.y),
+        m.Point(prop.pos.x - 1, prop.pos.y),
+        m.Point(prop.pos.x, prop.pos.y + 1),
+        m.Point(prop.pos.x, prop.pos.y - 1),
+      ].where((p) => _isWalkableTile(p.x, p.y) && !_solidPropPositions.contains('${p.x},${p.y}')).toList();
+      if (neighbors.isNotEmpty) {
+        neighbors.sort((a, b) => ((a.x - playerPos.x).abs() + (a.y - playerPos.y).abs()).compareTo((b.x - playerPos.x).abs() + (b.y - playerPos.y).abs()));
+        _handleTileTap(neighbors.first);
+      }
       return;
     }
 
     if (_dungeon.rooms.length > 1 && prop.pos.x == _dungeon.rooms.last.centerX && prop.pos.y == _dungeon.rooms.last.centerY) {
       _showDescentDialog();
-    } else if (prop.asset.contains('pillar') && _dungeon.rooms.length > 2 && prop.pos.x == _dungeon.rooms[1].centerX && prop.pos.y == _dungeon.rooms[1].centerY) {
+    } else if (prop.asset.contains('altar') || (prop.asset.contains('pillar') && _dungeon.rooms.length > 2 && prop.pos.x == _dungeon.rooms[1].centerX && prop.pos.y == _dungeon.rooms[1].centerY)) {
       _showAltarDialog(prop);
     } else if (prop.asset.contains('chest')) {
       _showLootChestDialog(prop);
+    } else if (prop.asset.contains('campfire')) {
+      _triggerCampfireBanter();
     } else if (prop.asset.contains('torch')) {
       AudioService.instance.playSuccess();
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1174,6 +1544,16 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
           duration: const Duration(seconds: 1),
         ),
       );
+    } else if (prop.interactionText != null) {
+      AudioService.instance.playTap();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${prop.name ?? "Inspection"}: ${prop.interactionText!}', style: GoogleFonts.ibmPlexSans()),
+          backgroundColor: ArcaneTheme.surfaceElevated,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+      _send('I inspect the ${prop.name ?? "object"} closely: ${prop.interactionText!}');
     } else {
       _send('I investigate the ${prop.asset.split('/').last.replaceAll('prop_', '').replaceAll('.png', '')} thoroughly.');
     }
@@ -1344,14 +1724,23 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
 
   void _triggerCampfireBanter() {
     final campaign = ref.read(campaignProvider);
+    final chars = ref.read(savedCharactersProvider);
+    final pet = _getActivePet(campaign, chars);
     AudioService.instance.playSend();
     if (campaign == null || campaign.party.length < 2) {
-      _send('I take a rest by the glowing torchlight, honing my blade and reflecting on the quest.');
+      if (pet != null && pet.id != 'none') {
+        _send('I take a rest by the glowing campfire. Beside me, ${pet.name} curls up close, resting peacefully in the warmth as I hone my blade.');
+      } else {
+        _send('I take a rest by the glowing campfire, honing my blade and reflecting on the quest.');
+      }
       return;
     }
     final companions = campaign.party.skip(1).toList();
     final speaker = companions[Random().nextInt(companions.length)];
-    _send('The party rests around the warm glow. ${speaker.name} breaks the silence, sharing a tale of battle and a word of counsel for the journey ahead...');
+    final petText = (pet != null && pet.id != 'none')
+        ? ' Beside the crackling flames, ${pet.name} naps peacefully, keeping quiet watch.'
+        : '';
+    _send('The party rests around the warm campfire glow. ${speaker.name} breaks the silence, sharing a tale of battle and a word of counsel for the journey ahead...$petText');
   }
 
   void _showDescentDialog() {
@@ -1707,17 +2096,78 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
                     partyMembers: _partyVisuals(campaign, chars),
                     environment: campaign?.mapEnvironment ?? 'dungeon',
                     npcs: _npcs,
+                    animals: _animals,
                     props: _props,
+                    activePet: _getActivePet(campaign, chars),
                     openedDoors: _openedDoors,
                     activePath: _activePath,
                     targetWaypoint: _targetWaypoint,
                     onTileTap: _handleTileTap,
                     onPropTap: _handlePropTap,
                     onNpcTap: _handleNpcTap,
+                    onAnimalTap: _showAnimalInteractionDialog,
                   ),
                 ),
               );
             }),
+            // Live Quest Objective HUD overlay
+            if (campaign != null && campaign.questLog.isNotEmpty)
+              Positioned(
+                top: 8,
+                left: 8,
+                right: 64, // leave clearance for right-side map buttons
+                child: Builder(builder: (context) {
+                  final activeBeat = campaign.questLog.where((q) => q.status == 'active').firstOrNull;
+                  final beatIdx = activeBeat != null ? campaign.questLog.indexOf(activeBeat) + 1 : campaign.questLog.length;
+                  final title = activeBeat?.title ?? 'Dungeon Cleansed';
+                  return Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF10121A).withValues(alpha: 0.90),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: ArcaneTheme.secondary.withValues(alpha: 0.6)),
+                      boxShadow: [
+                        BoxShadow(color: Colors.black.withValues(alpha: 0.5), blurRadius: 8),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.flag_circle_rounded, size: 16, color: ArcaneTheme.secondary),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'QUEST BEAT $beatIdx/${campaign.questLog.length}',
+                                style: GoogleFonts.cinzel(fontSize: 9.5, fontWeight: FontWeight.w800, color: ArcaneTheme.secondary, letterSpacing: 0.8),
+                              ),
+                              Text(
+                                title,
+                                style: GoogleFonts.ibmPlexSans(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: ArcaneTheme.surfaceElevated,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            '${visited.length} explored',
+                            style: GoogleFonts.ibmPlexSans(fontSize: 9.5, color: Colors.white70, fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+              ),
             // Controls overlay
             Positioned(
               right: 8,

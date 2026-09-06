@@ -106,6 +106,12 @@ class SavedCharactersNotifier extends StateNotifier<List<Character>> {
     await _cloudCollection()?.doc(id).set(updated.toJson()).catchError((_) {});
   }
 
+  Future<void> updateCharacter(Character c) async {
+    state = state.map((item) => item.id == c.id ? c : item).toList();
+    await _persist();
+    await _cloudCollection()?.doc(c.id).set(c.toJson()).catchError((_) {});
+  }
+
   Future<void> remove(String id) async {
     state = state.where((e) => e.id != id).toList();
     await _persist();

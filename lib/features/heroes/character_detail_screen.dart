@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../app/theme.dart';
 import '../../domain/character.dart';
 import '../../domain/persona.dart';
+import '../../domain/pet_companion.dart';
 import '../../providers/campaign_provider.dart';
 import '../../providers/character_provider.dart';
 import '../../providers/settings_provider.dart';
@@ -173,6 +174,147 @@ class _CharacterDetailScreenState extends ConsumerState<CharacterDetailScreen> {
                 ]),
               ),
               const SizedBox(height: 14),
+
+              // PET COMPANION CARD
+              if (character.avatar.pet != 'none') ...[
+                Builder(builder: (context) {
+                  final pet = PetCompanion.fromId(character.avatar.pet);
+                  return Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: pet.color.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: pet.color.withValues(alpha: 0.5)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: pet.color.withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(pet.emoji, style: const TextStyle(fontSize: 22)),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    pet.name.toUpperCase(),
+                                    style: GoogleFonts.cinzel(fontSize: 14, fontWeight: FontWeight.w800, color: Colors.white),
+                                  ),
+                                  Text(
+                                    pet.perkTitle,
+                                    style: GoogleFonts.ibmPlexSans(fontSize: 11, fontWeight: FontWeight.w700, color: pet.color),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            OutlinedButton.icon(
+                              icon: const Icon(Icons.pets_rounded, size: 14),
+                              label: const Text('Pet', style: TextStyle(fontSize: 11)),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                side: BorderSide(color: pet.color),
+                              ),
+                              onPressed: () {
+                                AudioService.instance.playTap();
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('You pet ${pet.name}. It leans into your hand happily!', style: GoogleFonts.ibmPlexSans()),
+                                    backgroundColor: pet.color,
+                                    duration: const Duration(seconds: 2),
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          pet.perkDescription,
+                          style: GoogleFonts.ibmPlexSans(fontSize: 11.5, color: Colors.white70, height: 1.3),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '"${pet.flavor}"',
+                          style: GoogleFonts.spectral(fontSize: 11, fontStyle: FontStyle.italic, color: Colors.white54),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+                const SizedBox(height: 14),
+              ],
+
+              // GEAR & HEROIC CUSTOMIZATION CARD
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: ArcaneTheme.cardDecoration(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('HEROIC GEAR & SPECIALTY', style: GoogleFonts.ibmPlexSans(fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 1, color: ArcaneTheme.textMuted)),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('CLOAK', style: GoogleFonts.ibmPlexSans(fontSize: 10, color: ArcaneTheme.textMuted, fontWeight: FontWeight.w600)),
+                              const SizedBox(height: 2),
+                              Text('${character.avatar.cloak} Cloak', style: GoogleFonts.ibmPlexSans(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white)),
+                            ],
+                          ),
+                        ),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('SPECIALTY', style: GoogleFonts.ibmPlexSans(fontSize: 10, color: ArcaneTheme.textMuted, fontWeight: FontWeight.w600)),
+                              const SizedBox(height: 2),
+                              Text(character.avatar.specialty, style: GoogleFonts.ibmPlexSans(fontSize: 12, fontWeight: FontWeight.w700, color: ArcaneTheme.secondary)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('LUCKY TRINKET', style: GoogleFonts.ibmPlexSans(fontSize: 10, color: ArcaneTheme.textMuted, fontWeight: FontWeight.w600)),
+                              const SizedBox(height: 2),
+                              Text(character.avatar.trinket, style: GoogleFonts.ibmPlexSans(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.amberAccent)),
+                            ],
+                          ),
+                        ),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('BATTLE CRY', style: GoogleFonts.ibmPlexSans(fontSize: 10, color: ArcaneTheme.textMuted, fontWeight: FontWeight.w600)),
+                              const SizedBox(height: 2),
+                              Text('"${character.avatar.battleCry}"', maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.spectral(fontSize: 12, fontStyle: FontStyle.italic, color: Colors.white70)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
+
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: ArcaneTheme.cardDecoration(),

@@ -30,12 +30,67 @@ List<MapProp> generateDungeonProps(DungeonMap dungeon) {
   final target = (dungeon.rooms.length * (1 + rng.nextInt(2)) + 4).clamp(8, 18);
   final count = target.clamp(0, spots.length);
   final props = <MapProp>[];
-  for (var i = 0; i < count; i++) {
-    props.add(MapProp(pos: spots[i], asset: _dungeonPropAssets[rng.nextInt(_dungeonPropAssets.length)]));
+
+  // Guaranteed ancient altar in one of the deeper rooms
+  if (dungeon.rooms.length > 2 && spots.isNotEmpty) {
+    final altarRoom = dungeon.rooms[dungeon.rooms.length ~/ 2];
+    final altarPos = Point(altarRoom.centerX, altarRoom.centerY);
+    props.add(MapProp(
+      pos: altarPos,
+      asset: 'assets/tiles/prop_altar.png',
+      isSolid: true,
+      name: 'Runic Stone Shrine',
+      interactionText: 'An ominous stone shrine carved with elder draconic runes. Kneeling here fills your spirit with renewed courage.',
+    ));
+    taken.add('${altarPos.x},${altarPos.y}');
+  }
+
+  for (var i = 0; i < count && spots.isNotEmpty; i++) {
+    final spot = spots.removeLast();
+    final asset = _dungeonPropAssets[rng.nextInt(_dungeonPropAssets.length)];
+    final isPillar = asset.contains('pillar');
+    final isTorch = asset.contains('torch');
+    final isChest = asset.contains('chest');
+    final isBones = asset.contains('bones');
+    final isRubble = asset.contains('rubble');
+
+    props.add(MapProp(
+      pos: spot,
+      asset: asset,
+      isSolid: isPillar,
+      name: isPillar
+          ? 'Fluted Stone Pillar'
+          : isTorch
+              ? 'Torch Sconce'
+              : isChest
+                  ? 'Weathered Iron Chest'
+                  : isBones
+                      ? 'Fallen Adventurer Skeletal Remains'
+                      : isRubble
+                          ? 'Crumbling Masonry Rubble'
+                          : 'Luminescent Cave Moss',
+      interactionText: isPillar
+          ? 'A massive fluted pillar supporting the subterranean vaulted ceiling.'
+          : isTorch
+              ? 'A glowing torch illuminating damp obsidian walls.'
+              : isChest
+                  ? 'An iron-reinforced chest with a heavy brass clasp.'
+                  : isBones
+                      ? 'The ancient bones of an explorer who succumbed to the crypt\'s perils.'
+                      : isRubble
+                          ? 'Broken flagstones and shattered masonry.'
+                          : 'Gently glowing cave moss pulsing with cold verdant light.',
+    ));
   }
   if (dungeon.rooms.length > 1) {
     final exitRoom = dungeon.rooms.last;
-    props.add(MapProp(pos: Point(exitRoom.centerX, exitRoom.centerY), asset: 'assets/tiles/prop_pillar.png'));
+    props.add(MapProp(
+      pos: Point(exitRoom.centerX, exitRoom.centerY),
+      asset: 'assets/tiles/prop_pillar.png',
+      isSolid: true,
+      name: 'Central Vault Pillar',
+      interactionText: 'A monolithic carved stone pillar marking the depth descent.',
+    ));
   }
   return props;
 }

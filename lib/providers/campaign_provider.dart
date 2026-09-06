@@ -151,6 +151,27 @@ class CampaignNotifier extends StateNotifier<CampaignState?> {
     _persist();
   }
 
+  void advanceQuestBeat(int beatIndex, {String? customStage}) {
+    final cur = state;
+    if (cur == null || cur.questLog.isEmpty) return;
+    if (beatIndex < 0 || beatIndex >= cur.questLog.length) return;
+    final updated = List<QuestEntry>.from(cur.questLog);
+    for (var i = 0; i < beatIndex; i++) {
+      final q = updated[i];
+      updated[i] = QuestEntry(id: q.id, title: q.title, stage: 'completed', status: 'completed');
+    }
+    final curr = updated[beatIndex];
+    updated[beatIndex] = QuestEntry(
+      id: curr.id,
+      title: curr.title,
+      stage: customStage ?? 'active',
+      status: 'active',
+    );
+    cur.questLog = updated;
+    state = cur;
+    _persist();
+  }
+
   void newFloor({required int newSeed, required Point entryPoint, String environment = 'dungeon'}) {
     final cur = state;
     if (cur == null) return;
