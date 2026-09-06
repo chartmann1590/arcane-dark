@@ -443,6 +443,8 @@ class IsoMapView extends StatelessWidget {
     final isShrine = prop.asset.contains('shrine');
     final isCart = prop.asset.contains('cart') || prop.asset.contains('wagon');
     final isThrone = prop.asset.contains('throne');
+    final isTable = prop.asset.contains('table');
+    final isBarCounter = prop.asset.contains('bar_counter') || prop.asset.contains('counter');
 
     Offset propDown = Offset.zero;
 
@@ -489,6 +491,10 @@ class IsoMapView extends StatelessWidget {
       childWidget = const _CartPropWidget();
     } else if (isThrone) {
       childWidget = const _ThronePropWidget();
+    } else if (isTable) {
+      childWidget = const _TablePropWidget();
+    } else if (isBarCounter) {
+      childWidget = const _BarCounterPropWidget();
     } else {
       childWidget = Image.asset(
         prop.asset,
@@ -3266,6 +3272,97 @@ class _CartPropWidget extends StatelessWidget {
             ),
           ),
           const Icon(Icons.agriculture_rounded, size: 20, color: Color(0xFFBCAAA4)),
+        ],
+      ),
+    );
+  }
+}
+
+class _TablePropWidget extends StatelessWidget {
+  const _TablePropWidget();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 44,
+      height: 38,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Positioned(
+            bottom: 2,
+            child: Container(
+              width: 36,
+              height: 10,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.black.withValues(alpha: 0.4),
+              ),
+            ),
+          ),
+          Container(
+            width: 38,
+            height: 22,
+            decoration: BoxDecoration(
+              color: const Color(0xFF5D4037),
+              borderRadius: BorderRadius.circular(5),
+              border: Border.all(color: const Color(0xFF8D6E63), width: 1.5),
+              boxShadow: const [
+                BoxShadow(color: Colors.black45, blurRadius: 4, offset: Offset(0, 2)),
+              ],
+            ),
+            child: const Center(
+              child: Icon(Icons.table_restaurant_rounded, size: 14, color: Color(0xFFD7CCC8)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BarCounterPropWidget extends StatelessWidget {
+  const _BarCounterPropWidget();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 46,
+      height: 40,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Positioned(
+            bottom: 2,
+            child: Container(
+              width: 40,
+              height: 10,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.black.withValues(alpha: 0.4),
+              ),
+            ),
+          ),
+          Container(
+            width: 42,
+            height: 24,
+            decoration: BoxDecoration(
+              color: const Color(0xFF3E2723),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: const Color(0xFF6D4C41), width: 1.8),
+              boxShadow: const [
+                BoxShadow(color: Colors.black54, blurRadius: 4, offset: Offset(0, 3)),
+              ],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                const Icon(Icons.sports_bar_rounded, size: 13, color: Color(0xFFFFB300)),
+                Container(width: 8, height: 12, decoration: BoxDecoration(color: const Color(0xFF8D6E63), borderRadius: BorderRadius.circular(2))),
+                const Icon(Icons.sports_bar_rounded, size: 13, color: Color(0xFFFFB300)),
+              ],
+            ),
+          ),
         ],
       ),
     );

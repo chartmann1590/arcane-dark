@@ -2,37 +2,80 @@ import 'dart:math';
 import 'tile_types.dart';
 
 /// Generates an expansive outdoor forest & wilderness map featuring natural
-/// clearings, winding dirt trails, river streams, wooden bridges, and tree groves.
+/// clearings, winding dirt trails, river streams, wooden bridges, and tree groves
+/// with 3 distinct procedural layout archetypes for every seed.
 class ForestGenerator {
-  DungeonMap generate({required int seed, int width = 34, int height = 34}) {
+  DungeonMap generate({required int seed, int width = 36, int height = 36}) {
     final rng = Random(seed);
-    // Base layer: lush plains/grass
-    final tiles = List.generate(height, (_) => List.generate(width, (_) => TileType.plains));
+    final layoutType = seed.abs() % 3;
 
-    // 1. Procedural River winding through the forest from top-right to bottom-left
-    int riverX = width - 4 - rng.nextInt(6);
-    final riverTiles = <Point>{};
-    for (int y = 0; y < height; y++) {
-      riverX += rng.nextInt(3) - 1;
-      riverX = riverX.clamp(3, width - 4);
-      for (int rx = -1; rx <= 1; rx++) {
-        final x = riverX + rx;
-        if (x >= 0 && x < width) {
-          tiles[y][x] = TileType.water;
-          riverTiles.add(Point(x, y));
+    final tiles = List.generate(height, (_) => List.generate(width, (_) => TileType.plains));
+    final rooms = <Room>[];
+
+    if (layoutType == 0) {
+      // -------------------------------------------------------------
+      // Archetype 0: River Valley Meander
+      // -------------------------------------------------------------
+      int riverX = width - 6 - rng.nextInt(6);
+      for (int y = 0; y < height; y++) {
+        riverX += rng.nextInt(3) - 1;
+        riverX = riverX.clamp(4, width - 5);
+        for (int rx = -1; rx <= 1; rx++) {
+          final x = riverX + rx;
+          if (x >= 0 && x < width) {
+            tiles[y][x] = TileType.water;
+          }
         }
       }
-    }
 
-    // 2. Clearings / Landmarks (Rooms)
-    final rooms = <Room>[
-      Room(0, 4, 4, 7, 7, type: RoomType.entryVestibule, name: 'Ranger Trailhead Clearing', description: 'Sunlight filters through towering evergreens onto a peaceful mossy clearing where the forest path begins.'),
-      Room(1, 15, 5, 8, 7, type: RoomType.shrineSanctum, name: 'Ancient Druid Grove', description: 'Ancient moss-covered menhirs circle an illuminated stone altar resonating with the heartbeat of the wilds.'),
-      Room(2, 5, 16, 8, 7, type: RoomType.ancientLibrary, name: 'Hermit Sage Encampment', description: 'A cozy hollow flanked by aged willows, featuring a warm campfire ring and drying herbal medicine racks.'),
-      Room(3, 20, 16, 7, 7, type: RoomType.armory, name: 'Woodcutter Timber Yard', description: 'Stacked pine timber and sturdy split logs surround an active timber workshop under the trees.'),
-      Room(4, 8, 25, 8, 6, type: RoomType.treasureVault, name: 'Sunken Brook Clearing', description: 'A tranquil riverbank glade where crystal-clear water pools against smooth river stones and wild ferns.'),
-      Room(5, 22, 24, 7, 7, type: RoomType.bossChamber, name: 'Wolf Crag Overlook', description: 'A rugged plateau crowned with granite boulders, overlooking the sweeping expanse of the ancient woodland.'),
-    ];
+      rooms.addAll([
+        Room(0, 4, 4, 7, 7, type: RoomType.entryVestibule, name: 'Ranger Trailhead Clearing', description: 'Sunlight filters through towering evergreens onto a peaceful mossy clearing where the forest path begins.'),
+        Room(1, 15, 4, 8, 7, type: RoomType.shrineSanctum, name: 'Ancient Druid Grove', description: 'Ancient moss-covered menhirs circle an illuminated stone altar resonating with the heartbeat of the wilds.'),
+        Room(2, 4, 16, 8, 7, type: RoomType.ancientLibrary, name: 'Hermit Sage Encampment', description: 'A cozy hollow flanked by aged willows, featuring a warm campfire ring and drying herbal medicine racks.'),
+        Room(3, 22, 14, 7, 7, type: RoomType.armory, name: 'Woodcutter Timber Yard', description: 'Stacked pine timber and sturdy split logs surround an active timber workshop under the trees.'),
+        Room(4, 7, 25, 8, 6, type: RoomType.treasureVault, name: 'Sunken Brook Clearing', description: 'A tranquil riverbank glade where crystal-clear water pools against smooth river stones and wild ferns.'),
+        Room(5, 23, 24, 7, 7, type: RoomType.bossChamber, name: 'Wolf Crag Overlook', description: 'A rugged plateau crowned with granite boulders, overlooking the sweeping expanse of the ancient woodland.'),
+        Room(6, width - 11, 4, 6, 6, type: RoomType.alchemistLab, name: 'Fairy Mushroom Glade', description: 'Bioluminescent fungal spores drift lazily over damp moss and ancient fallen birch logs.'),
+      ]);
+
+    } else if (layoutType == 1) {
+      // -------------------------------------------------------------
+      // Archetype 1: Giant Redwood Hollow (Expansive Woodland Clearings)
+      // -------------------------------------------------------------
+      final cx = width ~/ 2;
+      final cy = height ~/ 2;
+
+      rooms.addAll([
+        Room(0, cx - 4, cy - 4, 9, 9, type: RoomType.entryVestibule, name: 'Great Heart Tree Clearing', description: 'A colossal ancient redwood with radiant emerald leaves dominates this tranquil sacred clearing.'),
+        Room(1, 4, 4, 8, 7, type: RoomType.shrineSanctum, name: 'Standing Stones Circle', description: 'Weathered megaliths inscribed with spiral constellations humming with ambient planar magic.'),
+        Room(2, width - 12, 4, 8, 7, type: RoomType.alchemistLab, name: 'Moonwell Hollow', description: 'A silver reflecting pool fed by an underground spring where starlight gathers even at midday.'),
+        Room(3, 4, height - 11, 8, 7, type: RoomType.ancientLibrary, name: 'Elven Watchtower Ruins', description: 'Crumbling white marble pillars wrapped in ivy, remnants of an ancient woodland observation post.'),
+        Room(4, width - 12, height - 11, 8, 7, type: RoomType.bossChamber, name: 'Ancient Stag Ridge', description: 'An elevated mossy bluff overlooking the sweeping expanse of the ancient forest canopy.'),
+        Room(5, 4, cy - 3, 7, 7, type: RoomType.armory, name: 'Hunter Lodging Glade', description: 'Canvas lean-to tents, archery targets, and racks of seasoned ash wood longbows.'),
+        Room(6, width - 11, cy - 3, 7, 7, type: RoomType.treasureVault, name: 'Hidden Briar Grotto', description: 'Tangled blackberry brambles protecting an ancient stone cache buried beneath elder roots.'),
+      ]);
+
+    } else {
+      // -------------------------------------------------------------
+      // Archetype 2: Twin Brooks & Wetland Glade
+      // -------------------------------------------------------------
+      for (int x = 0; x < width; x++) {
+        final y1 = (height * 0.35 + sin(x / 4.0) * 2.5).round().clamp(2, height - 3);
+        final y2 = (height * 0.70 + cos(x / 5.0) * 2.5).round().clamp(2, height - 3);
+        tiles[y1][x] = TileType.water;
+        tiles[y2][x] = TileType.water;
+      }
+
+      rooms.addAll([
+        Room(0, 4, 3, 7, 7, type: RoomType.entryVestibule, name: 'River Crossing Trailhead', description: 'Gentle rushing water cascades over smooth river pebbles, framed by flowering elderberry shrubs.'),
+        Room(1, 16, 3, 8, 7, type: RoomType.shrineSanctum, name: 'Willow Shaded Spring', description: 'A crystal-clear spring welling up beneath the weeping branches of a colossal willow tree.'),
+        Room(2, 4, 15, 8, 6, type: RoomType.ancientLibrary, name: 'Island Sanctuary Camp', description: 'A dry islet between the brooks featuring a warm stone fire pit and dried herbs.'),
+        Room(3, 20, 15, 8, 6, type: RoomType.armory, name: 'Beaver Dam Crossing', description: 'Sturdy interlocking timber and river stones forming a natural crossing point over the brook.'),
+        Room(4, 5, 26, 8, 6, type: RoomType.treasureVault, name: 'Sunken Lotus Marsh', description: 'Floating water lilies with luminescent petals surrounded by quiet reeds and dragonflies.'),
+        Room(5, 21, 25, 8, 7, type: RoomType.bossChamber, name: 'Bog Wyrm Hollow', description: 'A shadowed depression flanked by twisted cypress roots and ancient mossy stones.'),
+        Room(6, width - 11, 4, 7, 7, type: RoomType.alchemistLab, name: 'Herbalist Drying Glade', description: 'Racks of wild thyme, yarrow, and coltsfoot drying in the sunlit breeze.'),
+      ]);
+    }
 
     // Carve open grass/plains in all rooms
     for (final r in rooms) {
@@ -47,17 +90,15 @@ class ForestGenerator {
       }
     }
 
-    // 3. Connect rooms with winding dirt pathways (TileType.floor)
+    // Connect rooms with winding dirt pathways
     for (int i = 1; i < rooms.length; i++) {
       final a = rooms[i - 1];
       final b = rooms[i];
       _carveWindingTrail(tiles, a.centerX, a.centerY, b.centerX, b.centerY, rng);
     }
-
-    // Connect last room to first to create loop trails
     _carveWindingTrail(tiles, rooms.last.centerX, rooms.last.centerY, rooms.first.centerX, rooms.first.centerY, rng);
 
-    // 4. Wooden Footbridges across the river where paths cross water
+    // Wooden Footbridges across rivers where paths cross water
     for (int y = 1; y < height - 1; y++) {
       for (int x = 1; x < width - 1; x++) {
         if (tiles[y][x] == TileType.water) {
@@ -72,24 +113,15 @@ class ForestGenerator {
       }
     }
 
-    // Ensure at least one guaranteed bridge across river near mid-height
-    final midY = height ~/ 2;
-    for (int x = 0; x < width; x++) {
-      if (tiles[midY][x] == TileType.water) {
-        tiles[midY][x] = TileType.floor;
-      }
-    }
-
-    // 5. Populate outer dense forest borders & tree clusters with TileType.wall (renders as 3D canopy trees!)
+    // Populate outer dense forest borders & tree clusters with TileType.wall (renders as 3D canopy trees!)
     for (int y = 0; y < height; y++) {
       for (int x = 0; x < width; x++) {
-        // Outer perimeter trees
         if (x == 0 || y == 0 || x == width - 1 || y == height - 1) {
           tiles[y][x] = TileType.wall;
           continue;
         }
-        // Don't place trees inside rooms or directly on pathways or water
         if (tiles[y][x] == TileType.water || tiles[y][x] == TileType.floor) continue;
+
         bool inRoom = false;
         for (final r in rooms) {
           if (r.contains(Point(x, y))) {
@@ -98,8 +130,7 @@ class ForestGenerator {
           }
         }
         if (!inRoom) {
-          // Cluster trees naturally
-          final treeChance = (x < 3 || x > width - 4 || y < 3 || y > height - 4) ? 0.75 : 0.40;
+          final treeChance = (x < 3 || x > width - 4 || y < 3 || y > height - 4) ? 0.75 : 0.38;
           if (rng.nextDouble() < treeChance) {
             tiles[y][x] = TileType.wall;
           }
@@ -122,7 +153,7 @@ class ForestGenerator {
     int curY = y1;
     while (curX != x2 || curY != y2) {
       if (tiles[curY][curX] != TileType.water) {
-        tiles[curY][curX] = TileType.floor; // Winding trail
+        tiles[curY][curX] = TileType.floor;
       }
       if (rng.nextBool()) {
         if (curX != x2) curX += (x2 > curX) ? 1 : -1;

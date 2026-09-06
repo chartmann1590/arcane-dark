@@ -13,12 +13,12 @@ List<MapProp> generateCaveProps(DungeonMap cave) {
     if (taken.contains(key)) continue;
 
     switch (room.id) {
-      case 0: // Cavern Mouth
+      case 0: // Cavern Mouth / Entry
         props.add(MapProp(
           pos: center,
           asset: 'assets/tiles/prop_torch.png',
           isSolid: false,
-          name: 'Prospector’s Wall Sconce',
+          name: 'Prospector\'s Wall Sconce',
           interactionText: 'An iron bracket torch left by spelunkers, casting dancing embers across the damp limestone.',
         ));
         taken.add(key);
@@ -35,18 +35,18 @@ List<MapProp> generateCaveProps(DungeonMap cave) {
         taken.add(key);
         break;
 
-      case 2: // Sunken Lake
+      case 2: // Sunken Lake / Fungal
         props.add(MapProp(
           pos: Point(room.x + 2, room.y + 2),
-          asset: 'assets/tiles/prop_moss.png',
+          asset: 'assets/tiles/prop_shrine.png',
           isSolid: false,
           name: 'Bioluminescent Shoreline Flora',
-          interactionText: 'Glowing turquoise cave moss growing on subterranean riverbanks, illuminating the dark waters.',
+          interactionText: 'Glowing turquoise cave moss and fungal caps growing on subterranean riverbanks, illuminating the dark waters.',
         ));
         taken.add('${room.x + 2},${room.y + 2}');
         break;
 
-      case 3: // Mine Excavation
+      case 3: // Mine Excavation / Forge
         props.add(MapProp(
           pos: center,
           asset: 'assets/tiles/prop_crates.png',
@@ -57,18 +57,18 @@ List<MapProp> generateCaveProps(DungeonMap cave) {
         taken.add(key);
         break;
 
-      case 4: // Chasm Crossing
+      case 4: // Chasm Crossing / Sarcophagus
         props.add(MapProp(
           pos: center,
-          asset: 'assets/tiles/prop_pillar.png',
+          asset: 'assets/tiles/prop_sarcophagus.png',
           isSolid: true,
-          name: 'Ancient Limestone Stalagmite',
-          interactionText: 'A towering limestone pillar formed over millennia of steady mineral seepage.',
+          name: 'Prehistoric Chasm Crypt',
+          interactionText: 'An ancient basalt sarcophagus etched with runes of primeval cavern dwellers.',
         ));
         taken.add(key);
         break;
 
-      case 5: // Ancient Sanctum
+      case 5: // Ancient Sanctum / Deep Caldera
         props.add(MapProp(
           pos: center,
           asset: 'assets/tiles/prop_altar.png',
@@ -81,7 +81,7 @@ List<MapProp> generateCaveProps(DungeonMap cave) {
     }
   }
 
-  // Scattered cave ambiance: stalagmites, glowing crystals, rubble, bones
+  // Scattered cave props (crystals, ore carts, braziers, chests)
   final candidateTiles = <Point>[];
   for (int y = 2; y < cave.height - 2; y++) {
     for (int x = 2; x < cave.width - 2; x++) {
@@ -96,21 +96,21 @@ List<MapProp> generateCaveProps(DungeonMap cave) {
   candidateTiles.shuffle(rng);
 
   final caveAssets = [
-    'assets/tiles/prop_crystals.png',
-    'assets/tiles/prop_rubble.png',
-    'assets/tiles/prop_bones.png',
-    'assets/tiles/prop_moss.png',
-    'assets/tiles/prop_chest.png',
+    ('assets/tiles/prop_crystals.png', 'Luminescent Crystal Shard', 'Subterranean mineral formation glowing with ambient cyan light.'),
+    ('assets/tiles/prop_chest.png', 'Prospector\'s Hidden Coffer', 'An ironbound strongbox wedged into a fissure in the rock.'),
+    ('assets/tiles/prop_brazier.png', 'Dwarven Heating Brazier', 'Perpetual sulfur embers keeping the cavern chill at bay.'),
+    ('assets/tiles/prop_crates.png', 'Mining Supply Crates', 'Saltpeter canisters and blasting cords for cavern excavation.'),
+    ('assets/tiles/prop_rubble.png', 'Fallen Stalactite Rubble', 'Jagged stone debris shattered against the cavern flagstones.'),
   ];
 
-  for (final p in candidateTiles.take(9)) {
-    final asset = caveAssets[rng.nextInt(caveAssets.length)];
+  for (final p in candidateTiles.take(10)) {
+    final (asset, name, desc) = caveAssets[rng.nextInt(caveAssets.length)];
     props.add(MapProp(
       pos: p,
       asset: asset,
-      isSolid: asset.contains('crystals') || asset.contains('chest'),
-      name: asset.contains('crystals') ? 'Luminescent Crystal Shard' : (asset.contains('chest') ? 'Sunken Prospector Coffer' : 'Cavern Rubble'),
-      interactionText: 'Subterranean geological remnants buried deep beneath the mountains.',
+      isSolid: asset.contains('crystals') || asset.contains('chest') || asset.contains('crates'),
+      name: name,
+      interactionText: desc,
     ));
     taken.add('${p.x},${p.y}');
   }
@@ -130,11 +130,16 @@ List<MapNpc> generateCaveNpcs(DungeonMap cave, {Set<String> excluding = const {}
       role: 'Dwarven Deep-Prospector',
       pos: const Point(0, 0),
       portraitAsset: 'assets/avatar/portraits/dwarf.png',
-      greeting: 'Watch yer step, friend! The lower strata are unstable, but by the gods, the mythril veins here run pure!',
+      greeting: 'Watch yer step, friend! The lower strata are unstable, but by the gods, the mithral veins here run pure!',
       dialogueOptions: [
         'Have you found any rare minerals or gems?',
         'Which tunnels lead deeper down?',
-        'Do you need assistance defending the claim?',
+        'Can we buy tempered mining equipment?',
+      ],
+      shopItems: [
+        'Mithral Pickaxe (+1 ATK, 45 Gold)',
+        'Heavy Miner\'s Helmet (Torchlight +1 AC, 35 Gold)',
+        'Rough Amethyst Gem (50 Gold)',
       ],
       healPower: 0,
       canRecruit: true,
@@ -149,22 +154,31 @@ List<MapNpc> generateCaveNpcs(DungeonMap cave, {Set<String> excluding = const {}
       dialogueOptions: [
         'What manner of beasts dwell in the chasm?',
         'Can you share a map of the upper caves?',
-        'Are there safe resting alcoves nearby?',
+        'Would you guide our company through the dark?',
       ],
-      healPower: 10,
+      shopItems: [
+        'Silk Climbing Rope with Grapple (15 Gold)',
+        'Everburning Phosphor Lantern (30 Gold)',
+        'Antidote for Cave Spider Venom (20 Gold)',
+      ],
+      healPower: 12,
       canRecruit: true,
     ),
     MapNpc(
       id: 'npc_goblin_snik',
       name: 'Snik the Turncoat',
-      role: 'Goblin Cave Guide',
+      role: 'Goblin Cave Merchant',
       pos: const Point(0, 0),
       portraitAsset: 'assets/avatar/portraits/halfling.png',
-      greeting: 'Don’t smash Snik! Snik knows all secret crawlspaces! You got shiny coins for good cave directions, yes?',
+      greeting: 'Don’t smash Snik! Snik has shiny treasures dropped by previous delvers! Cheap prices, good luck charms!',
       dialogueOptions: [
-        'Here’s 5 gold. Show me the secret bypass.',
+        'Show me what shiny goods you\'ve scavenged.',
         'Where do the hostile monsters nest?',
-        'Will you scout the darkness ahead for us?',
+      ],
+      shopItems: [
+        'Snik\'s Lucky Rabbit Foot (+1 Save, 25 Gold)',
+        'Gilded Skeleton Key (40 Gold)',
+        'Smoke Bomb Flask (20 Gold)',
       ],
       canRecruit: true,
     ),
@@ -179,14 +193,44 @@ List<MapNpc> generateCaveNpcs(DungeonMap cave, {Set<String> excluding = const {}
         'Interpret the whispers in the stone.',
         'Grant our party your subterranean warding.',
       ],
-      healPower: 18,
+      healPower: 22,
       canRecruit: false,
+    ),
+    MapNpc(
+      id: 'npc_gnome_lumina',
+      name: 'Lumina Gemshaper',
+      role: 'Deep Gnome Jeweler',
+      pos: const Point(0, 0),
+      portraitAsset: 'assets/avatar/portraits/gnome.png',
+      greeting: 'Greetings! I carve harmonic planar lenses out of raw cavern crystals. Would you like your weapons enchanted?',
+      dialogueOptions: [
+        'Show us your enchanted gemstones.',
+        'Can you polish our party\'s arcane focuses?',
+      ],
+      shopItems: [
+        'Azurite Crystal of Mana (+5 Max HP, 65 Gold)',
+        'Glowstone Amulet (Darkvision, 50 Gold)',
+      ],
+      canRecruit: true,
+    ),
+    MapNpc(
+      id: 'npc_sentry_varis',
+      name: 'Sentry Varis',
+      role: 'Subterranean Scout',
+      pos: const Point(0, 0),
+      portraitAsset: 'assets/avatar/portraits/elf.png',
+      greeting: 'The dark beneath the world has eyes everywhere. Stay near the torchlight and keep your shields up.',
+      dialogueOptions: [
+        'What dangers lurk in the deeper fissures?',
+        'Join our vanguard for the delve ahead.',
+      ],
+      canRecruit: true,
     ),
   ];
 
   for (final arch in archetypes) {
     Point? pos;
-    for (int attempts = 0; attempts < 30; attempts++) {
+    for (int attempts = 0; attempts < 35; attempts++) {
       final room = cave.rooms[rng.nextInt(cave.rooms.length)];
       final tx = room.x + 1 + rng.nextInt(max(1, room.w - 2));
       final ty = room.y + 1 + rng.nextInt(max(1, room.h - 2));
@@ -218,12 +262,12 @@ List<MapAnimal> generateCaveAnimals(DungeonMap cave, {Set<String> excluding = co
     ('hound', 'Blind Cave Hound', 'Pale silky hound bred by deep dwellers for cavern guidance.', 'Whine... The loyal hound presses its cool muzzle into your palm lovingly.', 'cave_hound'),
   ];
 
-  final count = 5 + rng.nextInt(4); // 5..8 animals
+  final count = 7 + rng.nextInt(4); // 7..10 animals
   for (int i = 0; i < count; i++) {
     final (species, name, flavor, dialogue, petId) = archetypes[i % archetypes.length];
-    for (int attempts = 0; attempts < 30; attempts++) {
-      final x = 2 + rng.nextInt(cave.width - 4);
-      final y = 2 + rng.nextInt(cave.height - 4);
+    for (int attempts = 0; attempts < 35; attempts++) {
+      final x = 3 + rng.nextInt(cave.width - 6);
+      final y = 3 + rng.nextInt(cave.height - 6);
       final k = '$x,$y';
       if (!taken.contains(k) && cave.tileAt(x, y).walkable) {
         taken.add(k);

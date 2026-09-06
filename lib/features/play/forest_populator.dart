@@ -78,10 +78,21 @@ List<MapProp> generateForestProps(DungeonMap forest) {
         ));
         taken.add(key);
         break;
+
+      case 6: // Fairy Glade
+        props.add(MapProp(
+          pos: center,
+          asset: 'assets/tiles/prop_shrine.png',
+          isSolid: false,
+          name: 'Fairy Ring Mushroom Shrine',
+          interactionText: 'A circle of glowing mushrooms whispering faint playful chimes in the woodland breeze.',
+        ));
+        taken.add(key);
+        break;
     }
   }
 
-  // Scattered forest ambiance (moss, boulders, logs)
+  // Scattered forest ambiance (campfires, logs, crystals, rubble)
   final candidateTiles = <Point>[];
   for (int y = 2; y < forest.height - 2; y++) {
     for (int x = 2; x < forest.width - 2; x++) {
@@ -96,20 +107,21 @@ List<MapProp> generateForestProps(DungeonMap forest) {
   candidateTiles.shuffle(rng);
 
   final forestAssets = [
-    'assets/tiles/prop_moss.png',
-    'assets/tiles/prop_rubble.png',
-    'assets/tiles/prop_campfire.png',
-    'assets/tiles/prop_crates.png',
+    ('assets/tiles/prop_campfire.png', 'Forest Trail Hearth', 'A small stone ring with glowing embers left by elven rangers.'),
+    ('assets/tiles/prop_crates.png', 'Forester Supply Cache', 'Waterproof timber crates containing dried venison and rope.'),
+    ('assets/tiles/prop_crystals.png', 'Wild Earth Geode', 'An earth crystal cluster jutting from mossy loam, shimmering with nature mana.'),
+    ('assets/tiles/prop_table.png', 'Fletcher Workbench', 'A flat log used for carving ash longbows and feathering arrows.'),
+    ('assets/tiles/prop_shrine.png', 'Mossy Wayshrine', 'A weathered stone shrine to the Green Lord, draped in blossoming ivy.'),
   ];
 
-  for (final p in candidateTiles.take(8)) {
-    final asset = forestAssets[rng.nextInt(forestAssets.length)];
+  for (final p in candidateTiles.take(10)) {
+    final (asset, name, desc) = forestAssets[rng.nextInt(forestAssets.length)];
     props.add(MapProp(
       pos: p,
       asset: asset,
-      isSolid: asset.contains('crates'),
-      name: asset.contains('moss') ? 'Wild Fern & Moss' : (asset.contains('campfire') ? 'Abandoned Fire Pit' : 'Forest Boulder'),
-      interactionText: 'Natural woodland scenery undisturbed by civilization.',
+      isSolid: asset.contains('crates') || asset.contains('crystals'),
+      name: name,
+      interactionText: desc,
     ));
     taken.add('${p.x},${p.y}');
   }
@@ -125,67 +137,32 @@ List<MapNpc> generateForestNpcs(DungeonMap forest, {Set<String> excluding = cons
   final archetypes = [
     MapNpc(
       id: 'npc_ranger_katherine',
-      name: 'Ranger Katherine',
-      role: 'Woodland Scout',
+      name: 'Captain Danica',
+      role: 'Woodland Ranger Captain',
       pos: const Point(0, 0),
       portraitAsset: 'assets/avatar/portraits/elf.png',
-      greeting: 'Halt, travelers! Tread lightly upon these trails. The canopy listens to every footstep.',
+      greeting: 'Halt, travelers! Tread lightly upon these ancient trails. The canopy listens to every footstep.',
       dialogueOptions: [
-        'What creatures roam this forest?',
-        'Have you seen any ancient ruins nearby?',
-        'Can you share tips for surviving in the wild?',
+        'What predators roam this woodland?',
+        'Have you spotted ancient elven ruins?',
+        'Would you join our company as ranger guide?',
       ],
-      healPower: 8,
+      healPower: 10,
       canRecruit: true,
     ),
     MapNpc(
       id: 'npc_druid_oakenshade',
-      name: 'Druid Oakenshade',
+      name: 'Archdruid Oakenshade',
       role: 'Circle of the Grove',
       pos: const Point(0, 0),
       portraitAsset: 'assets/avatar/portraits/human.png',
-      greeting: 'Nature’s grace be upon your path. The Leylines flow strong beneath the mossy stones.',
+      greeting: 'Nature’s grace be upon your path. The Leylines flow strong beneath the mossy roots.',
       dialogueOptions: [
-        'Teach me about the ancient stones.',
-        'May I receive your blessing?',
-        'I seek knowledge of the forest spirits.',
+        'Teach me the secrets of the ancient stones.',
+        'May our party receive your sacred blessing?',
+        'What dark corruptions threaten the forest?',
       ],
-      healPower: 15,
-      canRecruit: false,
-    ),
-    MapNpc(
-      id: 'npc_woodcutter_brant',
-      name: 'Brant the Woodcutter',
-      role: 'Timber Forester',
-      pos: const Point(0, 0),
-      portraitAsset: 'assets/avatar/portraits/dwarf.png',
-      greeting: 'Ho there! Good to see friendly faces out in the timber. Keep an eye out for timber wolves near the crags!',
-      dialogueOptions: [
-        'Are there wolves nearby?',
-        'Where does this river lead?',
-        'Do you need help hauling lumber?',
-      ],
-      healPower: 0,
-      canRecruit: false,
-    ),
-    MapNpc(
-      id: 'npc_traveling_merchant',
-      name: 'Volo the Peddler',
-      role: 'Wandering Caravan Merchant',
-      pos: const Point(0, 0),
-      portraitAsset: 'assets/avatar/portraits/halfling.png',
-      greeting: 'Greetings, fellow wayfarer! Fresh supplies straight from the capital markets!',
-      dialogueOptions: [
-        'What goods do you have for sale?',
-        'Any news from the neighboring settlements?',
-        'Do you trade for rare forest herbs?',
-      ],
-      shopItems: [
-        'Healing Salve (15 Gold)',
-        'Antitoxin Vial (25 Gold)',
-        'Traveler’s Cloak of Warmth (40 Gold)',
-        'Rations Pack (5 Gold)',
-      ],
+      healPower: 20,
       canRecruit: false,
     ),
     MapNpc(
@@ -196,19 +173,109 @@ List<MapNpc> generateForestNpcs(DungeonMap forest, {Set<String> excluding = cons
       portraitAsset: 'assets/avatar/portraits/gnome.png',
       greeting: 'Hehehe, few wander so deep into the willows! Sit by the fire, let the kettle brew.',
       dialogueOptions: [
-        'What herb remedies do you brew?',
-        'Tell me the history of this woods.',
-        'Can you teach me herb gathering?',
+        'Show me your forest salves and reagents.',
+        'Tell me the legends of the whispering canopy.',
+        'Can you brew an elixir of woodland stealth?',
+      ],
+      shopItems: [
+        'Elixir of Woodland Camouflage (30 Gold)',
+        'Herbal Poultice of Healing (20 Gold)',
+        'Tincture of Night Vision (35 Gold)',
+      ],
+      healPower: 15,
+      canRecruit: false,
+    ),
+    MapNpc(
+      id: 'npc_woodcutter_brant',
+      name: 'Brant the Woodcutter',
+      role: 'Master Forester',
+      pos: const Point(0, 0),
+      portraitAsset: 'assets/avatar/portraits/dwarf.png',
+      greeting: 'Ho there! Good to see friendly faces in the timber. Watch for grey wolves near the crags!',
+      dialogueOptions: [
+        'Where can we purchase sturdy camping timber?',
+        'Can you repair our wooden shields and shafts?',
+      ],
+      shopItems: [
+        'Ash Wood Tower Shield (40 Gold)',
+        'Hone-Forged Woodman Axe (35 Gold)',
+        'Bundle of Hardwood Torches (5 Gold)',
+      ],
+      canRecruit: true,
+    ),
+    MapNpc(
+      id: 'npc_traveling_merchant',
+      name: 'Volo the Peddler',
+      role: 'Wandering Caravan Merchant',
+      pos: const Point(0, 0),
+      portraitAsset: 'assets/avatar/portraits/halfling.png',
+      greeting: 'Greetings, fellow wayfarer! Fresh supplies and exotic curios straight from the capital markets!',
+      dialogueOptions: [
+        'Show me your caravan wares.',
+        'Any news from the neighboring cities?',
+      ],
+      shopItems: [
+        'Healing Salve (15 Gold)',
+        'Antitoxin Vial (25 Gold)',
+        'Traveler’s Cloak of Warmth (40 Gold)',
+        'Rations Pack (5 Gold)',
+      ],
+      canRecruit: false,
+    ),
+    MapNpc(
+      id: 'npc_fletcher_kira',
+      name: 'Kira Bowstring',
+      role: 'Elven Fletcher & Archer',
+      pos: const Point(0, 0),
+      portraitAsset: 'assets/avatar/portraits/elf.png',
+      greeting: 'Every arrow I fletch carries the blessing of the wind. Need your quiver restocked?',
+      dialogueOptions: [
+        'Show me your custom fletched arrows.',
+        'Can you teach me marksmanship fundamentals?',
+      ],
+      shopItems: [
+        'Quiver of Silvered Arrows (35 Gold)',
+        'Yew Composite Longbow (65 Gold)',
+        'Hawk-Feather Hunting Dagger (25 Gold)',
+      ],
+      canRecruit: true,
+    ),
+    MapNpc(
+      id: 'npc_trapper_olg',
+      name: 'Trapper Olg',
+      role: 'Wilderness Trapper',
+      pos: const Point(0, 0),
+      portraitAsset: 'assets/avatar/portraits/orc.png',
+      greeting: 'Olg knows every burrow and deer trail. Respect the wild beasts and they respect you.',
+      dialogueOptions: [
+        'What animal pelts do you have in stock?',
+        'Have you tracked any dangerous monsters nearby?',
+      ],
+      shopItems: [
+        'Warm Wolf-Fur Mantle (30 Gold)',
+        'Steel-Toothed Snare Trap (15 Gold)',
+      ],
+      canRecruit: false,
+    ),
+    MapNpc(
+      id: 'npc_bard_sylas',
+      name: 'Sylas Whisperbark',
+      role: 'Wandering Nature Bard',
+      pos: const Point(0, 0),
+      portraitAsset: 'assets/avatar/portraits/human.png',
+      greeting: 'The leaves whisper verses of ancient forgotten kingdoms. Listen closely to the wind!',
+      dialogueOptions: [
+        'Play a melody of woodland tranquility.',
+        'What secrets sleep under these roots?',
       ],
       healPower: 12,
-      canRecruit: false,
+      canRecruit: true,
     ),
   ];
 
   for (final arch in archetypes) {
-    // Pick walkable room or path
     Point? pos;
-    for (int attempts = 0; attempts < 30; attempts++) {
+    for (int attempts = 0; attempts < 35; attempts++) {
       final room = forest.rooms[rng.nextInt(forest.rooms.length)];
       final tx = room.x + 1 + rng.nextInt(max(1, room.w - 2));
       final ty = room.y + 1 + rng.nextInt(max(1, room.h - 2));
@@ -243,10 +310,10 @@ List<MapAnimal> generateForestAnimals(DungeonMap forest, {Set<String> excluding 
     ('hound', 'Forest Tracker Hound', 'Hardy hunting dog roaming ancient deer trails.', 'Woof-woof! A joyful bark rings out as the hound bounds around you.', 'forest_hound'),
   ];
 
-  final count = 5 + rng.nextInt(4); // 5..8 animals
+  final count = 8 + rng.nextInt(4); // 8..11 animals
   for (int i = 0; i < count; i++) {
     final (species, name, flavor, dialogue, petId) = archetypes[i % archetypes.length];
-    for (int attempts = 0; attempts < 30; attempts++) {
+    for (int attempts = 0; attempts < 35; attempts++) {
       final x = 2 + rng.nextInt(forest.width - 4);
       final y = 2 + rng.nextInt(forest.height - 4);
       final k = '$x,$y';

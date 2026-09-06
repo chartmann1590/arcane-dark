@@ -1,3 +1,4 @@
+import 'dart:math';
 import '../../domain/map/tile_types.dart';
 import 'tavern_populator.dart';
 
@@ -24,17 +25,21 @@ List<MapProp> generateCityProps(DungeonMap city) {
     Point(bazaar.centerX + 3, bazaar.centerY - 2),
     Point(bazaar.centerX - 2, bazaar.centerY + 3),
     Point(bazaar.centerX + 2, bazaar.centerY + 3),
+    Point(bazaar.centerX - 4, bazaar.centerY),
+    Point(bazaar.centerX + 4, bazaar.centerY),
   ];
   final stallNames = [
     'Silk & Spice Bazaar Stall',
     'Enchanted Curios & Relics Cart',
-    'Master Armorer''s Display Stall',
+    'Master Armorer\'s Display Stall',
     'Apothecary & Herbalist Canopy',
+    'Fine Gems & Jewelry Pavilion',
+    'Caravan Provisions & Rations Stand',
   ];
   for (int i = 0; i < stallOffsets.length; i++) {
     final pt = stallOffsets[i];
     final key = '${pt.x},${pt.y}';
-    if (!taken.contains(key) && city.tileAt(pt.x, pt.y).walkable) {
+    if (!taken.contains(key) && pt.x >= 0 && pt.x < city.width && pt.y >= 0 && pt.y < city.height && city.tileAt(pt.x, pt.y).walkable) {
       props.add(MapProp(
         pos: pt,
         asset: 'assets/tiles/prop_market_stall.png',
@@ -59,55 +64,84 @@ List<MapProp> generateCityProps(DungeonMap city) {
           pos: center,
           asset: 'assets/tiles/prop_throne.png',
           isSolid: true,
-          name: 'Governor''s Gilded Seat of Law',
+          name: 'Governor\'s Gilded Seat of Law',
           interactionText: 'An elevated velvet throne backed by the golden seal of the High Imperial Council.',
         ));
         taken.add(key);
         break;
 
-      case 2: // Grand Cathedral of the Sun
+      case 2: // Grand Cathedral
         props.add(MapProp(
           pos: center,
           asset: 'assets/tiles/prop_shrine.png',
           isSolid: true,
           name: 'High Radiant Altar of the Sun',
-          interactionText: 'A massive sunstone dais glowing with warm, divine luminescence. Holy blessings wash over all who pray.',
+          interactionText: 'A massive sunstone dais glowing with warm divine luminescence. Holy blessings wash over all who pray.',
         ));
         taken.add(key);
         break;
 
-      case 3: // City Watch Barracks & Armory
+      case 3: // Watch Barracks
         props.add(MapProp(
           pos: center,
           asset: 'assets/tiles/prop_weapon_rack.png',
           isSolid: true,
-          name: 'City Watch Heavy Weapon Rack',
-          interactionText: 'Sturdy iron racks bearing halberds, crossbows, and shields emblazoned with the city gryphon crest.',
+          name: 'Garrison Armory Weapon Rack',
+          interactionText: 'Rows of polished steel halberds, heavy tower shields, and crossbow quivers.',
         ));
         taken.add(key);
         break;
 
-      case 4: // Harbor Guild & Vaults
+      case 4: // Harbor Guild / Athenaeum
         props.add(MapProp(
           pos: center,
           asset: 'assets/tiles/prop_chest_gilded.png',
           isSolid: true,
-          name: 'Merchant Guild Bullion Coffer',
-          interactionText: 'A triple-locked iron chest used for customs tariffs and maritime trade bullion.',
+          name: 'Imperial Trade Guild Vault',
+          interactionText: 'Reinforced iron strongbox holding overseas trade manifestos and bags of silver coin.',
         ));
         taken.add(key);
         break;
 
-      case 5: // Canal Docks
+      case 5: // Docks or Gatehouse
         props.add(MapProp(
           pos: center,
-          asset: 'assets/tiles/prop_crates.png',
+          asset: 'assets/tiles/prop_cart.png',
           isSolid: true,
-          name: 'Harbor Shipping Crates & Barrels',
-          interactionText: 'Sealed wooden crates stamped with royal customs seals, containing silk, rum, and dried spices.',
+          name: 'Harbor Freight Wagon',
+          interactionText: 'A heavy transport wagon loaded with crates of salt fish, olive oil, and wine amphorae.',
         ));
         taken.add(key);
         break;
+
+      case 6: // Academy / Gatehouse
+        props.add(MapProp(
+          pos: center,
+          asset: 'assets/tiles/prop_crystals.png',
+          isSolid: true,
+          name: 'Artificer Arcane Conduit',
+          interactionText: 'A crystal resonator channeling raw arcane force for municipal enchanting.',
+        ));
+        taken.add(key);
+        break;
+    }
+  }
+
+  // Streetlamps along boulevards
+  final rng = Random(city.seed);
+  for (int i = 0; i < 8; i++) {
+    final lx = 4 + rng.nextInt(city.width - 8);
+    final ly = 4 + rng.nextInt(city.height - 8);
+    final k = '$lx,$ly';
+    if (!taken.contains(k) && city.tileAt(lx, ly) == TileType.floor) {
+      props.add(MapProp(
+        pos: Point(lx, ly),
+        asset: 'assets/tiles/prop_torch.png',
+        isSolid: false,
+        name: 'Metropolitan Streetlamp',
+        interactionText: 'A tall ornamental bronze lamppost illuminating the grand avenues.',
+      ));
+      taken.add(k);
     }
   }
 
@@ -116,129 +150,147 @@ List<MapProp> generateCityProps(DungeonMap city) {
 
 List<MapNpc> generateCityNpcs(DungeonMap city, {Set<String> excluding = const {}}) {
   final npcs = <MapNpc>[];
-  final occupied = Set<String>.from(excluding);
+  final rng = Random(city.seed ^ 0x43495459); // "CITY"
+  final taken = Set<String>.from(excluding);
 
-  final npcsToPlace = [
-    (
-      id: 'npc_balthazar',
-      name: 'Lord Balthazar',
-      role: 'Grand Merchant Prince',
-      roomIndex: 0,
-      dx: 1,
-      dy: -1,
-      portrait: 'assets/portraits/merchant.png',
-      greeting: 'Welcome, distinguished travelers! My bazaar carries wares from the highest astral spires to deepest dwarven mines. What do your coins desire today?',
-      dialogue: [
-        'What exotic curiosities do you have in stock?',
-        'Have you heard any rumors regarding the city docks?',
-        'I would like to trade some of my treasures.',
+  final archetypes = [
+    MapNpc(
+      id: 'npc_governor_aurelius',
+      name: 'Governor Aurelius',
+      role: 'City Magistrate & Governor',
+      pos: const Point(0, 0),
+      portraitAsset: 'assets/avatar/portraits/human.png',
+      greeting: 'Greetings, citizens and honored wanderers. The High Citadel maintains order and justice across all seven districts.',
+      dialogueOptions: [
+        'What civic matters require heroic assistance?',
+        'We seek the Council’s blessing for travel.',
       ],
-      shop: ['Potion of Superior Healing', 'Wand of Magic Missiles', 'Ring of Feather Falling', 'Elixir of True Sight', 'Boots of Speed'],
       canRecruit: false,
-      heal: 0,
     ),
-    (
-      id: 'npc_marcus',
-      name: 'Captain Marcus',
-      role: 'High Watch Commander',
-      roomIndex: 3,
-      dx: 0,
-      dy: 0,
-      portrait: 'assets/portraits/paladin.png',
-      greeting: 'Halt, citizens. The City Watch keeps order on these cobblestones. Keep your blades sheathed in the public square, and we will get along well.',
-      dialogue: [
-        'Are there any active bounties in the city?',
-        'We encountered suspicious movements near the canal water gate.',
-        'Would your steel march beside our party on dangerous quests?',
+    MapNpc(
+      id: 'npc_high_priestess_selene',
+      name: 'High Priestess Selene',
+      role: 'Sun Cathedral Luminary',
+      pos: const Point(0, 0),
+      portraitAsset: 'assets/avatar/portraits/elf.png',
+      greeting: 'May the warmth of the solar dawn illuminate your heart and banish the deep shadows.',
+      dialogueOptions: [
+        'We request your sacred healing for our wounded.',
+        'Tell us of the ancient prophecies.',
       ],
-      shop: ['Steel Heater Shield', 'Heavy Crossbow', 'Quiver of 20 Bolts', 'Lantern of Revealing'],
+      healPower: 30,
+      canRecruit: false,
+    ),
+    MapNpc(
+      id: 'npc_captain_darius',
+      name: 'Captain Darius',
+      role: 'City Watch High Commander',
+      pos: const Point(0, 0),
+      portraitAsset: 'assets/avatar/portraits/human.png',
+      greeting: 'Steel and vigil! Our guards patrol the avenues day and night. Keep the peace and you have our sword.',
+      dialogueOptions: [
+        'Are there rebel or criminal factions operating here?',
+        'Would you accompany our party as tactical vanguard?',
+      ],
       canRecruit: true,
-      heal: 0,
     ),
-    (
-      id: 'npc_malachi',
-      name: 'High Inquisitor Malachi',
-      role: 'Patriarch of the Sun',
-      roomIndex: 2,
-      dx: 0,
-      dy: 0,
-      portrait: 'assets/portraits/cleric.png',
-      greeting: 'May the undying dawn illuminate your path. In these troubled times, only the radiant light can shield the righteous from encroaching shadows.',
-      dialogue: [
-        'Please bestow the blessings of the Sun upon our party.',
-        'We seek guidance on ancient evil sealed beneath the realm.',
-        'Can your holy magic cleanse our afflictions?',
+    MapNpc(
+      id: 'npc_merchant_cassian',
+      name: 'Prince Cassian',
+      role: 'Grand Bazaar Merchant Prince',
+      pos: const Point(0, 0),
+      portraitAsset: 'assets/avatar/portraits/tiefling.png',
+      greeting: 'Ah, travelers with keen eyes and heavy purses! I trade in wonders from lands beyond the great oceans.',
+      dialogueOptions: [
+        'Show us your most exotic artifacts and rings.',
+        'What are the prevailing trade rumors in the city?',
       ],
-      shop: ['Potion of Greater Healing', 'Scroll of Revivify', 'Vial of Consecrated Holy Water', 'Sunstone Amulet'],
+      shopItems: [
+        'Ring of the Desert Falcon (+2 DEX, 90 Gold)',
+        'Vial of Phoenix Ash (Greater Healing, 60 Gold)',
+        'Cloak of Gilded Protection (+1 AC, 110 Gold)',
+        'Caravan Master Map of the Realm (25 Gold)',
+      ],
       canRecruit: false,
-      heal: 35,
     ),
-    (
-      id: 'npc_shadow_jack',
-      name: 'Slick Jack',
-      role: 'Thieves'' Guild Informant',
-      roomIndex: 0,
-      dx: -4,
-      dy: 2,
-      portrait: 'assets/portraits/rogue.png',
-      greeting: 'Psst! Keep your voice down and your eyes forward. If it exists in this metropolis—be it secret, lock, or contraband—Jack knows where it sleeps.',
-      dialogue: [
-        'What whispers circulate through the city underground?',
-        'Do you have tools for picking difficult lock mechanisms?',
-        'Join our crew; we need someone who treads silently.',
+    MapNpc(
+      id: 'npc_artificer_bram',
+      name: 'Master Artificer Bram',
+      role: 'Gnomish Automaton Engineer',
+      pos: const Point(0, 0),
+      portraitAsset: 'assets/avatar/portraits/gnome.png',
+      greeting: 'Click-whir! Mind your fingers near the gear-presses. Looking for clockwork munitions or enchanted gadgets?',
+      dialogueOptions: [
+        'What wondrous mechanical devices do you sell?',
+        'Can you reinforce our party\'s technological tools?',
       ],
-      shop: ['Masterwork Thieves'' Tools', 'Potion of Invisibility', 'Smokebomb of Shadow', 'Poisoner''s Vial'],
+      shopItems: [
+        'Clockwork Decoy Trap (40 Gold)',
+        'Arcane Shock Grenade (3d6 Lightning, 50 Gold)',
+        'Masterwork Lockpick Set (+2 Sleight of Hand, 35 Gold)',
+      ],
       canRecruit: true,
-      heal: 0,
     ),
-    (
-      id: 'npc_kaelen',
-      name: 'Harbor Master Kaelen',
-      role: 'Canal Fleet Quartermaster',
-      roomIndex: 5,
-      dx: 0,
-      dy: 0,
-      portrait: 'assets/portraits/ranger.png',
-      greeting: 'Ahoy! The tide brought in fresh cargo from the eastern straits this morning. Watch your step by the wet timbers.',
-      dialogue: [
-        'When does the next trade galleon depart?',
-        'Any rumors of aquatic beasts lurking in the canals?',
-        'I need maritime supplies and rope.',
+    MapNpc(
+      id: 'npc_guildmaster_fiona',
+      name: 'Guildmaster Fiona',
+      role: 'Harbor Guild Warden',
+      pos: const Point(0, 0),
+      portraitAsset: 'assets/avatar/portraits/dwarf.png',
+      greeting: 'Cargo in, cargo out! If you\'ve arrived by canal skiff, mind the mooring ropes and pay your tariffs.',
+      dialogueOptions: [
+        'Any overseas shipping vessels hiring guards?',
+        'Can we buy nautical provisions?',
       ],
-      shop: ['50ft Silk Rope & Grapple', 'Mariner''s Compass', 'Spyglass of Farsight', 'Spiced Rum Rations'],
+      shopItems: [
+        'Preserved Deep-Sea Rations (10 Gold)',
+        'Mariner’s Waterproof Pouch (15 Gold)',
+      ],
       canRecruit: false,
-      heal: 0,
+    ),
+    MapNpc(
+      id: 'npc_urchin_pip',
+      name: 'Pip the Shadow',
+      role: 'Rooftop Courier & Rogue',
+      pos: const Point(0, 0),
+      portraitAsset: 'assets/avatar/portraits/halfling.png',
+      greeting: 'Hey! You walk loud for someone exploring the canal districts. Drop a shiny coin and I’ll tell you who’s watching you.',
+      dialogueOptions: [
+        'Here’s two silver coins. Who’s following us?',
+        'Keep your eyes open, Pip.',
+      ],
+      canRecruit: false,
+    ),
+    MapNpc(
+      id: 'npc_knight_lucian',
+      name: 'Sir Lucian of the Sun',
+      role: 'Knight Errant & Champion',
+      pos: const Point(0, 0),
+      portraitAsset: 'assets/avatar/portraits/human.png',
+      greeting: 'My lance is pledged to honor and the defense of the defenseless. Where lies our next quest for justice?',
+      dialogueOptions: [
+        'Ride with us to cleanse the dark dungeons of the realm!',
+        'What chivalric code guides your sword?',
+      ],
+      canRecruit: true,
     ),
   ];
 
-  for (final data in npcsToPlace) {
-    if (data.roomIndex < city.rooms.length) {
-      final room = city.rooms[data.roomIndex];
-      final targetX = (room.centerX + data.dx).clamp(room.x + 1, room.x + room.w - 2);
-      final targetY = (room.centerY + data.dy).clamp(room.y + 1, room.y + room.h - 2);
-      final key = '$targetX,$targetY';
-
-      if (!occupied.contains(key) && city.tileAt(targetX, targetY).walkable) {
-        npcs.add(MapNpc(
-          id: data.id,
-          name: data.name,
-          role: data.role,
-          pos: Point(targetX, targetY),
-          portraitAsset: data.portrait,
-          greeting: data.greeting,
-          dialogueOptions: data.dialogue,
-          shopItems: data.shop,
-          healPower: data.heal,
-          canRecruit: data.canRecruit,
-          maxHp: 20,
-          currentHp: 20,
-          armorClass: 14,
-          attackBonus: 4,
-          damageDice: 8,
-          attackName: 'Steel Thrust',
-        ));
-        occupied.add(key);
+  for (final arch in archetypes) {
+    Point? pos;
+    for (int attempts = 0; attempts < 35; attempts++) {
+      final room = city.rooms[rng.nextInt(city.rooms.length)];
+      final tx = room.x + 1 + rng.nextInt(max(1, room.w - 2));
+      final ty = room.y + 1 + rng.nextInt(max(1, room.h - 2));
+      final k = '$tx,$ty';
+      if (!taken.contains(k) && city.tileAt(tx, ty).walkable) {
+        pos = Point(tx, ty);
+        taken.add(k);
+        break;
       }
+    }
+    if (pos != null) {
+      npcs.add(arch.copyWith(pos: pos));
     }
   }
 
@@ -247,76 +299,38 @@ List<MapNpc> generateCityNpcs(DungeonMap city, {Set<String> excluding = const {}
 
 List<MapAnimal> generateCityAnimals(DungeonMap city, {Set<String> excluding = const {}}) {
   final animals = <MapAnimal>[];
-  final occupied = Set<String>.from(excluding);
+  final rng = Random(city.seed ^ 0x43414E49); // "CANI"
+  final taken = Set<String>.from(excluding);
 
-  final animalDefs = [
-    (
-      id: 'city_warhorse',
-      name: 'Clydesdale Carriage Horse',
-      species: 'horse',
-      roomIndex: 0,
-      dx: 4,
-      dy: 3,
-      desc: 'A magnificent, muscled draught horse with braided mane, standing calmly by a market carriage.',
-    ),
-    (
-      id: 'city_mastiff',
-      name: 'Watch Mastiff "Goliath"',
-      species: 'dog',
-      roomIndex: 3,
-      dx: -2,
-      dy: 2,
-      desc: 'A broad-chested guard mastiff wearing a studded leather collar, vigilantly sniffing every passerby.',
-    ),
-    (
-      id: 'city_cat',
-      name: 'Market Tabby "Miska"',
-      species: 'cat',
-      roomIndex: 0,
-      dx: -3,
-      dy: -3,
-      desc: 'A clever striped street cat perched atop a crate of smoked fish, preening its whiskers in the sun.',
-    ),
-    (
-      id: 'city_pigeon',
-      name: 'Sun White Dove',
-      species: 'bird',
-      roomIndex: 2,
-      dx: 2,
-      dy: -2,
-      desc: 'A peaceful white dove cooing softly from the cathedral balustrade, pecking at offering crumbs.',
-    ),
-    (
-      id: 'city_rat',
-      name: 'Canal Skitterer',
-      species: 'rat',
-      roomIndex: 5,
-      dx: 1,
-      dy: 2,
-      desc: 'A plump canal rat chewing on an old rope splice near the water gate.',
-    ),
+  final archetypes = [
+    ('hound', 'Imperial Guard Mastiff', 'Armored guard hound standing tall beside the watchtower gate.', 'Woof! A deep, disciplined bark as the hound leans against your armor.', 'city_mastiff'),
+    ('cat', 'Canal Wharves Calico', 'Sleek harbor mouser patrolling fish barrels and cargo quays.', 'Purr... The cat arches its back gracefully and accepts a stroke.', 'city_cat'),
+    ('bird', 'Courier Carrier Pigeon', 'Trained homing pigeon perched on the guildhall mail ledge.', 'Coo! A cooing dove tilts its head, inspecting you calmly.', 'city_pigeon'),
+    ('horse', 'Governor\'s White Stallion', 'Magnificent snow-white courser caparisoned in royal silk.', 'Neigh! The stallion snorts proudly and stamps an iron shoe on the stone.', 'city_stallion'),
+    ('dog', 'Market Terrier', 'Energetic terrier darting playfully between bazaar canopies.', 'Yip-yip! The spirited pup wags its tail eagerly at your party.', 'city_terrier'),
   ];
 
-  for (final def in animalDefs) {
-    if (def.roomIndex < city.rooms.length) {
-      final room = city.rooms[def.roomIndex];
-      final targetX = (room.centerX + def.dx).clamp(room.x + 1, room.x + room.w - 2);
-      final targetY = (room.centerY + def.dy).clamp(room.y + 1, room.y + room.h - 2);
-      final key = '$targetX,$targetY';
-
-      if (!occupied.contains(key) && city.tileAt(targetX, targetY).walkable) {
+  final count = 7 + rng.nextInt(4); // 7..10 animals
+  for (int i = 0; i < count; i++) {
+    final (species, name, flavor, dialogue, petId) = archetypes[i % archetypes.length];
+    for (int attempts = 0; attempts < 35; attempts++) {
+      final x = 3 + rng.nextInt(city.width - 6);
+      final y = 3 + rng.nextInt(city.height - 6);
+      final k = '$x,$y';
+      if (!taken.contains(k) && city.tileAt(x, y).walkable) {
+        taken.add(k);
         animals.add(MapAnimal(
-          id: def.id,
-          name: def.name,
-          species: def.species,
-          pos: Point(targetX, targetY),
-          iconType: def.species,
-          flavor: def.desc,
-          dialogue: 'The ${def.name} observes your party with keen attention.',
+          id: 'city_animal_${species}_$i',
+          name: name,
+          species: species,
+          pos: Point(x, y),
+          iconType: species,
+          flavor: flavor,
+          dialogue: dialogue,
           canAdopt: true,
-          petId: def.id,
+          petId: petId,
         ));
-        occupied.add(key);
+        break;
       }
     }
   }

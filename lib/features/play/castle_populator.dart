@@ -1,3 +1,4 @@
+import 'dart:math';
 import '../../domain/map/tile_types.dart';
 import 'tavern_populator.dart';
 
@@ -82,6 +83,24 @@ List<MapProp> generateCastleProps(DungeonMap castle) {
     }
   }
 
+  // Sconces & Torches along corridors
+  final rng = Random(castle.seed);
+  for (int i = 0; i < 6; i++) {
+    final lx = 4 + rng.nextInt(castle.width - 8);
+    final ly = 4 + rng.nextInt(castle.height - 8);
+    final k = '$lx,$ly';
+    if (!taken.contains(k) && castle.tileAt(lx, ly) == TileType.floor) {
+      props.add(MapProp(
+        pos: Point(lx, ly),
+        asset: 'assets/tiles/prop_torch.png',
+        isSolid: false,
+        name: 'Royal Sconce Torch',
+        interactionText: 'A gold-trimmed sconce holding an enchanted smokeless torch.',
+      ));
+      taken.add(k);
+    }
+  }
+
   return props;
 }
 
@@ -97,14 +116,14 @@ List<MapNpc> generateCastleNpcs(DungeonMap castle, {Set<String> excluding = cons
       roomIndex: 0,
       dx: 0,
       dy: 0,
-      portrait: 'assets/portraits/paladin.png',
+      portrait: 'assets/avatar/portraits/human.png',
       greeting: 'Greetings, champions of the realm. Shadows gather on our frontier borders. If your steel and spells are loyal to the crown, honor and glory await you.',
       dialogue: [
         'We pledge our swords to the defense of the realm, Your Majesty.',
         'What threats currently endanger the kingdom?',
         'Does the Crown grant boons or royal charters for our quests?',
       ],
-      shop: ['Crown Royal Pardon Writ', 'Amulet of the King''s Guard', 'Royal Elixir of Fortitude', 'Banner of Valoria'],
+      shop: ['Crown Royal Pardon Writ', 'Amulet of the King\'s Guard', 'Royal Elixir of Fortitude', 'Banner of Valoria'],
       canRecruit: false,
       heal: 50,
     ),
@@ -115,7 +134,7 @@ List<MapNpc> generateCastleNpcs(DungeonMap castle, {Set<String> excluding = cons
       roomIndex: 3,
       dx: 0,
       dy: 0,
-      portrait: 'assets/portraits/fighter.png',
+      portrait: 'assets/avatar/portraits/human.png',
       greeting: 'Stand at attention! We tolerate no weak links in the castle garrison. If you seek masterwork arms or battle training, speak up.',
       dialogue: [
         'Show me the masterwork armaments forged for the Kingsguard.',
@@ -133,7 +152,7 @@ List<MapNpc> generateCastleNpcs(DungeonMap castle, {Set<String> excluding = cons
       roomIndex: 2,
       dx: 0,
       dy: 0,
-      portrait: 'assets/portraits/wizard.png',
+      portrait: 'assets/avatar/portraits/elf.png',
       greeting: 'Mind the Leyline circle! Magic is not a toy for reckless squires. But for those with inquisitive minds, the secrets of the cosmos are limitless.',
       dialogue: [
         'Teach me spells to harness arcane flame and warding barriers.',
@@ -151,7 +170,7 @@ List<MapNpc> generateCastleNpcs(DungeonMap castle, {Set<String> excluding = cons
       roomIndex: 1,
       dx: 1,
       dy: 1,
-      portrait: 'assets/portraits/bard.png',
+      portrait: 'assets/avatar/portraits/human.png',
       greeting: 'Welcome to the Feast Hall, honored guests! Fresh venison pastries and vintage honey-wine are prepared. Pray do not spill upon the imperial rugs.',
       dialogue: [
         'Who are the notable guests dining at court tonight?',
@@ -169,15 +188,32 @@ List<MapNpc> generateCastleNpcs(DungeonMap castle, {Set<String> excluding = cons
       roomIndex: 5,
       dx: 0,
       dy: 0,
-      portrait: 'assets/portraits/rogue.png',
+      portrait: 'assets/avatar/portraits/halfling.png',
       greeting: 'Jingle, jangle, bells go ring! The wisest fool before the King! Want to hear a joke, or perhaps see three daggers juggle in the air?',
       dialogue: [
         'Tell us a riddle about the castle treasury.',
         'Are you faster with your wit or your daggers?',
         'Join our adventuring party; we could use some cheer.',
       ],
-      shop: ['Jester''s Lucky Bells', 'Smoke Powder Pellets', 'Deck of Illusionary Cards'],
+      shop: ['Jester\'s Lucky Bells', 'Smoke Powder Pellets', 'Deck of Illusionary Cards'],
       canRecruit: true,
+      heal: 0,
+    ),
+    (
+      id: 'npc_herald_cassian',
+      name: 'Herald Cassian',
+      role: 'Imperial Royal Herald',
+      roomIndex: 0,
+      dx: 2,
+      dy: 1,
+      portrait: 'assets/avatar/portraits/tiefling.png',
+      greeting: 'Hear ye, hear ye! Proclamations of the Crown! Bounties are declared on dungeon lords throughout the provinces.',
+      dialogue: [
+        'What bounties are currently open?',
+        'Announce our deeds to the King!',
+      ],
+      shop: ['Royal Bounty Seal (50 Gold)', 'Map of Known Dragon Lairs (75 Gold)'],
+      canRecruit: false,
       heal: 0,
     ),
   ];
@@ -199,14 +235,8 @@ List<MapNpc> generateCastleNpcs(DungeonMap castle, {Set<String> excluding = cons
           greeting: data.greeting,
           dialogueOptions: data.dialogue,
           shopItems: data.shop,
-          healPower: data.heal,
           canRecruit: data.canRecruit,
-          maxHp: 24,
-          currentHp: 24,
-          armorClass: 16,
-          attackBonus: 5,
-          damageDice: 10,
-          attackName: 'Royal Strike',
+          healPower: data.heal,
         ));
         occupied.add(key);
       }
@@ -218,67 +248,37 @@ List<MapNpc> generateCastleNpcs(DungeonMap castle, {Set<String> excluding = cons
 
 List<MapAnimal> generateCastleAnimals(DungeonMap castle, {Set<String> excluding = const {}}) {
   final animals = <MapAnimal>[];
-  final occupied = Set<String>.from(excluding);
+  final rng = Random(castle.seed ^ 0x4B494E47); // "KING"
+  final taken = Set<String>.from(excluding);
 
-  final animalDefs = [
-    (
-      id: 'castle_warhorse',
-      name: 'Royal Armored Charger "Sovereign"',
-      species: 'horse',
-      roomIndex: 5,
-      dx: -2,
-      dy: 1,
-      desc: 'A magnificent black warhorse outfitted in silver barding, pawing the courtyard stones with regal power.',
-    ),
-    (
-      id: 'castle_hound',
-      name: 'King''s Bloodhound "Bane"',
-      species: 'dog',
-      roomIndex: 0,
-      dx: 2,
-      dy: 2,
-      desc: 'A noble brindle hunting hound resting faithfully beside the dais of the Lion Throne.',
-    ),
-    (
-      id: 'castle_falcon',
-      name: 'Royal Gyrfalcon "Zephyr"',
-      species: 'bird',
-      roomIndex: 2,
-      dx: -2,
-      dy: -1,
-      desc: 'A sharp-eyed white hunting falcon perched on a velvet-covered iron arm inside the Arcane Spire.',
-    ),
-    (
-      id: 'castle_peacock',
-      name: 'Imperial White Peacock',
-      species: 'bird',
-      roomIndex: 1,
-      dx: -2,
-      dy: 1,
-      desc: 'An exotic white peacock fanning dazzling plumage across the marble terrace of the Banquet Hall.',
-    ),
+  final archetypes = [
+    ('hound', 'Royal War Mastiff', 'Heavy armored hound resting at the King\'s feet.', 'Woof! The great war mastiff wags its tail slowly and allows you to scratch behind its ear.', 'castle_hound'),
+    ('owl', 'Courtyard Hunting Falcon', 'Sharp-eyed hunting bird perched on a velvet glove post.', 'Screeech! The falcon ruffles its feathers and fixes you with an alert amber gaze.', 'castle_falcon'),
+    ('horse', 'Armored War Destrier', 'Massive warhorse in barded plate armor standing in the courtyard.', 'Snort! The destrier tosses its mane proudly, iron shoes clattering on the courtyard flagstones.', 'castle_horse'),
+    ('cat', 'Royal Hearth Mouser', 'Sleek grey cat basking in the warm fireplace glow of the feast hall.', 'Purr... The mouser rolls over onto its back, purring contentedly.', 'castle_cat'),
   ];
 
-  for (final def in animalDefs) {
-    if (def.roomIndex < castle.rooms.length) {
-      final room = castle.rooms[def.roomIndex];
-      final targetX = (room.centerX + def.dx).clamp(room.x + 1, room.x + room.w - 2);
-      final targetY = (room.centerY + def.dy).clamp(room.y + 1, room.y + room.h - 2);
-      final key = '$targetX,$targetY';
-
-      if (!occupied.contains(key) && castle.tileAt(targetX, targetY).walkable) {
+  final count = 6 + rng.nextInt(3); // 6..8 animals
+  for (int i = 0; i < count; i++) {
+    final (species, name, flavor, dialogue, petId) = archetypes[i % archetypes.length];
+    for (int attempts = 0; attempts < 30; attempts++) {
+      final x = 4 + rng.nextInt(castle.width - 8);
+      final y = 4 + rng.nextInt(castle.height - 8);
+      final k = '$x,$y';
+      if (!taken.contains(k) && castle.tileAt(x, y).walkable) {
+        taken.add(k);
         animals.add(MapAnimal(
-          id: def.id,
-          name: def.name,
-          species: def.species,
-          pos: Point(targetX, targetY),
-          iconType: def.species,
-          flavor: def.desc,
-          dialogue: 'The ${def.name} stands regally beside the castle halls.',
+          id: 'castle_animal_${species}_$i',
+          name: name,
+          species: species,
+          pos: Point(x, y),
+          iconType: species,
+          flavor: flavor,
+          dialogue: dialogue,
           canAdopt: true,
-          petId: def.id,
+          petId: petId,
         ));
-        occupied.add(key);
+        break;
       }
     }
   }

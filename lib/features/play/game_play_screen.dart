@@ -34,6 +34,8 @@ import '../../widgets/tactical_combat_sheet.dart';
 import '../../widgets/npc_interaction_sheet.dart';
 import '../../widgets/tv_cast_sheet.dart';
 import '../../widgets/world_map_sheet.dart';
+import '../../widgets/fast_travel_sequence_dialog.dart';
+import '../../domain/world_location.dart';
 import 'castle_populator.dart';
 import 'cave_populator.dart';
 import 'city_populator.dart';
@@ -4668,7 +4670,48 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
       campaign: campaign,
       currentEnvironment: currentEnv,
       onFastTravel: (realmId, realmName) {
-        _travelToEnvironment(realmId, realmName);
+        _startFastTravelSequence(realmId, realmName);
+      },
+    );
+  }
+
+  void _startFastTravelSequence(String targetEnv, String regionTitle) {
+    final campaign = ref.read(campaignProvider);
+    final currentEnv = _currentEnvironment ?? 'dungeon';
+    final originLoc = WorldLocationCatalog.getById(currentEnv) ?? WorldLocationCatalog.locations.first;
+    final destLoc = WorldLocationCatalog.getById(targetEnv) ?? WorldLocationCatalog.locations.first;
+    final chars = ref.read(savedCharactersProvider);
+    final activePet = _getActivePet(campaign, chars);
+
+    List<PartyMemberStatus> party = campaign?.party ?? [];
+    if (party.isEmpty) {
+      if (chars.isNotEmpty) {
+        party = chars.map((c) => PartyMemberStatus.fromCharacter(c)).toList();
+      } else {
+        party = [
+          PartyMemberStatus(
+            characterId: 'hero_lead',
+            name: 'Valgar Bloodscale',
+            raceLabel: 'Dragonborn',
+            classLabel: 'Paladin',
+            persona: 'Honorable defender of the realm.',
+            abilities: const AbilityScores(str: 16, dex: 12, con: 15, int_: 10, wis: 13, cha: 14),
+            hp: 16,
+            maxHp: 16,
+          ),
+        ];
+      }
+    }
+
+    FastTravelSequenceDialog.show(
+      context: context,
+      origin: originLoc,
+      destination: destLoc,
+      party: party,
+      savedCharacters: chars,
+      activePet: activePet,
+      onComplete: () {
+        _travelToEnvironment(targetEnv, regionTitle);
       },
     );
   }

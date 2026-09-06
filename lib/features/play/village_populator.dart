@@ -18,7 +18,7 @@ List<MapProp> generateVillageProps(DungeonMap village) {
   ));
   taken.add('${centerFountain.x},${centerFountain.y}');
 
-  // 2. Thematic Shop & Building Props
+  // 2. Thematic Shop & Building Props for every building
   for (final room in village.rooms) {
     if (room.id == 0) continue;
     final center = Point(room.centerX, room.centerY);
@@ -80,37 +80,100 @@ List<MapProp> generateVillageProps(DungeonMap village) {
         ));
         taken.add(key);
         break;
+
+      case 6: // Bakery / Mill
+        props.add(MapProp(
+          pos: center,
+          asset: 'assets/tiles/prop_crates.png',
+          isSolid: true,
+          name: 'Bakery Flour Sacks & Dough Table',
+          interactionText: 'Wooden troughs filled with milled barley flour and loaves sprinkled with sesame.',
+        ));
+        taken.add(key);
+        break;
+
+      case 7: // Woodcutter / Guild
+        props.add(MapProp(
+          pos: center,
+          asset: 'assets/tiles/prop_table.png',
+          isSolid: true,
+          name: 'Carpenter Bench & Timber Saws',
+          interactionText: 'Honed adzes, planes, and fragrant blocks of freshly cut cedar and oak timber.',
+        ));
+        taken.add(key);
+        break;
+
+      case 8: // Weaver / Cottage
+        props.add(MapProp(
+          pos: center,
+          asset: 'assets/tiles/prop_rug.png',
+          isSolid: false,
+          name: 'Woven Floral Carpet',
+          interactionText: 'A richly dyed wool rug depicting golden falcons gliding over emerald meadows.',
+        ));
+        taken.add(key);
+        break;
+
+      case 9: // Homestead / Caravanserai
+        props.add(MapProp(
+          pos: center,
+          asset: 'assets/tiles/prop_chair.png',
+          isSolid: true,
+          name: 'Hearth Rocking Chair & Table',
+          interactionText: 'A cozy fireside chair beside a smoking pipe and a bowl of fresh orchard plums.',
+        ));
+        taken.add(key);
+        break;
     }
   }
 
-  // 3. Market Square Stalls, Benches & Cider Barrels along streets
-  final plazaSpots = <Point>[
-    Point(townSquare.centerX - 2, townSquare.centerY - 2),
-    Point(townSquare.centerX + 2, townSquare.centerY - 2),
-    Point(townSquare.centerX - 2, townSquare.centerY + 2),
-    Point(townSquare.centerX + 2, townSquare.centerY + 2),
-    Point(townSquare.centerX, townSquare.centerY - 3),
-    Point(townSquare.centerX, townSquare.centerY + 3),
+  // 3. Market Square Stalls & Bazaar Wares around central plaza
+  final plazaOffsets = [
+    (-2, -2), (2, -2), (-2, 2), (2, 2),
+    (0, -3), (0, 3), (-3, 0), (3, 0),
   ];
 
   final marketProps = [
-    ('assets/tiles/prop_crates.png', 'Market Fruit Stall', 'Wooden crates piled with orchard apples, turnips, and crusty bread.'),
-    ('assets/tiles/prop_barrel.png', 'Cider Barrel Stand', 'Freshly tapped barrels of Spiced Autumn Cider.'),
-    ('assets/tiles/prop_table.png', 'Merchant Display Table', 'Wares on velvet cloths: silver jewelry, sewing needles, and wool yarns.'),
-    ('assets/tiles/prop_torch.png', 'Town Street Lamppost', 'An ornamental iron lamppost keeping the cobblestones well-lit.'),
+    ('assets/tiles/prop_market_stall.png', 'Market Produce Stall', 'Wooden crates piled high with crisp orchard apples, pumpkins, and herbs.'),
+    ('assets/tiles/prop_barrel.png', 'Autumn Cider Casks', 'Tapped barrels of golden spiced cider fragrant with cinnamon and cloves.'),
+    ('assets/tiles/prop_crates.png', 'Merchant Trade Crates', 'Imported bolts of velvet, ceramic spice jars, and silver trade trinkets.'),
+    ('assets/tiles/prop_torch.png', 'Town Iron Streetlamp', 'A sturdy cast-iron streetlamp keeping the cobblestone avenues warmly illuminated.'),
+    ('assets/tiles/prop_cart.png', 'Farmstead Hay Wagon', 'A sturdy wooden cart stacked with sweet-smelling mountain timothy hay.'),
+    ('assets/tiles/prop_table.png', 'Jeweler Display Table', 'Wares on green velvet: copper rings, polished amber pendants, and cut river gems.'),
+    ('assets/tiles/prop_shrine.png', 'Wayfarer Blessing Shrine', 'A modest stone shrine dedicated to safe journeys on the realm highways.'),
+    ('assets/tiles/prop_torch.png', 'Square Lantern Post', 'Ornamental lantern beacon guiding travelers through the town square.'),
   ];
 
-  for (int i = 0; i < plazaSpots.length; i++) {
-    final p = plazaSpots[i];
+  for (int i = 0; i < plazaOffsets.length; i++) {
+    final (dx, dy) = plazaOffsets[i];
+    final p = Point(townSquare.centerX + dx, townSquare.centerY + dy);
     final k = '${p.x},${p.y}';
-    if (!taken.contains(k)) {
+    if (!taken.contains(k) && p.x >= 1 && p.x < village.width - 1 && p.y >= 1 && p.y < village.height - 1) {
       final (asset, name, desc) = marketProps[i % marketProps.length];
       props.add(MapProp(
         pos: p,
         asset: asset,
-        isSolid: asset.contains('crates') || asset.contains('table'),
+        isSolid: !asset.contains('torch') && !asset.contains('rug'),
         name: name,
         interactionText: desc,
+      ));
+      taken.add(k);
+    }
+  }
+
+  // 4. Street Lamps along thoroughfares
+  final rng = Random(village.seed);
+  for (int i = 0; i < 6; i++) {
+    final lx = 4 + rng.nextInt(village.width - 8);
+    final ly = 4 + rng.nextInt(village.height - 8);
+    final k = '$lx,$ly';
+    if (!taken.contains(k) && village.tileAt(lx, ly) == TileType.floor) {
+      props.add(MapProp(
+        pos: Point(lx, ly),
+        asset: 'assets/tiles/prop_torch.png',
+        isSolid: false,
+        name: 'Village Lamppost',
+        interactionText: 'A warm streetlamp warding the road against night shadows.',
       ));
       taken.add(k);
     }
@@ -229,15 +292,91 @@ List<MapNpc> generateVillageNpcs(DungeonMap village, {Set<String> excluding = co
     MapNpc(
       id: 'npc_urchin_toby',
       name: 'Toby Swiftfoot',
-      role: 'Town Urchin & Lookout',
+      role: 'Town Urchin & Scout',
       pos: const Point(0, 0),
       portraitAsset: 'assets/avatar/portraits/halfling.png',
-      greeting: 'Psst! Hey mister, want to know where the smugglers stash their loot behind the tavern? Won’t cost ya much!',
+      greeting: 'Psst! Want to know the safest shortcut through the Whispering Woods? Won\'t cost ya more than a silver coin!',
       dialogueOptions: [
-        'Here’s a gold piece. What’s the rumor?',
-        'Be careful, kid. Don’t get in trouble.',
+        'Here’s a silver piece. What’s the secret route?',
+        'Stay out of danger, little one.',
       ],
       canRecruit: false,
+    ),
+    MapNpc(
+      id: 'npc_scholar_alden',
+      name: 'Master Alden',
+      role: 'Arcane Scholar & Antiquarian',
+      pos: const Point(0, 0),
+      portraitAsset: 'assets/avatar/portraits/gnome.png',
+      greeting: 'Greetings, seeker of arcane mysteries! I study the ley line resonances crossing through our township.',
+      dialogueOptions: [
+        'Do you have spell scrolls for sale?',
+        'What ancient lore can you decipher for us?',
+      ],
+      shopItems: [
+        'Scroll of Identify (40 Gold)',
+        'Scroll of Mage Armor (50 Gold)',
+        'Potion of Mind Shielding (60 Gold)',
+      ],
+      canRecruit: true,
+    ),
+    MapNpc(
+      id: 'npc_farmer_barnaby',
+      name: 'Barnaby Greenhollow',
+      role: 'Pasture Farmer',
+      pos: const Point(0, 0),
+      portraitAsset: 'assets/avatar/portraits/halfling.png',
+      greeting: 'Fine weather for the harvest! If you\'re heading out past the south orchard, keep an ear out for prowling wolves.',
+      dialogueOptions: [
+        'Have wolves been troubling your herd?',
+        'Can you spare fresh fruit for our travel pack?',
+      ],
+      canRecruit: false,
+    ),
+    MapNpc(
+      id: 'npc_clothier_sarah',
+      name: 'Sarah Silverstitch',
+      role: 'Master Weaver & Clothier',
+      pos: const Point(0, 0),
+      portraitAsset: 'assets/avatar/portraits/human.png',
+      greeting: 'Warm wool cloaks and weather-waxed traveler capes! A cold night on the road will freeze unprepared wanderers.',
+      dialogueOptions: [
+        'Show me your winter cloaks and gear.',
+        'Can you mend torn leather armor?',
+      ],
+      shopItems: [
+        'Weather-Waxed Traveler Cloak (15 Gold)',
+        'Embroidered Silk Sash (25 Gold)',
+        'Reinforced Leather Bracers (35 Gold)',
+      ],
+      canRecruit: false,
+    ),
+    MapNpc(
+      id: 'npc_priest_donald',
+      name: 'Brother Donald',
+      role: 'Sun Temple Priest',
+      pos: const Point(0, 0),
+      portraitAsset: 'assets/avatar/portraits/human.png',
+      greeting: 'May the radiant dawn preserve your fellowship. Receive a sacred blessing before facing the darkness.',
+      dialogueOptions: [
+        'We seek a blessing for our journey.',
+        'Can you mend our wounded companions?',
+      ],
+      healPower: 25,
+      canRecruit: false,
+    ),
+    MapNpc(
+      id: 'npc_veteran_kaelen',
+      name: 'Sergeant Kaelen',
+      role: 'Veteran Gatekeeper',
+      pos: const Point(0, 0),
+      portraitAsset: 'assets/avatar/portraits/dwarf.png',
+      greeting: 'Halt, travelers! Road to the capital is rife with goblin ambushes. Keep your blades loose in their scabbards.',
+      dialogueOptions: [
+        'We can assist with patrol duties.',
+        'Would you join our company as vanguard?',
+      ],
+      canRecruit: true,
     ),
   ];
 
@@ -246,7 +385,7 @@ List<MapNpc> generateVillageNpcs(DungeonMap village, {Set<String> excluding = co
     final room = (i < village.rooms.length) ? village.rooms[i] : village.rooms[rng.nextInt(village.rooms.length)];
 
     Point? pos;
-    for (int attempts = 0; attempts < 30; attempts++) {
+    for (int attempts = 0; attempts < 35; attempts++) {
       final tx = room.x + 1 + rng.nextInt(max(1, room.w - 2));
       final ty = room.y + 1 + rng.nextInt(max(1, room.h - 2));
       final k = '$tx,$ty';
@@ -276,12 +415,14 @@ List<MapAnimal> generateVillageAnimals(DungeonMap village, {Set<String> excludin
     ('horse', 'Stall Draft Horse', 'Sturdy draft horse tied near the blacksmith forge.', 'Neigh! The horse snorts warmly and accepts a friendly pat.', 'village_horse'),
     ('cow', 'Pasture Dairy Cow', 'Gentle brown cow grazing quietly near town borders.', 'Moo... The cow blinks slowly and munches peacefully on clover.', 'village_cow'),
     ('rat', 'Cellar Whisker Rat', 'Quick-witted little rat foraging crumbs behind the bakery.', 'Squeak! The tiny rat pauses, wiggling its whiskers curiously.', 'village_rat'),
+    ('dog', 'Shepherd Collie', 'Eager herding dog keeping sheep safely inside the fences.', 'Arf-arf! The collie circles you happily and panting.', 'village_shepherd'),
+    ('cat', 'Hearth Calico Cat', 'Plump sleeping cat curled up beside the tavern stone steps.', 'Mew... It stretches its paws contentedly.', 'village_calico'),
   ];
 
-  final count = 6 + rng.nextInt(3); // 6..8 animals
+  final count = 8 + rng.nextInt(4); // 8..11 animals
   for (int i = 0; i < count; i++) {
     final (species, name, flavor, dialogue, petId) = archetypes[i % archetypes.length];
-    for (int attempts = 0; attempts < 30; attempts++) {
+    for (int attempts = 0; attempts < 35; attempts++) {
       final x = 3 + rng.nextInt(village.width - 6);
       final y = 3 + rng.nextInt(village.height - 6);
       final k = '$x,$y';
