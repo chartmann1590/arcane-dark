@@ -9,6 +9,8 @@ import '../../domain/map/cave_generator.dart';
 import '../../domain/map/dungeon_generator.dart';
 import '../../domain/map/forest_generator.dart';
 import '../../domain/map/village_generator.dart';
+import '../../domain/map/city_generator.dart';
+import '../../domain/map/castle_generator.dart';
 import '../../domain/map/tile_types.dart' as m;
 import '../../providers/campaign_provider.dart';
 import '../../providers/character_provider.dart';
@@ -31,7 +33,9 @@ import '../../widgets/inventory_sheet.dart';
 import '../../widgets/tactical_combat_sheet.dart';
 import '../../widgets/npc_interaction_sheet.dart';
 import '../../widgets/tv_cast_sheet.dart';
+import 'castle_populator.dart';
 import 'cave_populator.dart';
+import 'city_populator.dart';
 import 'dungeon_populator.dart';
 import 'forest_populator.dart';
 import 'iso_map_view.dart';
@@ -222,6 +226,32 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
         for (final p in _props) '${p.pos.x},${p.pos.y}',
       });
       _animals = generateCaveAnimals(_dungeon, excluding: {
+        '${playerPos.x},${playerPos.y}',
+        for (final p in _props) '${p.pos.x},${p.pos.y}',
+        for (final n in _npcs) '${n.pos.x},${n.pos.y}',
+      });
+      _traps.clear();
+      _revealedTraps.clear();
+    } else if (env == 'city') {
+      _dungeon = CityGenerator().generate(seed: _seed, width: 36, height: 36);
+      _props = generateCityProps(_dungeon);
+      _npcs = generateCityNpcs(_dungeon, excluding: {
+        for (final p in _props) '${p.pos.x},${p.pos.y}',
+      });
+      _animals = generateCityAnimals(_dungeon, excluding: {
+        '${playerPos.x},${playerPos.y}',
+        for (final p in _props) '${p.pos.x},${p.pos.y}',
+        for (final n in _npcs) '${n.pos.x},${n.pos.y}',
+      });
+      _traps.clear();
+      _revealedTraps.clear();
+    } else if (env == 'castle') {
+      _dungeon = CastleGenerator().generate(seed: _seed, width: 36, height: 36);
+      _props = generateCastleProps(_dungeon);
+      _npcs = generateCastleNpcs(_dungeon, excluding: {
+        for (final p in _props) '${p.pos.x},${p.pos.y}',
+      });
+      _animals = generateCastleAnimals(_dungeon, excluding: {
         '${playerPos.x},${playerPos.y}',
         for (final p in _props) '${p.pos.x},${p.pos.y}',
         for (final n in _npcs) '${n.pos.x},${n.pos.y}',
@@ -1789,6 +1819,14 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
       _showCrystalDialog(prop);
     } else if (prop.asset.contains('crates')) {
       _showCratesDialog(prop);
+    } else if (prop.asset.contains('stall') || prop.asset.contains('market')) {
+      _showMarketStallShopDialog(prop);
+    } else if (prop.asset.contains('throne')) {
+      _showThroneDialog(prop);
+    } else if (prop.asset.contains('fountain') || prop.asset.contains('well')) {
+      _showFountainDialog(prop);
+    } else if (prop.asset.contains('weapon_rack')) {
+      _showWeaponRackDialog(prop);
     } else if (prop.asset.contains('campfire')) {
       _triggerCampfireBanter();
     } else if (prop.asset.contains('torch')) {
@@ -1813,6 +1851,305 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
     } else {
       _send('I investigate the ${prop.asset.split('/').last.replaceAll('prop_', '').replaceAll('.png', '')} thoroughly.');
     }
+  }
+
+  void _showMarketStallShopDialog(MapProp prop) {
+    final campaign = ref.read(campaignProvider);
+    final wares = [
+      ('Potion of Greater Healing', 'Restores 4d4+4 Hit Points', 60, Icons.local_hospital_rounded, const Color(0xFFE53935)),
+      ('Scroll of Magic Missile', 'Auto-hits for 3d4+3 Force damage', 75, Icons.auto_awesome_rounded, const Color(0xFF7E57C2)),
+      ('Elven Cloak of Shadows', 'Grants Advantage on Stealth checks', 120, Icons.shield_rounded, const Color(0xFF2E7D32)),
+      ('Spiced Caravan Rations', 'Nutritious provisions for long journeys', 20, Icons.restaurant_rounded, const Color(0xFFFFB300)),
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF13151F),
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Center(
+            child: Container(width: 36, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2))),
+          ),
+          const SizedBox(height: 14),
+          Row(children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(color: const Color(0xFFFFB300).withValues(alpha: 0.2), borderRadius: BorderRadius.circular(10)),
+              child: const Icon(Icons.storefront_rounded, color: Color(0xFFFFB300), size: 24),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('BAZAAR MERCHANT STALL', style: GoogleFonts.cinzel(fontSize: 15, fontWeight: FontWeight.w800, color: Colors.white)),
+                Text(prop.name ?? 'A bustling merchant canopy displaying rare wares.', style: GoogleFonts.ibmPlexSans(fontSize: 12, color: ArcaneTheme.textSecondary)),
+              ]),
+            ),
+          ]),
+          const SizedBox(height: 16),
+          Text('AVAILABLE GOODS & SUPPLIES', style: GoogleFonts.cinzel(fontSize: 11, fontWeight: FontWeight.w700, color: const Color(0xFFFFD54F))),
+          const SizedBox(height: 8),
+          for (final (name, desc, price, icon, color) in wares)
+            Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: ArcaneTheme.surfaceElevated,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.white10),
+              ),
+              child: Row(children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(color: color.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(8)),
+                  child: Icon(icon, color: color, size: 20),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(name, style: GoogleFonts.cinzel(fontSize: 12.5, fontWeight: FontWeight.w700, color: Colors.white)),
+                    Text(desc, style: GoogleFonts.ibmPlexSans(fontSize: 11, color: Colors.white60)),
+                  ]),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFFB300),
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    minimumSize: Size.zero,
+                  ),
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    final hero = campaign?.party.firstOrNull;
+                    if (hero != null) {
+                      ref.read(campaignProvider.notifier).addItem(hero.characterId, name);
+                    }
+                    AudioService.instance.playSuccess();
+                    _checkSidequestProgression(atPos: prop.pos, eventType: 'shop');
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Purchased $name for $price GP!', style: GoogleFonts.cinzel(fontWeight: FontWeight.w700, color: Colors.black)),
+                        backgroundColor: const Color(0xFFFFB300),
+                        duration: const Duration(seconds: 3),
+                      ),
+                    );
+                    _send('I purchase $name from the merchant stall.');
+                  },
+                  child: Text('$price GP', style: GoogleFonts.cinzel(fontSize: 11, fontWeight: FontWeight.w800)),
+                ),
+              ]),
+            ),
+        ]),
+      ),
+    );
+  }
+
+  void _showThroneDialog(MapProp prop) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF13151F),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(color: const Color(0xFFFFD700).withValues(alpha: 0.2), borderRadius: BorderRadius.circular(10)),
+              child: const Icon(Icons.shield_rounded, color: Color(0xFFFFD700), size: 24),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('THE GOLDEN LION THRONE', style: GoogleFonts.cinzel(fontSize: 15, fontWeight: FontWeight.w800, color: Colors.white)),
+                Text('The sovereign seat of imperial power.', style: GoogleFonts.ibmPlexSans(fontSize: 12, color: ArcaneTheme.textSecondary)),
+              ]),
+            ),
+          ]),
+          const SizedBox(height: 16),
+          Text('You stand before the exalted dais of the realm. How does the party approach the throne?', style: GoogleFonts.ibmPlexSans(fontSize: 13, color: Colors.white70)),
+          const SizedBox(height: 16),
+          Row(children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.record_voice_over_rounded, size: 16),
+                label: const Text('Petition Crown'),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  _checkSidequestProgression(atPos: prop.pos, eventType: 'petition');
+                  _send('I step forward with regal etiquette to petition the sovereign on behalf of our party.');
+                },
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.star_rounded, size: 16),
+                label: const Text('Kneel for Favor'),
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFFD700), foregroundColor: Colors.black),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  final campaign = ref.read(campaignProvider);
+                  if (campaign != null && campaign.party.isNotEmpty) {
+                    ref.read(campaignProvider.notifier).updateHp(campaign.party.first.characterId, 10);
+                  }
+                  AudioService.instance.playSuccess();
+                  _checkSidequestProgression(atPos: prop.pos, eventType: 'blessing');
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Royal Favor granted! +10 HP restored to the vanguard.', style: GoogleFonts.cinzel(fontWeight: FontWeight.w700, color: Colors.black)),
+                      backgroundColor: const Color(0xFFFFD700),
+                      duration: const Duration(seconds: 3),
+                    ),
+                  );
+                  _send('I bend the knee before the throne in allegiance. The court herald proclaims royal favor upon our companions (+10 HP)!');
+                },
+              ),
+            ),
+          ]),
+        ]),
+      ),
+    );
+  }
+
+  void _showFountainDialog(MapProp prop) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF13151F),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(color: const Color(0xFF42A5F5).withValues(alpha: 0.2), borderRadius: BorderRadius.circular(10)),
+              child: const Icon(Icons.water_drop_rounded, color: Color(0xFF42A5F5), size: 24),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('TOWN SQUARE FOUNTAIN', style: GoogleFonts.cinzel(fontSize: 15, fontWeight: FontWeight.w800, color: Colors.white)),
+                Text('Pure mountain spring water spouts from carved limestone.', style: GoogleFonts.ibmPlexSans(fontSize: 12, color: ArcaneTheme.textSecondary)),
+              ]),
+            ),
+          ]),
+          const SizedBox(height: 16),
+          Text('Silver coins gleam through the clear water. Travelers make wishes here for luck and safe journeys.', style: GoogleFonts.ibmPlexSans(fontSize: 13, color: Colors.white70)),
+          const SizedBox(height: 16),
+          Row(children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.local_drink_rounded, size: 16),
+                label: const Text('Drink Spring Water'),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  AudioService.instance.playTap();
+                  _send('I scoop up a draught of cool spring water from the fountain, feeling thoroughly revitalized.');
+                },
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.toll_rounded, size: 16),
+                label: const Text('Toss a Coin'),
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF42A5F5)),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  final campaign = ref.read(campaignProvider);
+                  if (campaign != null && campaign.party.isNotEmpty) {
+                    ref.read(campaignProvider.notifier).updateHp(campaign.party.first.characterId, 6);
+                  }
+                  AudioService.instance.playSuccess();
+                  _checkSidequestProgression(atPos: prop.pos, eventType: 'fountain');
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Fountain Wish made! +6 HP restored to the party.', style: GoogleFonts.cinzel(fontWeight: FontWeight.w700, color: Colors.white)),
+                      backgroundColor: const Color(0xFF1976D2),
+                      duration: const Duration(seconds: 3),
+                    ),
+                  );
+                  _send('I flip a shiny coin into the fountain and make a wish for victory and fortune (+6 HP)!');
+                },
+              ),
+            ),
+          ]),
+        ]),
+      ),
+    );
+  }
+
+  void _showWeaponRackDialog(MapProp prop) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF13151F),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(color: const Color(0xFFFF7043).withValues(alpha: 0.2), borderRadius: BorderRadius.circular(10)),
+              child: const Icon(Icons.hardware_rounded, color: Color(0xFFFF7043), size: 24),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('MASTERWORK WEAPON RACK', style: GoogleFonts.cinzel(fontSize: 15, fontWeight: FontWeight.w800, color: Colors.white)),
+                Text('Sharpened armaments forged in castle and city armories.', style: GoogleFonts.ibmPlexSans(fontSize: 12, color: ArcaneTheme.textSecondary)),
+              ]),
+            ),
+          ]),
+          const SizedBox(height: 16),
+          Text('Racks of halberds, broadswords, and heater shields stand ready for battle. What will the party take?', style: GoogleFonts.ibmPlexSans(fontSize: 13, color: Colors.white70)),
+          const SizedBox(height: 16),
+          Row(children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.build_rounded, size: 16),
+                label: const Text('Hone Blades'),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  AudioService.instance.playTap();
+                  _checkSidequestProgression(atPos: prop.pos, eventType: 'armory');
+                  _send('I take a whetstone and hone our weapons to razor sharpness (+1 Attack bonus next combat).');
+                },
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.shield_rounded, size: 16),
+                label: const Text('Equip Blade'),
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF7043)),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  final campaign = ref.read(campaignProvider);
+                  final hero = campaign?.party.firstOrNull;
+                  if (hero != null) {
+                    ref.read(campaignProvider.notifier).addItem(hero.characterId, 'Tempered Bastard Sword (+1)');
+                  }
+                  AudioService.instance.playSuccess();
+                  _checkSidequestProgression(atPos: prop.pos, eventType: 'armory');
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Equipped Tempered Bastard Sword (+1)!', style: GoogleFonts.cinzel(fontWeight: FontWeight.w700, color: Colors.white)),
+                      backgroundColor: const Color(0xFFD84315),
+                      duration: const Duration(seconds: 3),
+                    ),
+                  );
+                  _send('I equip a masterwork tempered bastard sword from the armory rack.');
+                },
+              ),
+            ),
+          ]),
+        ]),
+      ),
+    );
   }
 
   void _showAltarDialog(MapProp prop) {
@@ -2868,7 +3205,7 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
       return 'Fascinating runes on this parchment...';
     } else if (asset.contains('chest')) {
       return 'An iron coffer! Checking for triggers...';
-    } else if (asset.contains('altar')) {
+    } else if (asset.contains('altar') || asset.contains('shrine')) {
       return 'I feel divine warmth radiating here.';
     } else if (asset.contains('brazier') || asset.contains('torch')) {
       return 'The flames hold the dark at bay.';
@@ -2878,6 +3215,14 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
       return 'Resonating with planar mana!';
     } else if (asset.contains('crates')) {
       return 'Munitions left by previous delves.';
+    } else if (asset.contains('throne')) {
+      return 'The high throne commands majestic awe!';
+    } else if (asset.contains('fountain') || asset.contains('well')) {
+      return 'Fresh spring water! A welcome respite.';
+    } else if (asset.contains('stall') || asset.contains('market')) {
+      return 'Bazaar wares! Let\'s barter for supplies.';
+    } else if (asset.contains('weapon_rack')) {
+      return 'Finely balanced steel on these racks.';
     }
     return 'Inspecting the stonework closely.';
   }
@@ -2885,7 +3230,44 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
   String _getCompanionBanter(PartyMemberStatus companion) {
     final race = companion.raceLabel.toLowerCase();
     final role = companion.classLabel.toLowerCase();
+    final env = _currentEnvironment ?? 'dungeon';
     final rng = Random();
+
+    if (rng.nextDouble() < 0.40) {
+      if (env == 'city') {
+        const cityBanter = [
+          'Keep your coin purse close; these alleys have eyes.',
+          'The smell of spiced pastries from the bazaar...',
+          'Look at those soaring cathedral spires.',
+          'The city watch seems on edge today.',
+        ];
+        return cityBanter[rng.nextInt(cityBanter.length)];
+      } else if (env == 'castle') {
+        const castleBanter = [
+          'Stand tall before the Kingsguard.',
+          'Royal tapestries... ancient battles woven in silk.',
+          'The throne room is solemn and magnificent.',
+          'The armorers forged excellent steel here.',
+        ];
+        return castleBanter[rng.nextInt(castleBanter.length)];
+      } else if (env == 'forest') {
+        const forestBanter = [
+          'The canopy is thick here. Listen for woodland beasts.',
+          'Footprints in the damp moss leading toward the river.',
+          'Primal nature magic hums in the ancient roots.',
+          'The air smells of pine and morning dew.',
+        ];
+        return forestBanter[rng.nextInt(forestBanter.length)];
+      } else if (env == 'cave') {
+        const caveBanter = [
+          'Watch your footing on the wet cavern shale.',
+          'Those glowing geodes pulse with deep subterranean heat.',
+          'Subterranean chasm winds... keep torches lit.',
+          'Ancient rock fissures run deep into the Underdark.',
+        ];
+        return caveBanter[rng.nextInt(caveBanter.length)];
+      }
+    }
 
     if (race.contains('dwarf')) {
       const dwarfBanter = [
@@ -4052,6 +4434,8 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
   void _showMinimap() {
     final env = _currentEnvironment ?? 'dungeon';
     final title = switch (env) {
+      'city' => 'HIGHGATE METROPOLIS MAP',
+      'castle' => 'VALORIA CITADEL FORTRESS MAP',
       'forest' => 'FOREST WILDERNESS MAP',
       'village' => 'VILLAGE & MARKET MAP',
       'cave' => 'CRYSTAL CAVERNS MAP',
@@ -4169,6 +4553,28 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
         for (final p in newProps) '${p.pos.x},${p.pos.y}',
         for (final n in newNpcs) '${n.pos.x},${n.pos.y}',
       });
+    } else if (targetEnv == 'city') {
+      newDungeon = CityGenerator().generate(seed: targetSeed, width: 36, height: 36);
+      newProps = generateCityProps(newDungeon);
+      newNpcs = generateCityNpcs(newDungeon, excluding: {
+        for (final p in newProps) '${p.pos.x},${p.pos.y}',
+      });
+      newAnimals = generateCityAnimals(newDungeon, excluding: {
+        '${newDungeon.entryPoint.x},${newDungeon.entryPoint.y}',
+        for (final p in newProps) '${p.pos.x},${p.pos.y}',
+        for (final n in newNpcs) '${n.pos.x},${n.pos.y}',
+      });
+    } else if (targetEnv == 'castle') {
+      newDungeon = CastleGenerator().generate(seed: targetSeed, width: 36, height: 36);
+      newProps = generateCastleProps(newDungeon);
+      newNpcs = generateCastleNpcs(newDungeon, excluding: {
+        for (final p in newProps) '${p.pos.x},${p.pos.y}',
+      });
+      newAnimals = generateCastleAnimals(newDungeon, excluding: {
+        '${newDungeon.entryPoint.x},${newDungeon.entryPoint.y}',
+        for (final p in newProps) '${p.pos.x},${p.pos.y}',
+        for (final n in newNpcs) '${n.pos.x},${n.pos.y}',
+      });
     } else if (targetEnv == 'tavern') {
       newDungeon = DungeonGenerator().generate(seed: targetSeed, width: 34, height: 34);
       newNpcs = generateTavernNpcs(newDungeon);
@@ -4269,6 +4675,24 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
         color: const Color(0xFFE5A93C),
         desc: 'Cobblestone avenues, town square water fountain, blacksmith forge, merchant houses, guards, and townsfolk.',
         features: const ['Cobblestone Streets', 'Town Fountain', 'Blacksmith & Houses', 'Villagers & Dogs'],
+      ),
+      (
+        id: 'city',
+        name: 'Highgate Metropolis',
+        type: 'Grand City & Harbor Canal',
+        icon: Icons.apartment_rounded,
+        color: const Color(0xFFE5A93C),
+        desc: 'Broad paved avenues, canal waterways with stone bridges, bustling Grand Bazaar stalls, and Cathedral of the Sun.',
+        features: const ['Canal Waterway', 'Bazaar Stalls', 'Sun Cathedral', 'Merchant Prince & Watch'],
+      ),
+      (
+        id: 'castle',
+        name: 'Valoria Citadel',
+        type: 'Royal Fortress & Stronghold',
+        icon: Icons.fort_rounded,
+        color: const Color(0xFFAB47BC),
+        desc: 'Deep moat, stone drawbridge, sovereign Lion Throne, Kingsguard armory, feast banquet hall, and high wizard spire.',
+        features: const ['Moat & Drawbridge', 'Golden Throne', 'Royal Banquet Hall', 'King & Kingsguard'],
       ),
       (
         id: 'cave',
@@ -4650,6 +5074,8 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
                 child: Builder(builder: (context) {
                   final env = _currentEnvironment ?? 'dungeon';
                   final (envName, envIcon, envColor) = switch (env) {
+                    'city' => ('City', Icons.apartment_rounded, const Color(0xFFE5A93C)),
+                    'castle' => ('Castle', Icons.fort_rounded, const Color(0xFFAB47BC)),
                     'forest' => ('Woods', Icons.forest_rounded, const Color(0xFF4E9A51)),
                     'village' => ('Village', Icons.location_city_rounded, const Color(0xFFE5A93C)),
                     'cave' => ('Cavern', Icons.terrain_rounded, const Color(0xFF5B8DEF)),
@@ -4782,6 +5208,8 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
                 child: Builder(builder: (context) {
                   final env = _currentEnvironment ?? 'dungeon';
                   final (envName, envIcon, envColor) = switch (env) {
+                    'city' => ('City', Icons.apartment_rounded, const Color(0xFFE5A93C)),
+                    'castle' => ('Castle', Icons.fort_rounded, const Color(0xFFAB47BC)),
                     'forest' => ('Woods', Icons.forest_rounded, const Color(0xFF4E9A51)),
                     'village' => ('Village', Icons.location_city_rounded, const Color(0xFFE5A93C)),
                     'cave' => ('Cavern', Icons.terrain_rounded, const Color(0xFF5B8DEF)),
@@ -5230,10 +5658,19 @@ class _DungeonMinimapPainter extends CustomPainter {
     final cellW = size.width / dungeon.width;
     final cellH = size.height / dungeon.height;
 
-    final wallPaint = Paint()..color = environment == 'forest' ? const Color(0xFF0F1E12) : (environment == 'village' ? const Color(0xFF1F1B14) : const Color(0xFF140F22));
+    final wallPaint = Paint()..color = switch (environment) {
+      'forest' => const Color(0xFF0F1E12),
+      'village' => const Color(0xFF1F1B14),
+      'city' => const Color(0xFF241D17),
+      'castle' => const Color(0xFF120E1E),
+      'cave' => const Color(0xFF0C1019),
+      _ => const Color(0xFF140F22),
+    };
     final visitedFloorPaint = Paint()..color = switch (environment) {
       'forest' => const Color(0xFF2E5E35),
       'village' => const Color(0xFF5C4E38),
+      'city' => const Color(0xFF6B5845),
+      'castle' => const Color(0xFF45395F),
       'cave' => const Color(0xFF2E4562),
       'tavern' => const Color(0xFF6B4226),
       _ => const Color(0xFF4A3B69),
@@ -5241,6 +5678,8 @@ class _DungeonMinimapPainter extends CustomPainter {
     final unvisitedFloorPaint = Paint()..color = switch (environment) {
       'forest' => const Color(0xFF152A18),
       'village' => const Color(0xFF282218),
+      'city' => const Color(0xFF2F251C),
+      'castle' => const Color(0xFF231A33),
       'cave' => const Color(0xFF162231),
       'tavern' => const Color(0xFF332012),
       _ => const Color(0xFF221A38),

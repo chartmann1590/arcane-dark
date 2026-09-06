@@ -220,8 +220,24 @@ class CampaignNotifier extends StateNotifier<CampaignState?> {
         m.position = null;
       }
     }
+    final newSidequests = CampaignState.sidequestsForEnvironment(environment, cur.seed);
+    for (final nsq in newSidequests) {
+      if (!cur.sidequests.any((sq) => sq.id == nsq.id)) {
+        cur.sidequests.add(nsq);
+      }
+    }
     state = cur;
     _persist();
+  }
+
+  void addSidequest(Sidequest sq) {
+    final cur = state;
+    if (cur == null) return;
+    if (!cur.sidequests.any((s) => s.id == sq.id)) {
+      cur.sidequests.add(sq);
+      state = cur;
+      _persist();
+    }
   }
 
 

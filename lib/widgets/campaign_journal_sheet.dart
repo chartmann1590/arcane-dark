@@ -220,7 +220,109 @@ class _CampaignJournalSheetState extends State<CampaignJournalSheet> with Single
               isComplete: q.status == 'completed',
             ),
         ],
+
+        if (widget.campaign.sidequests.isNotEmpty) ...[
+          const SizedBox(height: 18),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('REALM SIDEQUESTS & BOUNTIES', style: GoogleFonts.cinzel(fontSize: 12, fontWeight: FontWeight.w700, color: ArcaneTheme.secondary)),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(color: ArcaneTheme.secondary.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(6)),
+                child: Text(
+                  '${widget.campaign.sidequests.where((s) => s.isCompleted).length}/${widget.campaign.sidequests.length} Completed',
+                  style: GoogleFonts.cinzel(fontSize: 10, fontWeight: FontWeight.w700, color: ArcaneTheme.secondary),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          for (final sq in widget.campaign.sidequests)
+            _sidequestItem(sq),
+        ],
       ],
+    );
+  }
+
+  Widget _sidequestItem(Sidequest sq) {
+    final catIcon = switch (sq.category) {
+      'combat' => Icons.sports_kabaddi_rounded,
+      'puzzle' => Icons.extension_rounded,
+      'scavenge' => Icons.inventory_2_rounded,
+      _ => Icons.explore_rounded,
+    };
+    final catColor = switch (sq.category) {
+      'combat' => const Color(0xFFE53935),
+      'puzzle' => const Color(0xFFAB47BC),
+      'scavenge' => const Color(0xFFFFB300),
+      _ => const Color(0xFF42A5F5),
+    };
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: ArcaneTheme.surfaceElevated,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: sq.isCompleted ? Colors.green.withValues(alpha: 0.5) : Colors.white12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(color: catColor.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(6)),
+                child: Icon(catIcon, size: 14, color: catColor),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  sq.title,
+                  style: GoogleFonts.cinzel(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: sq.isCompleted ? Colors.white60 : Colors.white,
+                    decoration: sq.isCompleted ? TextDecoration.lineThrough : null,
+                  ),
+                ),
+              ),
+              Icon(
+                sq.isCompleted ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+                color: sq.isCompleted ? Colors.greenAccent : Colors.white30,
+                size: 18,
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            sq.objective,
+            style: GoogleFonts.ibmPlexSans(fontSize: 12, color: Colors.white70),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: Colors.amber.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(5),
+              border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.stars_rounded, size: 12, color: Colors.amberAccent),
+                const SizedBox(width: 4),
+                Text(
+                  sq.rewardDescription,
+                  style: GoogleFonts.cinzel(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.amberAccent),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 

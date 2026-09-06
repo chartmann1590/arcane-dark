@@ -206,7 +206,9 @@ class IsoMapView extends StatelessWidget {
     final isVillage = environment == 'village';
     final isCave = environment == 'cave';
     final isTavern = environment == 'tavern';
-    final canFog = !isTavern && !isVillage;
+    final isCity = environment == 'city';
+    final isCastle = environment == 'castle';
+    final canFog = !isTavern && !isVillage && !isCity && !isCastle;
 
     final tileAsset = switch (tile) {
       m.TileType.wall => isTavern ? 'assets/tiles/wall_tavern.png' : 'assets/tiles/wall.png',
@@ -299,6 +301,8 @@ class IsoMapView extends StatelessWidget {
                         isTavern: isTavern,
                         isVillage: isVillage,
                         isCave: isCave,
+                        isCity: isCity,
+                        isCastle: isCastle,
                         torchGlow: lightIntensity,
                         isVisited: isVisited,
                         canFog: canFog,
@@ -438,6 +442,7 @@ class IsoMapView extends StatelessWidget {
     final isStall = prop.asset.contains('stall') || prop.asset.contains('market');
     final isShrine = prop.asset.contains('shrine');
     final isCart = prop.asset.contains('cart') || prop.asset.contains('wagon');
+    final isThrone = prop.asset.contains('throne');
 
     Offset propDown = Offset.zero;
 
@@ -482,6 +487,8 @@ class IsoMapView extends StatelessWidget {
       childWidget = const _ShrinePropWidget();
     } else if (isCart) {
       childWidget = const _CartPropWidget();
+    } else if (isThrone) {
+      childWidget = const _ThronePropWidget();
     } else {
       childWidget = Image.asset(
         prop.asset,
@@ -1268,6 +1275,8 @@ class _Iso3DWallPainter extends CustomPainter {
   final bool isTavern;
   final bool isVillage;
   final bool isCave;
+  final bool isCity;
+  final bool isCastle;
   final double torchGlow;
   final bool isVisited;
   final bool canFog;
@@ -1279,6 +1288,8 @@ class _Iso3DWallPainter extends CustomPainter {
     this.isTavern = false,
     this.isVillage = false,
     this.isCave = false,
+    this.isCity = false,
+    this.isCastle = false,
     this.torchGlow = 0.0,
     this.isVisited = true,
     this.canFog = true,
@@ -1301,6 +1312,16 @@ class _Iso3DWallPainter extends CustomPainter {
       leftBase = const Color(0xFF2C1D13);
       rightBase = const Color(0xFF4A3222);
       topBase = const Color(0xFF382618);
+    } else if (isCastle) {
+      // Imperial dark granite fortress
+      leftBase = const Color(0xFF1E222A);
+      rightBase = const Color(0xFF343B48);
+      topBase = const Color(0xFF282F3B);
+    } else if (isCity) {
+      // Dressed ashlar limestone
+      leftBase = const Color(0xFF8A7968);
+      rightBase = const Color(0xFFA69A89);
+      topBase = const Color(0xFF988C7B);
     } else if (isVillage) {
       // Medieval timber & warm stucco
       leftBase = const Color(0xFFB8A692);
@@ -1417,6 +1438,27 @@ class _Iso3DWallPainter extends CustomPainter {
       canvas.drawLine(Offset(w / 2, tileH + rise), Offset(w, tileH / 2), timberPaint);
     }
 
+    // Royal heraldic pennant overlay for castle fortress walls
+    if (isCastle && !isDoor && rise > 14.0) {
+      final bannerPaint = Paint()..color = const Color(0xFF4A148C).withValues(alpha: 0.85);
+      final goldTrim = Paint()..color = const Color(0xFFFFD700).withValues(alpha: 0.85)..strokeWidth = 1.0;
+      final bx = w / 2 + 7;
+      final by = tileH + 4;
+      canvas.drawRect(Rect.fromLTWH(bx, by, 9, (rise - 8).clamp(8.0, 20.0)), bannerPaint);
+      canvas.drawLine(Offset(bx, by), Offset(bx + 9, by), goldTrim);
+      canvas.drawLine(Offset(bx + 4.5, by + 1), Offset(bx + 4.5, by + (rise - 9).clamp(7.0, 19.0)), goldTrim);
+    }
+
+    // Ornate bronze sconce overlay for metropolis city walls
+    if (isCity && !isDoor && rise > 14.0) {
+      final bronzePaint = Paint()..color = const Color(0xFFCD7F32).withValues(alpha: 0.9)..strokeWidth = 1.5;
+      final glowPaint = Paint()..color = const Color(0xFFFFD54F).withValues(alpha: 0.75);
+      final sx = w / 2 + 10;
+      final sy = tileH + rise * 0.45;
+      canvas.drawLine(Offset(sx, sy), Offset(sx + 4, sy - 4), bronzePaint);
+      canvas.drawCircle(Offset(sx + 4, sy - 5), 2.0, glowPaint);
+    }
+
     // Door hardware overlay on front-right face if door
     if (isDoor) {
       final ironPaint = Paint()..color = const Color(0xFF1E212B);
@@ -1502,6 +1544,8 @@ class _Iso3DWallPainter extends CustomPainter {
       old.isTavern != isTavern ||
       old.isVillage != isVillage ||
       old.isCave != isCave ||
+      old.isCity != isCity ||
+      old.isCastle != isCastle ||
       old.torchGlow != torchGlow ||
       old.isVisited != isVisited ||
       old.canFog != canFog ||
@@ -1707,6 +1751,37 @@ class _IsoFloorReliefPainter extends CustomPainter {
         ..strokeWidth = 0.8;
       canvas.drawLine(Offset(w * 0.3, h * 0.3), Offset(w * 0.5, h * 0.5), crackPaint);
       canvas.drawLine(Offset(w * 0.5, h * 0.5), Offset(w * 0.7, h * 0.45), crackPaint);
+    } else if (environment == 'city') {
+      final paverPaint = Paint()
+        ..color = const Color(0xFF5D5345).withValues(alpha: 0.3)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.0;
+      final paverFill = Paint()
+        ..color = const Color(0xFFC7BCA9).withValues(alpha: 0.15)
+        ..style = PaintingStyle.fill;
+      canvas.drawRect(Rect.fromCenter(center: Offset(w * 0.5, h * 0.5), width: 22, height: 11), paverFill);
+      canvas.drawRect(Rect.fromCenter(center: Offset(w * 0.5, h * 0.5), width: 22, height: 11), paverPaint);
+      final brassGrate = Paint()
+        ..color = const Color(0xFFB8860B).withValues(alpha: 0.35)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 0.8;
+      canvas.drawCircle(Offset(w * 0.5, h * 0.5), 3, brassGrate);
+    } else if (environment == 'castle') {
+      final runnerPaint = Paint()
+        ..color = const Color(0xFF8B0000).withValues(alpha: 0.35)
+        ..style = PaintingStyle.fill;
+      final goldTrim = Paint()
+        ..color = const Color(0xFFFFD700).withValues(alpha: 0.5)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.0;
+      final runnerPath = Path()
+        ..moveTo(w * 0.25, h * 0.25)
+        ..lineTo(w * 0.75, h * 0.75)
+        ..lineTo(w * 0.85, h * 0.65)
+        ..lineTo(w * 0.35, h * 0.15)
+        ..close();
+      canvas.drawPath(runnerPath, runnerPaint);
+      canvas.drawLine(Offset(w * 0.25, h * 0.25), Offset(w * 0.75, h * 0.75), goldTrim);
     }
 
     final mortarPaint = Paint()
@@ -3160,6 +3235,57 @@ class _GenericPropWidget extends StatelessWidget {
             ),
           ),
           const Icon(Icons.star_rounded, size: 18, color: Color(0xFFFFD54F)),
+        ],
+      ),
+    );
+  }
+}
+
+class _ThronePropWidget extends StatelessWidget {
+  const _ThronePropWidget();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 48,
+      height: 52,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Golden backrest dais
+          Positioned(
+            top: 4,
+            child: Container(
+              width: 32,
+              height: 38,
+              decoration: BoxDecoration(
+                color: const Color(0xFFB8860B),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                border: Border.all(color: const Color(0xFFFFD700), width: 1.8),
+                boxShadow: const [
+                  BoxShadow(color: Colors.black54, blurRadius: 6, offset: Offset(0, 3)),
+                ],
+              ),
+            ),
+          ),
+          // Crimson velvet cushion
+          Positioned(
+            top: 18,
+            child: Container(
+              width: 24,
+              height: 20,
+              decoration: BoxDecoration(
+                color: const Color(0xFF8B0000),
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(color: const Color(0xFFFFD700), width: 1.0),
+              ),
+            ),
+          ),
+          // Crown icon
+          const Positioned(
+            top: 8,
+            child: Icon(Icons.shield_rounded, size: 16, color: Color(0xFFFFE082)),
+          ),
         ],
       ),
     );

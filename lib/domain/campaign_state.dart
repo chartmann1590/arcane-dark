@@ -229,15 +229,23 @@ class CampaignState {
   }
 
   /// Environment inferred from narration or location text — automatically sets
-  /// the active map mode to forest wilderness, village town, underground caverns,
-  /// warm tavern interiors, or stone dungeon crypts.
+  /// the active map mode to castle stronghold, metropolis city, forest wilderness,
+  /// village town, underground caverns, warm tavern interiors, or stone dungeon crypts.
   static String environmentFor(String text) {
     final l = text.toLowerCase();
+    const castleWords = ['castle', 'citadel', 'fortress', 'palace', 'throne', 'keep', 'rampart', 'battlement', 'stronghold', 'court', 'bailey'];
+    for (final w in castleWords) {
+      if (l.contains(w)) return 'castle';
+    }
+    const cityWords = ['city', 'metropolis', 'capital', 'bazaar', 'harbor', 'port', 'canal', 'dock', 'district', 'quarter', 'avenue'];
+    for (final w in cityWords) {
+      if (l.contains(w)) return 'city';
+    }
     const forestWords = ['forest', 'woods', 'woodland', 'grove', 'glade', 'jungle', 'wilds', 'wilderness', 'trail', 'clearing', 'canopy', 'timber'];
     for (final w in forestWords) {
       if (l.contains(w)) return 'forest';
     }
-    const villageWords = ['village', 'town', 'city', 'market', 'plaza', 'street', 'bazaar', 'hamlet', 'district', 'square', 'quarter', 'blacksmith', 'apothecary'];
+    const villageWords = ['village', 'town', 'market', 'plaza', 'street', 'hamlet', 'square', 'blacksmith', 'apothecary'];
     for (final w in villageWords) {
       if (l.contains(w)) return 'village';
     }
@@ -272,54 +280,255 @@ class CampaignState {
   /// generated for that environment, or rolls (and remembers) a fresh one.
   int seedForEnvironment(String env) => locationSeeds.putIfAbsent(env, () => Random().nextInt(1 << 30));
 
-  static List<Sidequest> defaultSidequestsFor(CampaignSeed seed) {
-    return [
-      Sidequest(
-        id: 'sq_altar_relic',
-        title: 'The Mystic Shrine',
-        description: 'An ancient consecrated obelisk hums with restorative power in a secluded chamber.',
-        objective: 'Locate and commune with the Mystic Shrine or Altar',
-        category: 'puzzle',
-        targetTile: const Point(8, 6),
-        rewardDescription: '120 XP & Ring of Protection',
-        rewardXp: 120,
-        rewardItem: 'Ring of Protection (+1 AC)',
-      ),
-      Sidequest(
-        id: 'sq_crypt_scavenge',
-        title: 'Lost Munitions Cache',
-        description: 'Valuable pioneer supplies and gold lie hidden in abandoned coffer boxes or supply barrels.',
-        objective: 'Open and loot an iron chest, gilded coffer, or supply crate',
-        category: 'scavenge',
-        targetTile: const Point(14, 12),
-        rewardDescription: '100 XP & 50 Gold Pieces',
-        rewardXp: 100,
-        rewardItem: 'Pouch of 50 Royal Gold Pieces',
-      ),
-      Sidequest(
-        id: 'sq_beast_cull',
-        title: 'Crypt Cleansing Bounty',
-        description: 'Vile undead horrors stalk the subterranean corridors, threatening the realm above.',
-        objective: 'Defeat at least 2 hostile crypt stalkers',
-        category: 'combat',
-        targetTile: const Point(6, 16),
-        rewardDescription: '150 XP & Elixir of Giant Strength',
-        rewardXp: 150,
-        rewardItem: 'Elixir of Giant Strength (+2 STR)',
-      ),
-      Sidequest(
-        id: 'sq_cartographer',
-        title: 'Delve Cartography',
-        description: 'Explore the gloomy depths and chart unknown rooms and corridors.',
-        objective: 'Chart at least 25 dungeon tiles and uncover secret chambers',
-        category: 'exploration',
-        targetTile: const Point(18, 8),
-        rewardDescription: '140 XP & Boots of Elvenkind',
-        rewardXp: 140,
-        rewardItem: 'Boots of Elvenkind (Advantage on Stealth)',
-      ),
-    ];
+  static List<Sidequest> sidequestsForEnvironment(String env, CampaignSeed seed) {
+    switch (env) {
+      case 'city':
+        return [
+          Sidequest(
+            id: 'sq_city_bazaar',
+            title: 'Bazaar Silk & Curios',
+            description: 'The Grand Market Bazaar holds curiosities from across the seven seas. Trade with the merchant lords.',
+            objective: 'Converse or trade with Lord Balthazar in the Grand Bazaar',
+            category: 'exploration',
+            targetTile: const Point(18, 17),
+            rewardDescription: '140 XP & Wand of Magic Missiles',
+            rewardXp: 140,
+            rewardItem: 'Wand of Magic Missiles (3 Charges)',
+          ),
+          Sidequest(
+            id: 'sq_city_cathedral',
+            title: 'Sunlight Benediction',
+            description: 'The Grand Cathedral of the Sun radiates holy protection over the city.',
+            objective: 'Receive the radiant sun blessing at the High Cathedral Altar',
+            category: 'puzzle',
+            targetTile: const Point(22, 7),
+            rewardDescription: '150 XP & Sunstone Amulet',
+            rewardXp: 150,
+            rewardItem: 'Sunstone Amulet (+1 WIS & Radiant Ward)',
+          ),
+          Sidequest(
+            id: 'sq_city_smuggler',
+            title: 'Canal Harbor Contraband',
+            description: 'Smugglers have stashed illegal goods near the water gate and cargo barges.',
+            objective: 'Inspect the shipping crates at the canal docks',
+            category: 'scavenge',
+            targetTile: const Point(30, 18),
+            rewardDescription: '120 XP & 80 Gold Coins',
+            rewardXp: 120,
+            rewardItem: 'Pouch of 80 Royal Gold Coins',
+          ),
+          Sidequest(
+            id: 'sq_city_watch',
+            title: 'City Watch Patrol',
+            description: 'Report to High Watch Commander Marcus at the barracks to reinforce public safety.',
+            objective: 'Visit the City Watch Barracks & Armory',
+            category: 'exploration',
+            targetTile: const Point(7, 21),
+            rewardDescription: '130 XP & Steel Heater Shield',
+            rewardXp: 130,
+            rewardItem: 'Steel Heater Shield (+2 AC)',
+          ),
+        ];
+
+      case 'castle':
+        return [
+          Sidequest(
+            id: 'sq_castle_audience',
+            title: 'Royal Audience with the King',
+            description: 'Petition King Alden the Just before the Golden Lion Throne in the high keep.',
+            objective: 'Seek an audience with the Sovereign at the Lion Throne',
+            category: 'exploration',
+            targetTile: const Point(18, 15),
+            rewardDescription: '200 XP & Royal Pardon Writ',
+            rewardXp: 200,
+            rewardItem: 'Crown Royal Pardon Writ (+2 CHA)',
+          ),
+          Sidequest(
+            id: 'sq_castle_armory',
+            title: 'Kingsguard Forge Inspection',
+            description: 'Grand Marshal Cedric oversees the masterwork armor and weapons of the royal guard.',
+            objective: 'Examine the weapon racks in the Kingsguard Armory',
+            category: 'scavenge',
+            targetTile: const Point(10, 24),
+            rewardDescription: '160 XP & Valorian Bastard Sword',
+            rewardXp: 160,
+            rewardItem: 'Valorian Bastard Sword (+1 Atk/Dmg)',
+          ),
+          Sidequest(
+            id: 'sq_castle_arcane',
+            title: 'The Astral Focus Orb',
+            description: 'Archmage Vane has channeled cosmic leyline power into an astral crystal atop the spire.',
+            objective: 'Commune with the floating astral focus crystal in the Arcane Spire',
+            category: 'puzzle',
+            targetTile: const Point(26, 10),
+            rewardDescription: '180 XP & Scroll of Fireball',
+            rewardXp: 180,
+            rewardItem: 'Scroll of Fireball (8d6 Fire)',
+          ),
+          Sidequest(
+            id: 'sq_castle_treasury',
+            title: 'The Royal Vault Audit',
+            description: 'The royal bullion vault holds ancient ancestral treasures guarded by heavy runic wards.',
+            objective: 'Inspect the gilded coffers in the Royal Treasury Vault',
+            category: 'exploration',
+            targetTile: const Point(26, 24),
+            rewardDescription: '150 XP & 100 Platinum Pieces',
+            rewardXp: 150,
+            rewardItem: 'Chest of 100 Platinum Pieces',
+          ),
+        ];
+
+      case 'forest':
+        return [
+          Sidequest(
+            id: 'sq_forest_dryad',
+            title: 'The Elder Grove Sanctuary',
+            description: 'An ancient heartwood tree in the forest clearing resonates with primal nature magic.',
+            objective: 'Discover and commune with the ancient elder tree grove',
+            category: 'puzzle',
+            targetTile: const Point(17, 17),
+            rewardDescription: '150 XP & Staff of the Woodlands',
+            rewardXp: 150,
+            rewardItem: 'Staff of the Woodlands (+1 Spell Atk)',
+          ),
+          Sidequest(
+            id: 'sq_forest_bridge',
+            title: 'River Crossing Scout',
+            description: 'Scout the roaring river stream and cross the wooden footbridge safely.',
+            objective: 'Cross the wooden footbridge over the forest river',
+            category: 'exploration',
+            targetTile: const Point(17, 10),
+            rewardDescription: '120 XP & Cloak of Elvenkind',
+            rewardXp: 120,
+            rewardItem: 'Cloak of Elvenkind (Advantage on Stealth)',
+          ),
+          Sidequest(
+            id: 'sq_forest_wolf',
+            title: 'Timber Wolf Encounter',
+            description: 'A pack of wild timber wolves prowls the woodland trails.',
+            objective: 'Pacify or defeat the timber wolf stalkers',
+            category: 'combat',
+            targetTile: const Point(8, 12),
+            rewardDescription: '140 XP & Wolf-Tooth Talisman',
+            rewardXp: 140,
+            rewardItem: 'Wolf-Tooth Talisman (+1 DEX)',
+          ),
+        ];
+
+      case 'village':
+        return [
+          Sidequest(
+            id: 'sq_village_fountain',
+            title: 'The Wishing Fountain',
+            description: 'Local villagers toss coins into the stone fountain for health, bountiful harvest, and safe journeys.',
+            objective: 'Inspect and make a wish at the Oakhaven Town Fountain',
+            category: 'puzzle',
+            targetTile: const Point(17, 17),
+            rewardDescription: '100 XP & Fountain Lucky Coin',
+            rewardXp: 100,
+            rewardItem: 'Fountain Lucky Coin (+1 on Save Rolls)',
+          ),
+          Sidequest(
+            id: 'sq_village_forge',
+            title: 'Ironfang Forge Supplies',
+            description: 'The master blacksmith needs assistance maintaining the glowing coal hearths.',
+            objective: 'Visit Ironfang Blacksmith Forge in the north-west quarter',
+            category: 'scavenge',
+            targetTile: const Point(8, 7),
+            rewardDescription: '130 XP & Tempered Iron Shield',
+            rewardXp: 130,
+            rewardItem: 'Tempered Iron Shield (+2 AC)',
+          ),
+          Sidequest(
+            id: 'sq_village_apothecary',
+            title: 'Herbal Distillation',
+            description: 'Sylph seeks rare wild herbs to distill restorative drought elixirs.',
+            objective: 'Visit Sylph''s Mystic Apothecary in the north-east quarter',
+            category: 'exploration',
+            targetTile: const Point(25, 7),
+            rewardDescription: '120 XP & Potion of Greater Healing',
+            rewardXp: 120,
+            rewardItem: 'Potion of Greater Healing (4d4+4 HP)',
+          ),
+        ];
+
+      case 'cave':
+        return [
+          Sidequest(
+            id: 'sq_cave_crystals',
+            title: 'Subterranean Geode Harvest',
+            description: 'Luminous blue and violet crystal geodes illuminate the underground caverns.',
+            objective: 'Harvest luminescent crystal shards from the cavern walls',
+            category: 'scavenge',
+            targetTile: const Point(17, 17),
+            rewardDescription: '150 XP & Glowing Geode Fragment',
+            rewardXp: 150,
+            rewardItem: 'Glowing Geode Fragment (Illuminates 30ft)',
+          ),
+          Sidequest(
+            id: 'sq_cave_pool',
+            title: 'The Stygian Spring',
+            description: 'A dark underground pool whispers with ancient chasm secrets.',
+            objective: 'Investigate the subterranean lake shore',
+            category: 'exploration',
+            targetTile: const Point(20, 20),
+            rewardDescription: '130 XP & Ring of Water Breathing',
+            rewardXp: 130,
+            rewardItem: 'Ring of Water Breathing',
+          ),
+        ];
+
+      default: // dungeon
+        return [
+          Sidequest(
+            id: 'sq_altar_relic',
+            title: 'The Mystic Shrine',
+            description: 'An ancient consecrated obelisk hums with restorative power in a secluded chamber.',
+            objective: 'Locate and commune with the Mystic Shrine or Altar',
+            category: 'puzzle',
+            targetTile: const Point(8, 6),
+            rewardDescription: '120 XP & Ring of Protection',
+            rewardXp: 120,
+            rewardItem: 'Ring of Protection (+1 AC)',
+          ),
+          Sidequest(
+            id: 'sq_crypt_scavenge',
+            title: 'Lost Munitions Cache',
+            description: 'Valuable pioneer supplies and gold lie hidden in abandoned coffer boxes or supply barrels.',
+            objective: 'Open and loot an iron chest, gilded coffer, or supply crate',
+            category: 'scavenge',
+            targetTile: const Point(14, 12),
+            rewardDescription: '100 XP & 50 Gold Pieces',
+            rewardXp: 100,
+            rewardItem: 'Pouch of 50 Royal Gold Pieces',
+          ),
+          Sidequest(
+            id: 'sq_beast_cull',
+            title: 'Crypt Cleansing Bounty',
+            description: 'Vile undead horrors stalk the subterranean corridors, threatening the realm above.',
+            objective: 'Defeat at least 2 hostile crypt stalkers',
+            category: 'combat',
+            targetTile: const Point(6, 16),
+            rewardDescription: '150 XP & Elixir of Giant Strength',
+            rewardXp: 150,
+            rewardItem: 'Elixir of Giant Strength (+2 STR)',
+          ),
+          Sidequest(
+            id: 'sq_cartographer',
+            title: 'Delve Cartography',
+            description: 'Explore the gloomy depths and chart unknown rooms and corridors.',
+            objective: 'Chart at least 25 dungeon tiles and uncover secret chambers',
+            category: 'exploration',
+            targetTile: const Point(18, 8),
+            rewardDescription: '140 XP & Boots of Elvenkind',
+            rewardXp: 140,
+            rewardItem: 'Boots of Elvenkind (Advantage on Stealth)',
+          ),
+        ];
+    }
   }
+
+  static List<Sidequest> defaultSidequestsFor(CampaignSeed seed) => sidequestsForEnvironment('dungeon', seed);
 
   factory CampaignState.initial({required CampaignSeed seed, required List<Character> characters}) {
     return CampaignState(
