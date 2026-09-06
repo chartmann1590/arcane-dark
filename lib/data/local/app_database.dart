@@ -6,12 +6,9 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../domain/character.dart';
-import '../../domain/campaign_state.dart';
-import '../../domain/campaign_seed.dart';
 
 class AppDatabase {
   static const _charsKey = 'db_characters';
-  static const _campaignsKey = 'db_campaigns';
 
   Future<List<Character>> getAllCharacters() async {
     final p = await SharedPreferences.getInstance();

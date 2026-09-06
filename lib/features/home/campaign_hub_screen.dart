@@ -8,7 +8,6 @@ import '../../providers/character_provider.dart';
 import '../../domain/campaign_seed.dart';
 import '../../domain/campaign_state.dart';
 import '../../domain/character.dart';
-import '../../services/ad_service.dart';
 import '../../widgets/fx.dart';
 import '../../widgets/party_assembler_sheet.dart';
 
@@ -210,16 +209,38 @@ class CampaignHubScreen extends ConsumerWidget {
     showModalBottomSheet(
       context: context,
       backgroundColor: ArcaneTheme.surface,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
-      builder: (c) => Padding(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Choose a Legend', style: GoogleFonts.cinzel(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white)),
-          const SizedBox(height: 4),
-          Text('Select a setting, then assemble your party of heroes.', style: GoogleFonts.ibmPlexSans(fontSize: 12, color: ArcaneTheme.textSecondary)),
-          const SizedBox(height: 12),
-          ...CampaignSeed.presets.map((seed) => Padding(
-                padding: const EdgeInsets.only(bottom: 10),
+      builder: (c) => DraggableScrollableSheet(
+        initialChildSize: 0.72,
+        minChildSize: 0.45,
+        maxChildSize: 0.92,
+        expand: false,
+        builder: (ctx, scrollCtrl) => ListView(
+          controller: scrollCtrl,
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+          children: [
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(color: ArcaneTheme.border, borderRadius: BorderRadius.circular(2)),
+              ),
+            ),
+            Text('CHOOSE A LEGEND', style: GoogleFonts.cinzel(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white)),
+            const SizedBox(height: 4),
+            Text('Select an adventure setting, then assemble your party of heroes.', style: GoogleFonts.ibmPlexSans(fontSize: 12, color: ArcaneTheme.textSecondary)),
+            const SizedBox(height: 16),
+            ...CampaignSeed.presets.map((seed) {
+              final (icon, col) = switch (seed.id) {
+                'ember_wastes' => (Icons.local_fire_department_rounded, Colors.deepOrangeAccent),
+                'frostpeak_spire' => (Icons.ac_unit_rounded, Colors.cyanAccent),
+                'sunken_citadel' => (Icons.water_rounded, Colors.lightBlueAccent),
+                _ => (Icons.shield_moon_rounded, ArcaneTheme.primary),
+              };
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
                 child: InkWell(
                   onTap: () {
                     Navigator.pop(c);
@@ -235,20 +256,41 @@ class CampaignHubScreen extends ConsumerWidget {
                     padding: const EdgeInsets.all(14),
                     decoration: ArcaneTheme.cardDecoration(),
                     child: Row(children: [
-                      Container(width: 44, height: 44, decoration: BoxDecoration(color: ArcaneTheme.primary.withOpacity(0.15), borderRadius: BorderRadius.circular(8)), child: const Icon(Icons.map_rounded, color: ArcaneTheme.primary)),
-                      const SizedBox(width: 12),
+                      Container(
+                        width: 46,
+                        height: 46,
+                        decoration: BoxDecoration(color: col.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(10), border: Border.all(color: col.withValues(alpha: 0.3))),
+                        child: Icon(icon, color: col, size: 24),
+                      ),
+                      const SizedBox(width: 14),
                       Expanded(
-                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text(seed.title, style: GoogleFonts.ibmPlexSans(fontWeight: FontWeight.w700, color: Colors.white)),
-                        Text(seed.hook, maxLines: 2, overflow: TextOverflow.ellipsis, style: GoogleFonts.ibmPlexSans(fontSize: 12, color: ArcaneTheme.textSecondary)),
-                        const SizedBox(height: 4),
-                        Text(seed.tone, style: GoogleFonts.ibmPlexSans(fontSize: 11, color: ArcaneTheme.secondary, fontWeight: FontWeight.w600)),
-                      ])),
+                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Text(seed.title, style: GoogleFonts.ibmPlexSans(fontWeight: FontWeight.w700, fontSize: 14, color: Colors.white)),
+                          const SizedBox(height: 2),
+                          Text(seed.hook, maxLines: 2, overflow: TextOverflow.ellipsis, style: GoogleFonts.ibmPlexSans(fontSize: 12, color: ArcaneTheme.textSecondary)),
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(color: col.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(4)),
+                                child: Text(seed.tone, style: GoogleFonts.ibmPlexSans(fontSize: 10.5, color: col, fontWeight: FontWeight.w700)),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text('•  ${seed.setting}', maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.ibmPlexSans(fontSize: 11, color: Colors.white38)),
+                              ),
+                            ],
+                          ),
+                        ]),
+                      ),
                     ]),
                   ),
                 ),
-              )),
-        ]),
+              );
+            }),
+          ],
+        ),
       ),
     );
   }

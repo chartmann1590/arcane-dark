@@ -115,6 +115,11 @@ class _CharacterDetailScreenState extends ConsumerState<CharacterDetailScreen> {
                     CircleAvatar(radius: 44, backgroundColor: ArcaneTheme.primary.withOpacity(0.15), backgroundImage: AssetImage('assets/avatar/portraits/${character.race.name}.png')),
                     const SizedBox(height: 10),
                     Text(character.name, style: GoogleFonts.cinzel(fontSize: 20, fontWeight: FontWeight.w800, color: Colors.white)),
+                    if (character.avatar.title.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(character.avatar.title.toUpperCase(), style: GoogleFonts.cinzel(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.amber.shade200, letterSpacing: 1.1)),
+                    ],
+                    const SizedBox(height: 4),
                     Text('${character.race.label} • ${character.charClass.label} • ${character.background.label}', style: GoogleFonts.ibmPlexSans(fontSize: 12, color: ArcaneTheme.textSecondary)),
                     const SizedBox(height: 10),
                     Row(mainAxisAlignment: MainAxisAlignment.center, children: [
@@ -124,6 +129,29 @@ class _CharacterDetailScreenState extends ConsumerState<CharacterDetailScreen> {
                       const SizedBox(width: 8),
                       _Pill('Lv ${character.level}', ArcaneTheme.primary),
                     ]),
+                    if (character.avatar.weapon.isNotEmpty || character.avatar.aura.isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      Wrap(spacing: 8, runSpacing: 6, alignment: WrapAlignment.center, children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(color: ArcaneTheme.surfaceElevated, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.white12)),
+                          child: Row(mainAxisSize: MainAxisSize.min, children: [
+                            const Icon(Icons.shield_moon_rounded, size: 12, color: ArcaneTheme.secondary),
+                            const SizedBox(width: 4),
+                            Text(character.avatar.weapon, style: GoogleFonts.ibmPlexSans(fontSize: 11, color: Colors.white70)),
+                          ]),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(color: ArcaneTheme.primary.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(8), border: Border.all(color: ArcaneTheme.primary.withValues(alpha: 0.4))),
+                          child: Row(mainAxisSize: MainAxisSize.min, children: [
+                            const Icon(Icons.flare_rounded, size: 12, color: ArcaneTheme.primary),
+                            const SizedBox(width: 4),
+                            Text('${character.avatar.aura.toUpperCase()} AURA', style: GoogleFonts.ibmPlexSans(fontSize: 10.5, fontWeight: FontWeight.w700, color: ArcaneTheme.primary)),
+                          ]),
+                        ),
+                      ]),
+                    ],
                   ]),
                 ),
               ),

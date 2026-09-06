@@ -55,6 +55,11 @@ class AbilityScores {
 
   int totalCost() {
     const cost = {8: 0, 9: 1, 10: 2, 11: 3, 12: 4, 13: 5, 14: 7, 15: 9};
-    return cost[str]! + cost[dex]! + cost[con]! + cost[int_]! + cost[wis]! + cost[cha]!;
+    int scoreCost(int score) {
+      if (score < 8) return 0;
+      if (score <= 15) return cost[score] ?? 0;
+      return 9 + (score - 15) * 2;
+    }
+    return scoreCost(str) + scoreCost(dex) + scoreCost(con) + scoreCost(int_) + scoreCost(wis) + scoreCost(cha);
   }
 }

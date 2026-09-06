@@ -74,5 +74,37 @@ class CampaignSeed {
       startingLocation: 'Wall Outpost K-9',
       villain: 'Ashen Matriarch',
     ),
+    CampaignSeed(
+      id: 'frostpeak_spire',
+      title: 'The Frostpeak Spire',
+      setting: 'Glacial peaks of the Wyrmtooth Range',
+      tone: 'High-Magic Wonder',
+      hook: 'An eternal blizzard shrouds the celestial observatory atop the Spire, freezing time and waking crystalline horrors.',
+      beats: [
+        'Ascend the treacherous Avalan Pass',
+        'Solve the Prismatic Mirror Gate',
+        'Repel the Frost Revenant ambush',
+        'Confront Archmage Vhol in the Observatory of Eternity',
+        'Choose: shatter the chronal core or harness timeless power',
+      ],
+      startingLocation: 'The Hearth & Wyvern Inn — Glacial Ridge',
+      villain: 'Archmage Vhol, The Frostbound Sovereign',
+    ),
+    CampaignSeed(
+      id: 'sunken_citadel',
+      title: 'The Sunken Citadel',
+      setting: 'Submerged obsidian ruins of the Coral Trench',
+      tone: 'Horror',
+      hook: 'Black tides wash ashore abyssal idols, calling leviathans from the drowned depths to drag the world under.',
+      beats: [
+        'Navigate the flooded grottoes of Driftwood Anchorage',
+        'Recover the Pearl of Abyssal Sight',
+        'Disrupt the Blood Coral summoning ritual',
+        'Vanquish Priestess Xyrena in the Sunken Sanctum',
+        'Choose: banish the leviathan back to the abyss or bind its cosmic tide',
+      ],
+      startingLocation: 'The Salty Cutlass Tavern — Driftwood Anchorage',
+      villain: 'Leviathan Priestess Xyrena',
+    ),
   ];
 }

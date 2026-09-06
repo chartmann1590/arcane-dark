@@ -53,6 +53,10 @@ class AvatarConfig {
   final String outfit;
   final String accessory;
   final String eyeColor;
+  final String aura;
+  final String weapon;
+  final String title;
+  final String battleCry;
 
   const AvatarConfig({
     this.body = 'body_1',
@@ -61,9 +65,24 @@ class AvatarConfig {
     this.outfit = 'outfit_1',
     this.accessory = 'none',
     this.eyeColor = '#8B5CF6',
+    this.aura = 'arcane',
+    this.weapon = 'Runed Greatsword',
+    this.title = 'The Undaunted',
+    this.battleCry = 'For glory and the dawn!',
   });
 
-  AvatarConfig copyWith({String? body, String? face, String? hair, String? outfit, String? accessory, String? eyeColor}) =>
+  AvatarConfig copyWith({
+    String? body,
+    String? face,
+    String? hair,
+    String? outfit,
+    String? accessory,
+    String? eyeColor,
+    String? aura,
+    String? weapon,
+    String? title,
+    String? battleCry,
+  }) =>
       AvatarConfig(
         body: body ?? this.body,
         face: face ?? this.face,
@@ -71,6 +90,10 @@ class AvatarConfig {
         outfit: outfit ?? this.outfit,
         accessory: accessory ?? this.accessory,
         eyeColor: eyeColor ?? this.eyeColor,
+        aura: aura ?? this.aura,
+        weapon: weapon ?? this.weapon,
+        title: title ?? this.title,
+        battleCry: battleCry ?? this.battleCry,
       );
 
   Map<String, dynamic> toJson() => {
@@ -80,6 +103,10 @@ class AvatarConfig {
         'outfit': outfit,
         'accessory': accessory,
         'eyeColor': eyeColor,
+        'aura': aura,
+        'weapon': weapon,
+        'title': title,
+        'battleCry': battleCry,
       };
   factory AvatarConfig.fromJson(Map<String, dynamic> j) => AvatarConfig(
         body: j['body'] as String? ?? 'body_1',
@@ -88,6 +115,10 @@ class AvatarConfig {
         outfit: j['outfit'] as String? ?? 'outfit_1',
         accessory: j['accessory'] as String? ?? 'none',
         eyeColor: j['eyeColor'] as String? ?? '#8B5CF6',
+        aura: j['aura'] as String? ?? 'arcane',
+        weapon: j['weapon'] as String? ?? 'Runed Greatsword',
+        title: j['title'] as String? ?? 'The Undaunted',
+        battleCry: j['battleCry'] as String? ?? 'For glory and the dawn!',
       );
 }
 

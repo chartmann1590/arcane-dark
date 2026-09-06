@@ -56,7 +56,7 @@ class _CharacterCreationFlowState extends ConsumerState<CharacterCreationFlow> {
       0 => true,
       1 => true,
       2 => true,
-      3 => draft.abilities.totalCost() <= 27,
+      3 => true, // Allows point-buy, standard array, or 4d6 rolled stats
       4 => draft.name.isNotEmpty || _nameController.text.isNotEmpty,
       _ => true,
     };

@@ -1,11 +1,77 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../app/theme.dart';
+import '../../../domain/ability_scores.dart';
+import '../../../domain/character.dart';
 import '../../../providers/character_provider.dart';
+import '../../../services/audio_service.dart';
 
 class AbilitiesStep extends ConsumerWidget {
   const AbilitiesStep({super.key});
+
+  int _rollSingleStat() {
+    final rolls = List.generate(4, (_) => Random().nextInt(6) + 1)..sort();
+    return rolls[1] + rolls[2] + rolls[3]; // drop lowest
+  }
+
+  void _rollAll(BuildContext context, WidgetRef ref) {
+    AudioService.instance.playDiceRoll();
+    final scores = AbilityScores(
+      str: _rollSingleStat().clamp(8, 18),
+      dex: _rollSingleStat().clamp(8, 18),
+      con: _rollSingleStat().clamp(8, 18),
+      int_: _rollSingleStat().clamp(8, 18),
+      wis: _rollSingleStat().clamp(8, 18),
+      cha: _rollSingleStat().clamp(8, 18),
+    );
+    ref.read(characterDraftProvider.notifier).setAbilities(scores);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('🎲 Rolled 4d6 (drop lowest) for all ability scores!', style: GoogleFonts.ibmPlexSans(fontWeight: FontWeight.w600)),
+        backgroundColor: ArcaneTheme.secondary,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  void _applyStandardArray(BuildContext context, WidgetRef ref, CharClass charClass) {
+    AudioService.instance.playSuccess();
+    final AbilityScores scores;
+    switch (charClass) {
+      case CharClass.fighter:
+      case CharClass.barbarian:
+        scores = const AbilityScores(str: 15, con: 14, dex: 13, wis: 12, cha: 10, int_: 8);
+        break;
+      case CharClass.wizard:
+        scores = const AbilityScores(int_: 15, dex: 14, con: 13, wis: 12, cha: 10, str: 8);
+        break;
+      case CharClass.rogue:
+        scores = const AbilityScores(dex: 15, cha: 14, con: 13, int_: 12, wis: 10, str: 8);
+        break;
+      case CharClass.cleric:
+        scores = const AbilityScores(wis: 15, con: 14, str: 13, cha: 12, int_: 10, dex: 8);
+        break;
+      case CharClass.paladin:
+        scores = const AbilityScores(str: 15, cha: 14, con: 13, wis: 12, dex: 10, int_: 8);
+        break;
+      case CharClass.ranger:
+        scores = const AbilityScores(dex: 15, wis: 14, con: 13, str: 12, int_: 10, cha: 8);
+        break;
+      case CharClass.bard:
+        scores = const AbilityScores(cha: 15, dex: 14, con: 13, int_: 12, wis: 10, str: 8);
+        break;
+    }
+    ref.read(characterDraftProvider.notifier).setAbilities(scores);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('⚡ Standard Array allocated for ${charClass.label}!', style: GoogleFonts.ibmPlexSans(fontWeight: FontWeight.w600)),
+        backgroundColor: ArcaneTheme.primary,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -31,6 +97,37 @@ class AbilitiesStep extends ConsumerWidget {
             ]),
           ),
         ]),
+        const SizedBox(height: 12),
+        // Quick Stat Presets Row
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.casino_rounded, size: 16, color: ArcaneTheme.secondary),
+                label: Text('Roll 4d6 Dice', style: GoogleFonts.ibmPlexSans(fontSize: 12, fontWeight: FontWeight.w700, color: ArcaneTheme.secondary)),
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(color: ArcaneTheme.secondary.withValues(alpha: 0.6)),
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                ),
+                onPressed: () => _rollAll(context, ref),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.bolt_rounded, size: 16),
+                label: Text('Standard Array', style: GoogleFonts.ibmPlexSans(fontSize: 12, fontWeight: FontWeight.w700)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: ArcaneTheme.primary.withValues(alpha: 0.25),
+                  foregroundColor: ArcaneTheme.primary,
+                  side: BorderSide(color: ArcaneTheme.primary.withValues(alpha: 0.6)),
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                ),
+                onPressed: () => _applyStandardArray(context, ref, draft.charClass),
+              ),
+            ),
+          ],
+        ),
         const SizedBox(height: 14),
         ...[
           ('STR', abilities.str, (v) => abilities.copyWith(str: v), abilities.strMod, 'Melee, carry'),

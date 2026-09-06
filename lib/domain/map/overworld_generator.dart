@@ -1,9 +1,7 @@
-import 'dart:math';
 import 'tile_types.dart';
 
 class OverworldGenerator {
   DungeonMap generate({required int seed, int width = 32, int height = 32}) {
-    final rng = Random(seed);
     final tiles = List.generate(height, (_) => List.generate(width, (_) => TileType.plains));
     // Simple noise-like: random blobs
     for (int y = 0; y < height; y++) {

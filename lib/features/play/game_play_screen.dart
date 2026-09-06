@@ -558,6 +558,7 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
 
   void _roamNpcs() {
     _roamTurnCounter++;
+    if (_roamTurnCounter % 2 != 0) return;
     if (_npcs.isEmpty) return;
 
     final occupied = <String>{
@@ -1041,13 +1042,29 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
     if (hostiles.isNotEmpty) {
       _showCombatDialog(hostiles.first);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('No hostile foes detected in this area. The perimeter is secure!', style: GoogleFonts.ibmPlexSans()),
-          duration: const Duration(seconds: 2),
-          backgroundColor: ArcaneTheme.secondary,
-        ),
+      final campaign = ref.read(campaignProvider);
+      final foeName = campaign != null && campaign.seed.villain.isNotEmpty
+          ? '${campaign.seed.villain.split(' ').first} Minion'
+          : 'Spire Ice Wraith';
+      final ambush = MapNpc(
+        id: 'ambush_${DateTime.now().millisecondsSinceEpoch}',
+        name: foeName,
+        role: 'Hostile Stalker',
+        pos: m.Point(playerPos.x + 1, playerPos.y),
+        portraitAsset: 'assets/avatar/portraits/orc.png',
+        isHostile: true,
+        maxHp: 16,
+        currentHp: 16,
+        armorClass: 12,
+        attackBonus: 4,
+        damageDice: 6,
+        attackName: 'Frost Claws',
+        greeting: 'An icy fiend leaps from the frozen mist!',
       );
+      setState(() {
+        _npcs.add(ambush);
+      });
+      _showCombatDialog(ambush);
     }
   }
 
@@ -1323,6 +1340,18 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
         },
       ),
     );
+  }
+
+  void _triggerCampfireBanter() {
+    final campaign = ref.read(campaignProvider);
+    AudioService.instance.playSend();
+    if (campaign == null || campaign.party.length < 2) {
+      _send('I take a rest by the glowing torchlight, honing my blade and reflecting on the quest.');
+      return;
+    }
+    final companions = campaign.party.skip(1).toList();
+    final speaker = companions[Random().nextInt(companions.length)];
+    _send('The party rests around the warm glow. ${speaker.name} breaks the silence, sharing a tale of battle and a word of counsel for the journey ahead...');
   }
 
   void _showDescentDialog() {
@@ -1865,6 +1894,7 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
               _QuickAction(icon: Icons.auto_awesome_rounded, label: 'Cast Spell', color: ArcaneTheme.primary, onTap: _showSpellPicker),
               _QuickAction(icon: Icons.shield_rounded, label: 'Tactics', color: const Color(0xFF29B6F6), onTap: _showCompanionTactics),
               _QuickAction(icon: Icons.bedtime_rounded, label: 'Short Rest', color: const Color(0xFF3DD68C), onTap: _performShortRest),
+              _QuickAction(icon: Icons.fireplace_rounded, label: 'Campfire', color: Colors.deepOrangeAccent, onTap: _triggerCampfireBanter),
               _QuickAction(icon: Icons.chat_bubble_rounded, label: 'Talk', color: ArcaneTheme.primary, onTap: () => _send('I speak to whoever is nearby.')),
               _QuickAction(icon: Icons.casino_rounded, label: 'Roll Die', color: ArcaneTheme.secondary, onTap: () => _send('I roll a d20 ability check.')),
             ]),

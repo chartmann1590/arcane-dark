@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../app/theme.dart';
 import '../domain/campaign_state.dart';
-import '../domain/ability_scores.dart';
 import '../features/play/tavern_populator.dart';
 import '../services/audio_service.dart';
 import 'fx.dart';
@@ -451,7 +450,7 @@ class _TacticalCombatSheetState extends State<TacticalCombatSheet> with SingleTi
       AudioService.instance.playSend();
       setState(() {
         _floatingPartyTexts[woundedAlly.id] = '+$heal HP';
-        _bannerText = '✨ ${companion.name} casts Healing Word on ${woundedAlly.name} (+${heal} HP)!';
+        _bannerText = '✨ ${companion.name} casts Healing Word on ${woundedAlly.name} (+$heal HP)!';
         _bannerColor = Colors.cyanAccent;
         _battleLog.insert(0, '${companion.name} shouts: "Stay on your feet!" and heals ${woundedAlly.name} for $heal HP.');
       });
@@ -547,7 +546,132 @@ class _TacticalCombatSheetState extends State<TacticalCombatSheet> with SingleTi
         });
       }
     }
-    // 4. Fighter / Default Martial AI: Heavy Cleave
+    // 4. Paladin AI: Radiant Smite
+    else if (role.contains('paladin')) {
+      final d20 = Random().nextInt(20) + 1;
+      final total = d20 + companion.attackBonus;
+      if (d20 == 20 || total >= enemy.armorClass) {
+        final smite = Random().nextInt(8) + 1 + Random().nextInt(8) + 1;
+        final dmg = Random().nextInt(10) + 1 + 3 + smite;
+        final newHp = max(0, enemy.currentHp - dmg);
+        enemy.currentHp = newHp;
+        _enemyNpc = _enemyNpc.copyWith(currentHp: newHp);
+        widget.onEnemyUpdated(_enemyNpc);
+        AudioService.instance.playSend();
+
+        setState(() {
+          _floatingEnemyText = '-$dmg HP';
+          _floatingEnemyColor = Colors.amber;
+          _bannerText = '✨ ${companion.name} strikes with Radiant Smite for $dmg holy damage!';
+          _bannerColor = Colors.amber;
+          _battleLog.insert(0, '${companion.name} invokes a sacred oath: "By righteous light!" smiting ${enemy.name} for $dmg damage.');
+        });
+
+        if (newHp <= 0) {
+          _handleVictory(companion.name);
+          return;
+        }
+      } else {
+        AudioService.instance.playError();
+        setState(() {
+          _bannerText = '🛡️ ${companion.name}\'s smite was parried!';
+          _bannerColor = Colors.white60;
+          _battleLog.insert(0, '${companion.name}\'s radiant hammer struck wide of ${enemy.name}.');
+        });
+      }
+    }
+    // 5. Ranger AI: Hunter's Mark & Pinpoint Volley
+    else if (role.contains('ranger')) {
+      final d20 = Random().nextInt(20) + 1;
+      final total = d20 + companion.attackBonus + 1;
+      if (d20 == 20 || total >= enemy.armorClass) {
+        final markDmg = Random().nextInt(6) + 1;
+        final dmg = Random().nextInt(8) + 1 + 3 + markDmg;
+        final newHp = max(0, enemy.currentHp - dmg);
+        enemy.currentHp = newHp;
+        _enemyNpc = _enemyNpc.copyWith(currentHp: newHp);
+        widget.onEnemyUpdated(_enemyNpc);
+        AudioService.instance.playSend();
+
+        setState(() {
+          _floatingEnemyText = '-$dmg HP';
+          _floatingEnemyColor = Colors.greenAccent;
+          _bannerText = '🏹 ${companion.name} looses Hunter\'s Volley for $dmg damage!';
+          _bannerColor = Colors.greenAccent;
+          _battleLog.insert(0, '${companion.name} marks the target and drives an arrow straight through ${enemy.name}\'s armor for $dmg damage!');
+        });
+
+        if (newHp <= 0) {
+          _handleVictory(companion.name);
+          return;
+        }
+      } else {
+        AudioService.instance.playError();
+        setState(() {
+          _bannerText = '💨 ${companion.name}\'s arrow embedded in stone!';
+          _bannerColor = Colors.white60;
+          _battleLog.insert(0, '${companion.name}\'s bowshot whistled past ${enemy.name}.');
+        });
+      }
+    }
+    // 6. Barbarian AI: Reckless Frenzy
+    else if (role.contains('barbarian')) {
+      final d20_1 = Random().nextInt(20) + 1;
+      final d20_2 = Random().nextInt(20) + 1;
+      final d20 = max(d20_1, d20_2);
+      final total = d20 + companion.attackBonus;
+      if (d20 == 20 || total >= enemy.armorClass) {
+        final dmg = Random().nextInt(12) + 1 + 5;
+        final newHp = max(0, enemy.currentHp - dmg);
+        enemy.currentHp = newHp;
+        _enemyNpc = _enemyNpc.copyWith(currentHp: newHp);
+        widget.onEnemyUpdated(_enemyNpc);
+        AudioService.instance.playSend();
+
+        setState(() {
+          _floatingEnemyText = '-$dmg HP';
+          _floatingEnemyColor = Colors.redAccent;
+          _bannerText = '🪓 ${companion.name} enters Reckless Rage for $dmg damage!';
+          _bannerColor = Colors.redAccent;
+          _battleLog.insert(0, '${companion.name} roars in bloodthirsty fury, hacking into ${enemy.name} for $dmg damage!');
+        });
+
+        if (newHp <= 0) {
+          _handleVictory(companion.name);
+          return;
+        }
+      } else {
+        AudioService.instance.playError();
+        setState(() {
+          _bannerText = '🛡️ ${companion.name}\'s wild axe glanced off!';
+          _bannerColor = Colors.white60;
+          _battleLog.insert(0, '${companion.name}\'s reckless swing crashed into the floor near ${enemy.name}.');
+        });
+      }
+    }
+    // 7. Bard AI: Vicious Mockery
+    else if (role.contains('bard')) {
+      final dmg = Random().nextInt(4) + 1 + Random().nextInt(4) + 1 + 2;
+      final newHp = max(0, enemy.currentHp - dmg);
+      enemy.currentHp = newHp;
+      _enemyNpc = _enemyNpc.copyWith(currentHp: newHp);
+      widget.onEnemyUpdated(_enemyNpc);
+      AudioService.instance.playSend();
+
+      setState(() {
+        _floatingEnemyText = '-$dmg HP';
+        _floatingEnemyColor = Colors.pinkAccent;
+        _bannerText = '🎭 ${companion.name} casts Vicious Mockery for $dmg psychic damage!';
+        _bannerColor = Colors.pinkAccent;
+        _battleLog.insert(0, '${companion.name} mocks ${enemy.name} with biting verse, dealing $dmg psychic damage!');
+      });
+
+      if (newHp <= 0) {
+        _handleVictory(companion.name);
+        return;
+      }
+    }
+    // 8. Fighter / Default Martial AI: Heavy Cleave
     else {
       final d20 = Random().nextInt(20) + 1;
       final total = d20 + companion.attackBonus;
