@@ -54,26 +54,26 @@ Five minutes or five hours — your adventure waits right where you left it.
 
 ### 👀 Peek inside
 
-<p align="center"><em>Deep violet, warm gold, soft tavern light. Tap any image to enlarge.</em></p>
+<p align="center"><em>Real captures from the game today — warm tavern light, living maps, heroes with history. Tap any image to enlarge.</em></p>
 
 #### Phone
 
 <table>
   <tr>
-    <td align="center" width="20%"><a href="https://chartmann1590.github.io/arcane-dark/store/phone/01-onboarding.png"><img src="docs/store/phone/01-onboarding.png" alt="Welcome screen — quick setup then play anywhere" width="160"/></a><br/><sub><strong>Welcome</strong><br/>Cozy setup in minutes</sub></td>
-    <td align="center" width="20%"><a href="https://chartmann1590.github.io/arcane-dark/store/phone/02-character-creation.png"><img src="docs/store/phone/02-character-creation.png" alt="Character creation — ancestry, calling, looks" width="160"/></a><br/><sub><strong>Your Hero</strong><br/>Ancestry, calling, looks</sub></td>
-    <td align="center" width="20%"><a href="https://chartmann1590.github.io/arcane-dark/store/phone/03-campaign-hub.png"><img src="docs/store/phone/03-campaign-hub.png" alt="Home — current adventure and heroes" width="160"/></a><br/><sub><strong>Home</strong><br/>Adventures & heroes</sub></td>
-    <td align="center" width="20%"><a href="https://chartmann1590.github.io/arcane-dark/store/phone/04-gameplay.png"><img src="docs/store/phone/04-gameplay.png" alt="At the table — map, dice, living story" width="160"/></a><br/><sub><strong>At the Table</strong><br/>Map, dice, story</sub></td>
-    <td align="center" width="20%"><a href="https://chartmann1590.github.io/arcane-dark/store/phone/05-multiplayer.png"><img src="docs/store/phone/05-multiplayer.png" alt="With friends — QR invite, party up to 6" width="160"/></a><br/><sub><strong>With Friends</strong><br/>QR invite, up to 6</sub></td>
+    <td align="center" width="20%"><a href="https://chartmann1590.github.io/arcane-dark/store/phone/01-onboarding.png"><img src="docs/store/phone/01-onboarding.png" alt="Choose a Legend — Whispering Crypts, Ember of the Wastes, Frostpeak Spire" width="160"/></a><br/><sub><strong>Choose a Legend</strong><br/>Twelve tales to chase</sub></td>
+    <td align="center" width="20%"><a href="https://chartmann1590.github.io/arcane-dark/store/phone/02-character-creation.png"><img src="docs/store/phone/02-character-creation.png" alt="Choose Your Race — Human, Elf, Dwarf, Halfling, Orc, Tiefling" width="160"/></a><br/><sub><strong>Your Hero</strong><br/>Lineage, gifts, story</sub></td>
+    <td align="center" width="20%"><a href="https://chartmann1590.github.io/arcane-dark/store/phone/03-campaign-hub.png"><img src="docs/store/phone/03-campaign-hub.png" alt="Home — Whispers of the Clockwork Vault with Kordan, Sirielle, Thessaly" width="160"/></a><br/><sub><strong>Home</strong><br/>Campaign & heroes</sub></td>
+    <td align="center" width="20%"><a href="https://chartmann1590.github.io/arcane-dark/store/phone/04-gameplay.png"><img src="docs/store/phone/04-gameplay.png" alt="At the table — village map, party, living story and smart suggestions" width="160"/></a><br/><sub><strong>At the Table</strong><br/>Map, story, dice</sub></td>
+    <td align="center" width="20%"><a href="https://chartmann1590.github.io/arcane-dark/store/phone/05-multiplayer.png"><img src="docs/store/phone/05-multiplayer.png" alt="Your Heroes — Kordan Steelhand, Sirielle Duskwhisper, Thessaly Vane and more" width="160"/></a><br/><sub><strong>Your Party</strong><br/>Heroes ready for anything</sub></td>
   </tr>
 </table>
 
 **What you're seeing, left to right:**
-- **Welcome** – Settle in quickly. After that, solo play doesn't need internet.
-- **Your Hero** – 6 gentle steps: ancestry, calling, background, strengths, appearance with live preview, then review.
-- **Home** – Pick up where you left off, meet your heroes, choose your next legend.
-- **At the Table** – Touch-to-move map with soft fog, story chat, open dice, backpack, journal, battles, heart-to-hearts, and read-aloud tale-telling.
-- **With Friends** – Host a table or join one with a short code or QR scan.
+- **Choose a Legend** – The Whispering Crypts, Ember of the Wastes, Frostpeak Spire, Sunken Citadel and more. Pick your mood.
+- **Your Hero** – Step 1 of 6: lineage shapes your gifts and story. Human, Elf, Dwarf, Halfling, Orc, Tiefling and more.
+- **Home** – Whispers of the Clockwork Vault, ready to resume, with Kordan, Sirielle and Thessaly waiting.
+- **At the Table** – A real village quest, Beat 3 of 5, with Thessaly, Kordan and Elara on the map, narration, and gentle suggestions like Listen at Doorway.
+- **Your Party** – Kordan Steelhand, Sirielle Duskwhisper, Thessaly Vane, Valgar Bloodscale, Lyra Windrunner and friends, with portraits, hearts and armor.
 
 #### Tablets — made for the big table
 
