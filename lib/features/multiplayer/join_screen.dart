@@ -32,10 +32,16 @@ class _JoinScreenState extends ConsumerState<JoinScreen> {
     });
     try {
       final chars = ref.read(savedCharactersProvider);
+      final c = chars.isNotEmpty ? chars.first : null;
       final info = await SessionRepository.instance.joinSessionByCode(
         code,
-        displayName: chars.isNotEmpty ? chars.first.name : 'Adventurer',
-        characterId: chars.isNotEmpty ? chars.first.id : null,
+        displayName: c?.name ?? 'Adventurer',
+        characterId: c?.id,
+        characterClass: c?.charClass.label,
+        characterRace: c?.race.label,
+        characterLevel: c?.level,
+        hp: c?.hp,
+        maxHp: c?.hp,
       );
       AudioService.instance.playSuccess();
       if (mounted) context.go('/party?session=${info.id}');
@@ -59,7 +65,7 @@ class _JoinScreenState extends ConsumerState<JoinScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: ArcaneTheme.background,
-      appBar: AppBar(leading: IconButton(icon: const Icon(Icons.arrow_back_rounded), onPressed: () => context.pop()), title: Text('JOIN A CAMPAIGN', style: GoogleFonts.ibmPlexSans(fontSize: 13, fontWeight: FontWeight.w800, letterSpacing: 1))),
+      appBar: AppBar(leading: IconButton(icon: const Icon(Icons.arrow_back_rounded), onPressed: () => context.go('/home')), title: Text('JOIN A CAMPAIGN', style: GoogleFonts.ibmPlexSans(fontSize: 13, fontWeight: FontWeight.w800, letterSpacing: 1))),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
         children: [

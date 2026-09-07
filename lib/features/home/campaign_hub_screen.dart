@@ -142,7 +142,7 @@ class CampaignHubScreen extends ConsumerWidget {
             iconColor: ArcaneTheme.secondary,
             title: 'Multiplayer',
             subtitle: 'Join or Host',
-            onTap: () => context.go('/party'),
+            onTap: () => _showMultiplayerPicker(context),
           ),
           const SizedBox(height: 20),
 
@@ -289,6 +289,92 @@ class CampaignHubScreen extends ConsumerWidget {
                 ),
               );
             }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showMultiplayerPicker(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: ArcaneTheme.surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      builder: (c) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(color: ArcaneTheme.border, borderRadius: BorderRadius.circular(2)),
+              ),
+            ),
+            Text('MULTIPLAYER ADVENTURE', style: GoogleFonts.cinzel(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white)),
+            const SizedBox(height: 6),
+            Text('Play cooperatively in real-time. The host runs the AI Dungeon Master while all devices explore together.', style: GoogleFonts.ibmPlexSans(fontSize: 12, color: ArcaneTheme.textSecondary)),
+            const SizedBox(height: 20),
+            InkWell(
+              onTap: () {
+                Navigator.pop(c);
+                context.go('/party');
+              },
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: ArcaneTheme.cardDecoration(),
+                child: Row(children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(color: ArcaneTheme.primary.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(10)),
+                    child: const Icon(Icons.castle_rounded, color: ArcaneTheme.primary, size: 26),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text('Host an Adventure', style: GoogleFonts.ibmPlexSans(fontWeight: FontWeight.w700, fontSize: 14, color: Colors.white)),
+                      const SizedBox(height: 3),
+                      Text('Create a new party lobby and generate a Join Code / QR code for your friends.', style: GoogleFonts.ibmPlexSans(fontSize: 12, color: ArcaneTheme.textSecondary)),
+                    ]),
+                  ),
+                  const Icon(Icons.chevron_right_rounded, color: ArcaneTheme.textMuted),
+                ]),
+              ),
+            ),
+            const SizedBox(height: 12),
+            InkWell(
+              onTap: () {
+                Navigator.pop(c);
+                context.go('/join');
+              },
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: ArcaneTheme.cardDecoration(),
+                child: Row(children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(color: ArcaneTheme.secondary.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(10)),
+                    child: const Icon(Icons.vpn_key_rounded, color: ArcaneTheme.secondary, size: 26),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text('Join an Existing Party', style: GoogleFonts.ibmPlexSans(fontWeight: FontWeight.w700, fontSize: 14, color: Colors.white)),
+                      const SizedBox(height: 3),
+                      Text('Enter a 6-character Join Code or scan a QR code to enter your host’s campaign.', style: GoogleFonts.ibmPlexSans(fontSize: 12, color: ArcaneTheme.textSecondary)),
+                    ]),
+                  ),
+                  const Icon(Icons.chevron_right_rounded, color: ArcaneTheme.textMuted),
+                ]),
+              ),
+            ),
           ],
         ),
       ),

@@ -53,10 +53,16 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
       // Google/email sign-in separately, for players who want their
       // characters to follow them across devices.
       final chars = ref.read(savedCharactersProvider);
+      final c = chars.isNotEmpty ? chars.first : null;
       final info = await SessionRepository.instance.createSession(
         campaignSeedJson: CampaignSeed.presets.first.toJson(),
-        displayName: chars.isNotEmpty ? chars.first.name : 'Host',
-        characterId: chars.isNotEmpty ? chars.first.id : null,
+        displayName: c?.name ?? 'Host',
+        characterId: c?.id,
+        characterClass: c?.charClass.label,
+        characterRace: c?.race.label,
+        characterLevel: c?.level,
+        hp: c?.hp,
+        maxHp: c?.hp,
       );
       if (!mounted) return;
       setState(() {
@@ -90,7 +96,14 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
 
     return Scaffold(
       backgroundColor: ArcaneTheme.background,
-      appBar: AppBar(title: Text('PARTY LOBBY', style: GoogleFonts.ibmPlexSans(fontWeight: FontWeight.w800, letterSpacing: 1.1, fontSize: 13, color: Colors.white)), centerTitle: true),
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: () => context.go('/home'),
+        ),
+        title: Text('PARTY LOBBY', style: GoogleFonts.ibmPlexSans(fontWeight: FontWeight.w800, letterSpacing: 1.1, fontSize: 13, color: Colors.white)),
+        centerTitle: true,
+      ),
       body: _creating
           ? const Center(child: CircularProgressIndicator())
           : _error != null
@@ -196,23 +209,32 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                                       onPressed: players.isEmpty
                                           ? null
                                           : () async {
-                                              await SessionRepository.instance.startSession(sessionId);
+                                              if (session?.status != 'active') {
+                                                await SessionRepository.instance.startSession(sessionId);
+                                              }
                                               if (context.mounted) {
                                                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Starting adventure — host begins narration!', style: GoogleFonts.ibmPlexSans()), backgroundColor: ArcaneTheme.primary));
                                                 context.go('/play?session=$sessionId');
                                               }
                                             },
-                                      child: Text('Begin Adventure', style: GoogleFonts.ibmPlexSans(fontWeight: FontWeight.w800)),
+                                      child: Text(session?.status == 'active' ? 'Enter Adventure' : 'Begin Adventure', style: GoogleFonts.ibmPlexSans(fontWeight: FontWeight.w800)),
                                     ),
                                   )
                                 else if (session?.status == 'active')
-                                  SizedBox(
-                                    width: double.infinity,
-                                    child: ElevatedButton(
-                                      onPressed: () => context.go('/play?session=$sessionId'),
-                                      child: Text('Enter Adventure', style: GoogleFonts.ibmPlexSans(fontWeight: FontWeight.w800)),
-                                    ),
-                                  )
+                                  Builder(builder: (ctx) {
+                                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                                      if (ctx.mounted) {
+                                        ctx.go('/play?session=$sessionId');
+                                      }
+                                    });
+                                    return SizedBox(
+                                      width: double.infinity,
+                                      child: ElevatedButton(
+                                        onPressed: () => context.go('/play?session=$sessionId'),
+                                        child: Text('Enter Adventure', style: GoogleFonts.ibmPlexSans(fontWeight: FontWeight.w800)),
+                                      ),
+                                    );
+                                  })
                                 else
                                   Container(
                                     padding: const EdgeInsets.all(14),
@@ -223,7 +245,7 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                                 if (widget.sessionId == null)
                                   SizedBox(
                                     width: double.infinity,
-                                    child: OutlinedButton(onPressed: () => context.push('/join'), child: Text('Join a Different Party', style: GoogleFonts.ibmPlexSans())),
+                                    child: OutlinedButton(onPressed: () => context.go('/join'), child: Text('Join a Different Party', style: GoogleFonts.ibmPlexSans())),
                                   ),
                                 const SizedBox(height: 16),
                                 Container(

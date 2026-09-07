@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'tile_types.dart';
 
 /// Generates a royal citadel and castle stronghold with stone battlements,
@@ -6,7 +5,6 @@ import 'tile_types.dart';
 /// Knights' Armory, High Wizard's Spire, and Treasury Vault with 3 procedural archetypes.
 class CastleGenerator {
   DungeonMap generate({required int seed, int width = 36, int height = 36}) {
-    final rng = Random(seed);
     final layoutType = seed.abs() % 3;
 
     final tiles = List.generate(height, (_) => List.generate(width, (_) => TileType.floor));

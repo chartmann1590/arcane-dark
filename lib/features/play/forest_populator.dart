@@ -89,10 +89,54 @@ List<MapProp> generateForestProps(DungeonMap forest) {
         ));
         taken.add(key);
         break;
+
+      case 7: // Faerie Ring Meadow
+        props.add(MapProp(
+          pos: center,
+          asset: 'assets/tiles/prop_flowerbed.png',
+          isSolid: false,
+          name: 'Luminescent Faerie Blossom Bed',
+          interactionText: 'Radiant blossoms emitting soft silver sparkles in the cool shade.',
+        ));
+        taken.add(key);
+        break;
+
+      case 8: // Ranger Archery Glade
+        props.add(MapProp(
+          pos: center,
+          asset: 'assets/tiles/prop_target.png',
+          isSolid: true,
+          name: 'Ranger Archery Bullseye',
+          interactionText: 'A thick straw target marked with concentric red circles and fletched arrows.',
+        ));
+        taken.add(key);
+        break;
+
+      case 9: // Whispering Hollow Cache
+        props.add(MapProp(
+          pos: center,
+          asset: 'assets/tiles/prop_chest.png',
+          isSolid: true,
+          name: 'Hollow Tree Ranger Cache',
+          interactionText: 'A weatherproof chest nestled inside a colossal hollow trunk containing emergency rations.',
+        ));
+        taken.add(key);
+        break;
+
+      case 10: // Wildflower Clearing
+        props.add(MapProp(
+          pos: center,
+          asset: 'assets/tiles/prop_flowerbed.png',
+          isSolid: false,
+          name: 'Alpine Heather Flower Bed',
+          interactionText: 'Fragrant purple heather and wild elder blossoms humming with gentle woodland bumblebees.',
+        ));
+        taken.add(key);
+        break;
     }
   }
 
-  // Scattered forest ambiance (campfires, logs, crystals, rubble)
+  // Scattered forest ambiance (campfires, logs, crystals, flowerbeds, archery targets, hay)
   final candidateTiles = <Point>[];
   for (int y = 2; y < forest.height - 2; y++) {
     for (int x = 2; x < forest.width - 2; x++) {
@@ -112,14 +156,17 @@ List<MapProp> generateForestProps(DungeonMap forest) {
     ('assets/tiles/prop_crystals.png', 'Wild Earth Geode', 'An earth crystal cluster jutting from mossy loam, shimmering with nature mana.'),
     ('assets/tiles/prop_table.png', 'Fletcher Workbench', 'A flat log used for carving ash longbows and feathering arrows.'),
     ('assets/tiles/prop_shrine.png', 'Mossy Wayshrine', 'A weathered stone shrine to the Green Lord, draped in blossoming ivy.'),
+    ('assets/tiles/prop_flowerbed.png', 'Wildflower Meadow', 'A blooming patch of wild mountain columbine, bellflowers, and sweet mint.'),
+    ('assets/tiles/prop_target.png', 'Woodland Practice Target', 'A straw bullseye target set up by elven woodland scouts.'),
+    ('assets/tiles/prop_hay.png', 'Forest Feed Stook', 'Bundles of dried forest grasses placed for wild stags.'),
   ];
 
-  for (final p in candidateTiles.take(10)) {
+  for (final p in candidateTiles.take(18)) {
     final (asset, name, desc) = forestAssets[rng.nextInt(forestAssets.length)];
     props.add(MapProp(
       pos: p,
       asset: asset,
-      isSolid: asset.contains('crates') || asset.contains('crystals'),
+      isSolid: !asset.contains('campfire') && !asset.contains('flower') && !asset.contains('shrine'),
       name: name,
       interactionText: desc,
     ));
@@ -271,6 +318,50 @@ List<MapNpc> generateForestNpcs(DungeonMap forest, {Set<String> excluding = cons
       healPower: 12,
       canRecruit: true,
     ),
+    MapNpc(
+      id: 'npc_dryad_sylva',
+      name: 'Sylva the Grove Spirit',
+      role: 'Heart Tree Dryad',
+      pos: const Point(0, 0),
+      portraitAsset: 'assets/avatar/portraits/elf.png',
+      greeting: 'Mortal traveler, your heart beats in rhythm with the root-paths. May the great woods shield you from sorrow.',
+      dialogueOptions: [
+        'How can we cleanse blighted groves?',
+        'Can you grant us the forest’s sanctuary?',
+      ],
+      healPower: 30,
+      canRecruit: false,
+    ),
+    MapNpc(
+      id: 'npc_beastmaster_baelen',
+      name: 'Baelen Claw-Friend',
+      role: 'Beast Whisperer',
+      pos: const Point(0, 0),
+      portraitAsset: 'assets/avatar/portraits/human.png',
+      greeting: 'Keep your steel lowered. The wolves will not strike unless you show malice.',
+      dialogueOptions: [
+        'Teach us how to tame woodland companions.',
+        'What apex beast rules this territory?',
+      ],
+      canRecruit: true,
+    ),
+    MapNpc(
+      id: 'npc_alchemist_mira',
+      name: 'Mira Sporeseeker',
+      role: 'Mycologist & Alchemist',
+      pos: const Point(0, 0),
+      portraitAsset: 'assets/avatar/portraits/gnome.png',
+      greeting: 'Careful where you tread! Bioluminescent amanita caps take thirty years to mature in this damp loam.',
+      dialogueOptions: [
+        'Do you sell glowing mushroom extracts?',
+        'Can you identify this strange glowing herb?',
+      ],
+      shopItems: [
+        'Luminescent Spore Vial (25 Gold)',
+        'Barkskin Salve (35 Gold)',
+      ],
+      canRecruit: false,
+    ),
   ];
 
   for (final arch in archetypes) {
@@ -308,9 +399,12 @@ List<MapAnimal> generateForestAnimals(DungeonMap forest, {Set<String> excluding 
     ('frog', 'Riverbank Bullfrog', 'Vibrant green tree frog basking on warm moss rocks.', 'Ribbit! The sleek amphibian blinks peacefully by the water spray.', 'forest_frog'),
     ('beetle', 'Emerald Jewel Beetle', 'Iridescent metallic beetle crawling across fallen logs.', 'A shimmering green carapace reflects dappled canopy sunlight.', 'forest_beetle'),
     ('hound', 'Forest Tracker Hound', 'Hardy hunting dog roaming ancient deer trails.', 'Woof-woof! A joyful bark rings out as the hound bounds around you.', 'forest_hound'),
+    ('badger', 'Mossy Forest Badger', 'Stout black-and-white badger snuffling through autumn roots.', 'Chitter! The badger peers up curiously before waddling back into the loam.', 'forest_badger'),
+    ('cat', 'Silver Lynx Kitten', 'Tufted-eared wild lynx stalking softly through sunbeams.', 'Mew-purr... The lynx arches its soft back and purrs gently.', 'forest_lynx'),
+    ('bird', 'Hunting Gyrfalcon', 'Keen-eyed raptor watching from high pine branches.', 'Kreee! The noble falcon spreads broad wings in salutation.', 'forest_falcon'),
   ];
 
-  final count = 8 + rng.nextInt(4); // 8..11 animals
+  final count = 12 + rng.nextInt(4); // 12..15 animals
   for (int i = 0; i < count; i++) {
     final (species, name, flavor, dialogue, petId) = archetypes[i % archetypes.length];
     for (int attempts = 0; attempts < 35; attempts++) {

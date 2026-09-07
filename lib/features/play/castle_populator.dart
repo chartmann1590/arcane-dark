@@ -73,29 +73,47 @@ List<MapProp> generateCastleProps(DungeonMap castle) {
       case 5: // Outer Bailey Courtyard
         props.add(MapProp(
           pos: center,
-          asset: 'assets/tiles/prop_brazier.png',
+          asset: 'assets/tiles/prop_target.png',
           isSolid: true,
-          name: 'Courtyard Signal Beacon',
-          interactionText: 'A roaring copper brazier sending amber sparks up toward the stone battlements.',
+          name: 'Jousting Practice Target',
+          interactionText: 'A heavy quintain target and archery bullseye where knights practice lance thrusts.',
         ));
         taken.add(key);
         break;
     }
   }
 
-  // Sconces & Torches along corridors
+  // Red velvet runner carpets in Throne Room
+  final carpetPos1 = Point(throneRoom.centerX, thronePos.y + 2);
+  final carpetPos2 = Point(throneRoom.centerX, thronePos.y + 4);
+  props.add(MapProp(
+    pos: carpetPos1,
+    asset: 'assets/tiles/prop_rug.png',
+    isSolid: false,
+    name: 'Imperial Crimson Carpet',
+    interactionText: 'A plush velvet runner embroidered with golden lions.',
+  ));
+  props.add(MapProp(
+    pos: carpetPos2,
+    asset: 'assets/tiles/prop_rug.png',
+    isSolid: false,
+    name: 'Imperial Crimson Carpet',
+    interactionText: 'A plush velvet runner embroidered with golden lions.',
+  ));
+
+  // Courtyard & Corridor Sconces & Streetlamps
   final rng = Random(castle.seed);
-  for (int i = 0; i < 6; i++) {
+  for (int i = 0; i < 8; i++) {
     final lx = 4 + rng.nextInt(castle.width - 8);
     final ly = 4 + rng.nextInt(castle.height - 8);
     final k = '$lx,$ly';
     if (!taken.contains(k) && castle.tileAt(lx, ly) == TileType.floor) {
       props.add(MapProp(
         pos: Point(lx, ly),
-        asset: 'assets/tiles/prop_torch.png',
+        asset: 'assets/tiles/prop_streetlamp.png',
         isSolid: false,
-        name: 'Royal Sconce Torch',
-        interactionText: 'A gold-trimmed sconce holding an enchanted smokeless torch.',
+        name: 'Royal Citadel Streetlamp',
+        interactionText: 'A gold-trimmed wrought-iron lantern keeping the castle courtyards and ramparts illuminated.',
       ));
       taken.add(k);
     }
@@ -256,9 +274,12 @@ List<MapAnimal> generateCastleAnimals(DungeonMap castle, {Set<String> excluding 
     ('owl', 'Courtyard Hunting Falcon', 'Sharp-eyed hunting bird perched on a velvet glove post.', 'Screeech! The falcon ruffles its feathers and fixes you with an alert amber gaze.', 'castle_falcon'),
     ('horse', 'Armored War Destrier', 'Massive warhorse in barded plate armor standing in the courtyard.', 'Snort! The destrier tosses its mane proudly, iron shoes clattering on the courtyard flagstones.', 'castle_horse'),
     ('cat', 'Royal Hearth Mouser', 'Sleek grey cat basking in the warm fireplace glow of the feast hall.', 'Purr... The mouser rolls over onto its back, purring contentedly.', 'castle_cat'),
+    ('hound', 'Imperial Great Dane', 'Majestic harlequin hound adorned with a gilded collar.', 'Woof! It sits with quiet dignity and lets you pet its sleek coat.', 'castle_dane'),
+    ('bird', 'Tower Battlement Raven', 'Clever black raven watching intently from high stone crenellations.', 'Caw-caw! It caws wisely and hops along the parapet.', 'castle_raven'),
+    ('cat', 'Archmage Spire Persian', 'Long-haired white cat sleeping upon arcane grimoires.', 'Mew... Soft golden eyes blink before it curls back to sleep.', 'castle_persian'),
   ];
 
-  final count = 6 + rng.nextInt(3); // 6..8 animals
+  final count = 9 + rng.nextInt(4); // 9..12 animals
   for (int i = 0; i < count; i++) {
     final (species, name, flavor, dialogue, petId) = archetypes[i % archetypes.length];
     for (int attempts = 0; attempts < 30; attempts++) {

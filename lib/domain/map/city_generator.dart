@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'tile_types.dart';
 
 /// Generates a sprawling medieval fantasy metropolis with grand paved boulevards,
@@ -6,7 +5,6 @@ import 'tile_types.dart';
 /// with 3 distinct procedural layout archetypes for every seed.
 class CityGenerator {
   DungeonMap generate({required int seed, int width = 36, int height = 36}) {
-    final rng = Random(seed);
     final layoutType = seed.abs() % 3;
 
     // Base layer: dressed limestone street paving

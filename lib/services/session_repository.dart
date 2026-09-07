@@ -8,9 +8,25 @@ class SessionPlayer {
   final String uid;
   final String displayName;
   final String? characterId;
+  final String? characterClass;
+  final String? characterRace;
+  final int? characterLevel;
+  final int? hp;
+  final int? maxHp;
   final bool ready;
   final DateTime? lastSeen;
-  SessionPlayer({required this.uid, required this.displayName, this.characterId, this.ready = false, this.lastSeen});
+  SessionPlayer({
+    required this.uid,
+    required this.displayName,
+    this.characterId,
+    this.characterClass,
+    this.characterRace,
+    this.characterLevel,
+    this.hp,
+    this.maxHp,
+    this.ready = false,
+    this.lastSeen,
+  });
 
   factory SessionPlayer.fromDoc(DocumentSnapshot<Map<String, dynamic>> d) {
     final j = d.data() ?? {};
@@ -18,6 +34,11 @@ class SessionPlayer {
       uid: d.id,
       displayName: j['displayName'] as String? ?? 'Adventurer',
       characterId: j['characterId'] as String?,
+      characterClass: j['characterClass'] as String?,
+      characterRace: j['characterRace'] as String?,
+      characterLevel: (j['characterLevel'] as num?)?.toInt(),
+      hp: (j['hp'] as num?)?.toInt(),
+      maxHp: (j['maxHp'] as num?)?.toInt(),
       ready: j['ready'] as bool? ?? false,
       lastSeen: (j['lastSeen'] as Timestamp?)?.toDate(),
     );
@@ -59,6 +80,8 @@ class SessionRepository {
 
   final _db = FirebaseFirestore.instance;
   Timer? _heartbeat;
+  String? activeSessionId;
+  bool isLocalHost = false;
 
   CollectionReference<Map<String, dynamic>> get _sessions => _db.collection('sessions');
 
@@ -68,7 +91,16 @@ class SessionRepository {
     return List.generate(6, (_) => chars[r.nextInt(chars.length)]).join();
   }
 
-  Future<SessionInfo> createSession({required Map<String, dynamic> campaignSeedJson, required String displayName, String? characterId}) async {
+  Future<SessionInfo> createSession({
+    required Map<String, dynamic> campaignSeedJson,
+    required String displayName,
+    String? characterId,
+    String? characterClass,
+    String? characterRace,
+    int? characterLevel,
+    int? hp,
+    int? maxHp,
+  }) async {
     final user = await AuthService.instance.ensureSignedIn();
     final code = _genCode();
     final doc = _sessions.doc();
@@ -82,14 +114,30 @@ class SessionRepository {
     await doc.collection('players').doc(user.uid).set({
       'displayName': displayName,
       'characterId': characterId,
+      if (characterClass != null) 'characterClass': characterClass,
+      if (characterRace != null) 'characterRace': characterRace,
+      if (characterLevel != null) 'characterLevel': characterLevel,
+      if (hp != null) 'hp': hp,
+      if (maxHp != null) 'maxHp': maxHp,
       'ready': true,
       'lastSeen': FieldValue.serverTimestamp(),
     });
+    activeSessionId = doc.id;
+    isLocalHost = true;
     _startHeartbeat(doc.id, user.uid);
     return SessionInfo(id: doc.id, hostUid: user.uid, joinCode: code, status: 'lobby');
   }
 
-  Future<SessionInfo> joinSessionByCode(String code, {required String displayName, String? characterId}) async {
+  Future<SessionInfo> joinSessionByCode(
+    String code, {
+    required String displayName,
+    String? characterId,
+    String? characterClass,
+    String? characterRace,
+    int? characterLevel,
+    int? hp,
+    int? maxHp,
+  }) async {
     final user = await AuthService.instance.ensureSignedIn();
     // Allow joining a lobby that hasn't started yet OR one already underway
     // (a friend catching up mid-adventure) — only a session the host has
@@ -102,9 +150,16 @@ class SessionRepository {
     await doc.reference.collection('players').doc(user.uid).set({
       'displayName': displayName,
       'characterId': characterId,
+      if (characterClass != null) 'characterClass': characterClass,
+      if (characterRace != null) 'characterRace': characterRace,
+      if (characterLevel != null) 'characterLevel': characterLevel,
+      if (hp != null) 'hp': hp,
+      if (maxHp != null) 'maxHp': maxHp,
       'ready': true,
       'lastSeen': FieldValue.serverTimestamp(),
     });
+    activeSessionId = doc.id;
+    isLocalHost = false;
     _startHeartbeat(doc.id, user.uid);
     return SessionInfo.fromDoc(doc);
   }
@@ -134,42 +189,64 @@ class SessionRepository {
   /// only the host's device runs the real on-device DM engine; everyone
   /// else submits actions via [submitAction] and reads back via [watchState].
   Future<bool> isHost(String sessionId) async {
+    if (activeSessionId == sessionId && isLocalHost) return true;
+    final user = await AuthService.instance.ensureSignedIn();
     final doc = await _sessions.doc(sessionId).get();
     final hostUid = doc.data()?['hostUid'] as String?;
-    return hostUid != null && hostUid == AuthService.instance.currentUser?.uid;
+    final host = hostUid != null && hostUid == user.uid;
+    if (host) isLocalHost = true;
+    return host;
   }
 
   Future<void> leaveSession(String sessionId) async {
     stopHeartbeat();
+    activeSessionId = null;
+    isLocalHost = false;
     final user = AuthService.instance.currentUser;
     if (user == null) return;
     await _sessions.doc(sessionId).collection('players').doc(user.uid).delete();
   }
 
-  Future<void> endSession(String sessionId) => _sessions.doc(sessionId).update({'status': 'ended'});
+  Future<void> endSession(String sessionId) {
+    activeSessionId = null;
+    isLocalHost = false;
+    return _sessions.doc(sessionId).update({'status': 'ended'});
+  }
 
   /// Non-host players call this to propose an action; the host's device
   /// listens via [watchPendingActions], feeds it through the real DM engine,
   /// and writes the result back via [pushState].
-  Future<void> submitAction(String sessionId, String actionText) async {
+  Future<void> submitAction(
+    String sessionId,
+    String actionText, {
+    String actionType = 'chat',
+    Map<String, dynamic>? data,
+  }) async {
     final user = await AuthService.instance.ensureSignedIn();
     await _sessions.doc(sessionId).collection('actions').add({
       'fromUid': user.uid,
+      'actionType': actionType,
       'actionText': actionText,
+      if (data != null) 'data': data,
       'submittedAt': FieldValue.serverTimestamp(),
       'processed': false,
     });
   }
 
   Stream<QuerySnapshot<Map<String, dynamic>>> watchPendingActions(String sessionId) =>
-      _sessions.doc(sessionId).collection('actions').where('processed', isEqualTo: false).orderBy('submittedAt').snapshots();
+      _sessions.doc(sessionId).collection('actions').where('processed', isEqualTo: false).snapshots();
 
   Future<void> markActionProcessed(String sessionId, String actionId) =>
       _sessions.doc(sessionId).collection('actions').doc(actionId).update({'processed': true});
 
   /// Host-only: publish the authoritative campaign state for every client to render.
-  Future<void> pushState(String sessionId, CampaignState state) =>
-      _sessions.doc(sessionId).collection('state').doc('current').set(state.toJson());
+  Future<void> pushState(String sessionId, CampaignState state) async {
+    try {
+      await _sessions.doc(sessionId).collection('state').doc('current').set(state.toJson());
+    } catch (e) {
+      // Ignored if offline or transient Firestore network error
+    }
+  }
 
   Stream<Map<String, dynamic>?> watchState(String sessionId) =>
       _sessions.doc(sessionId).collection('state').doc('current').snapshots().map((d) => d.data());

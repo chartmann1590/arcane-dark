@@ -13,6 +13,7 @@ import '../features/settings/privacy_policy_screen.dart';
 import '../features/auth/auth_screen.dart';
 import '../services/ad_service.dart';
 import '../services/audio_service.dart';
+import '../services/session_repository.dart';
 import 'theme.dart';
 
 class ScaffoldWithNav extends StatelessWidget {
@@ -80,10 +81,12 @@ class _NavBar extends StatelessWidget {
                 context.go('/heroes');
                 break;
               case 2:
-                context.go('/play');
+                final sid = SessionRepository.instance.activeSessionId;
+                context.go(sid != null ? '/play?session=$sid' : '/play');
                 break;
               case 3:
-                context.go('/party');
+                final sid = SessionRepository.instance.activeSessionId;
+                context.go(sid != null ? '/party?session=$sid' : '/party');
                 break;
               case 4:
                 context.go('/settings');

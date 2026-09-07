@@ -62,7 +62,7 @@ class IsoMapView extends StatelessWidget {
   }
 
   List<m.Point> get _torchPositions =>
-      props.where((p) => p.asset.contains('torch') || p.asset.contains('campfire') || p.asset.contains('brazier') || p.asset.contains('cauldron') || p.asset.contains('crystals')).map((p) => p.pos).toList();
+      props.where((p) => p.asset.contains('torch') || p.asset.contains('campfire') || p.asset.contains('brazier') || p.asset.contains('cauldron') || p.asset.contains('crystals') || p.asset.contains('streetlamp') || p.asset.contains('lamppost') || p.asset.contains('lantern_post')).map((p) => p.pos).toList();
 
   double _lightIntensityAt(int x, int y, List<m.Point> torches) {
     final dPx = (playerPos.x - x).toDouble();
@@ -445,6 +445,13 @@ class IsoMapView extends StatelessWidget {
     final isThrone = prop.asset.contains('throne');
     final isTable = prop.asset.contains('table');
     final isBarCounter = prop.asset.contains('bar_counter') || prop.asset.contains('counter');
+    final isStreetlamp = prop.asset.contains('streetlamp') || prop.asset.contains('lamppost') || prop.asset.contains('lantern_post');
+    final isFlowerBed = prop.asset.contains('flower') || prop.asset.contains('garden') || prop.asset.contains('plants');
+    final isHayBale = prop.asset.contains('hay') || prop.asset.contains('straw');
+    final isVegetablePatch = prop.asset.contains('vegetable') || prop.asset.contains('crop') || prop.asset.contains('pumpkin');
+    final isArcheryTarget = prop.asset.contains('target') || prop.asset.contains('archery');
+    final isMineCart = prop.asset.contains('minecart') || prop.asset.contains('ore_cart');
+    final isFence = prop.asset.contains('fence') || prop.asset.contains('gate_post');
 
     Offset propDown = Offset.zero;
 
@@ -495,6 +502,20 @@ class IsoMapView extends StatelessWidget {
       childWidget = const _TablePropWidget();
     } else if (isBarCounter) {
       childWidget = const _BarCounterPropWidget();
+    } else if (isStreetlamp) {
+      childWidget = const _StreetlampPropWidget();
+    } else if (isFlowerBed) {
+      childWidget = const _FlowerBedPropWidget();
+    } else if (isHayBale) {
+      childWidget = const _HayBalePropWidget();
+    } else if (isVegetablePatch) {
+      childWidget = const _VegetablePatchPropWidget();
+    } else if (isArcheryTarget) {
+      childWidget = const _ArcheryTargetPropWidget();
+    } else if (isMineCart) {
+      childWidget = const _MineCartPropWidget();
+    } else if (isFence) {
+      childWidget = const _FencePropWidget();
     } else {
       childWidget = Image.asset(
         prop.asset,
@@ -507,7 +528,7 @@ class IsoMapView extends StatelessWidget {
 
     return Positioned(
       left: origin.dx + tileW / 2 - 24,
-      top: origin.dy + 18.0 - (isRug ? 16 : (isStatue ? 48 : 34)),
+      top: origin.dy + 18.0 - (isRug ? 16 : (isStatue ? 48 : (isStreetlamp ? 46 : 34))),
       child: Listener(
         behavior: HitTestBehavior.opaque,
         onPointerDown: (e) => propDown = e.position,
@@ -532,7 +553,7 @@ class IsoMapView extends StatelessWidget {
                   ),
                 ),
               ),
-            if (isTorch)
+            if (isTorch || isStreetlamp)
               Pulse(
                 duration: const Duration(milliseconds: 1400),
                 child: Container(
@@ -1188,6 +1209,7 @@ class _Iso3DTreePainter extends CustomPainter {
     const tileH = IsoMapView.tileH; // 32
     final centerX = w / 2;
     final groundY = tileH + 12.0;
+    final species = (treeSeed & 0x7FFFFFFF) % 4;
 
     // 1. Isometric Ground Drop Shadow beneath tree base
     final shadowPaint = Paint()
@@ -1198,76 +1220,96 @@ class _Iso3DTreePainter extends CustomPainter {
       shadowPaint,
     );
 
-    // 2. Sturdy Wooden Tree Trunk
+    // 2. Trunk colors and proportions per species
+    final double trunkHeight;
+    final double trunkWidth;
+    final List<Color> trunkColors;
+
+    switch (species) {
+      case 1: // Alpine Pine / Conifer (Taller slender trunk, dark bark)
+        trunkHeight = 26.0;
+        trunkWidth = 8.0;
+        trunkColors = const [Color(0xFF1B120C), Color(0xFF332014), Color(0xFF22160E)];
+        break;
+      case 2: // Weeping Willow (Gnarled wide trunk, mossy brown)
+        trunkHeight = 20.0;
+        trunkWidth = 12.0;
+        trunkColors = const [Color(0xFF231E18), Color(0xFF3B3327), Color(0xFF2D261E)];
+        break;
+      case 3: // Autumn Birch / Golden Aspen (Silver-white bark with dark striations)
+        trunkHeight = 24.0;
+        trunkWidth = 9.0;
+        trunkColors = const [Color(0xFFDCD6CD), Color(0xFFFAF7F2), Color(0xFFB0A89C)];
+        break;
+      default: // Broadleaf Oak (Sturdy rich oak bark)
+        trunkHeight = 22.0;
+        trunkWidth = 10.0;
+        trunkColors = const [Color(0xFF2E1C0C), Color(0xFF4E3620), Color(0xFF382312)];
+        break;
+    }
+
     final trunkBase = groundY - 6;
-    const trunkHeight = 22.0;
     final trunkTop = trunkBase - trunkHeight;
 
     final trunkPath = Path()
-      ..moveTo(centerX - 5, trunkBase)
-      ..lineTo(centerX - 3.5, trunkTop)
-      ..lineTo(centerX + 3.5, trunkTop)
-      ..lineTo(centerX + 5, trunkBase)
+      ..moveTo(centerX - trunkWidth / 2, trunkBase)
+      ..lineTo(centerX - trunkWidth * 0.35, trunkTop)
+      ..lineTo(centerX + trunkWidth * 0.35, trunkTop)
+      ..lineTo(centerX + trunkWidth / 2, trunkBase)
       ..close();
 
-    final trunkGradient = const LinearGradient(
-      begin: Alignment.centerLeft,
-      end: Alignment.centerRight,
-      colors: [
-        Color(0xFF2E1C0C),
-        Color(0xFF4E3620),
-        Color(0xFF382312),
-      ],
-    );
     final trunkPaint = Paint()
-      ..shader = trunkGradient.createShader(Rect.fromLTWH(centerX - 5, trunkTop, 10, trunkHeight));
+      ..shader = LinearGradient(
+        begin: Alignment.centerLeft,
+        end: Alignment.centerRight,
+        colors: trunkColors,
+      ).createShader(Rect.fromLTWH(centerX - trunkWidth / 2, trunkTop, trunkWidth, trunkHeight));
     canvas.drawPath(trunkPath, trunkPaint);
 
-    // 3. Layered 3D Isometric Foliage Canopies
-    // Layer 1 (Bottom Tier - Broadest & Deep Forest Green)
-    _drawCanopyTier(
-      canvas,
-      centerX: centerX,
-      centerY: trunkTop + 4,
-      width: 46,
-      height: 24,
-      baseColor: const Color(0xFF133926),
-      highlightColor: const Color(0xFF1E5238),
-      torchGlow: torchGlow,
-      fogFactor: (canFog && !isVisited) ? 0.8 : 0.0,
-    );
+    // Dark birch flecks for Autumn Birch
+    if (species == 3) {
+      final fleckPaint = Paint()..color = const Color(0xFF3E2723)..strokeWidth = 1.2;
+      canvas.drawLine(Offset(centerX - 2, trunkBase - 5), Offset(centerX + 2, trunkBase - 5), fleckPaint);
+      canvas.drawLine(Offset(centerX - 3, trunkBase - 12), Offset(centerX + 1, trunkBase - 12), fleckPaint);
+      canvas.drawLine(Offset(centerX - 1, trunkBase - 18), Offset(centerX + 3, trunkBase - 18), fleckPaint);
+    }
 
-    // Layer 2 (Middle Tier - Lush Vibrant Emerald)
-    _drawCanopyTier(
-      canvas,
-      centerX: centerX,
-      centerY: trunkTop - 8,
-      width: 38,
-      height: 22,
-      baseColor: const Color(0xFF1E593E),
-      highlightColor: const Color(0xFF2D7A56),
-      torchGlow: torchGlow,
-      fogFactor: (canFog && !isVisited) ? 0.8 : 0.0,
-    );
+    final fog = (canFog && !isVisited) ? 0.8 : 0.0;
 
-    // Layer 3 (Top Crown Tier - Sunlight Highlighted Leaf Crown)
-    _drawCanopyTier(
-      canvas,
-      centerX: centerX,
-      centerY: trunkTop - 20,
-      width: 28,
-      height: 18,
-      baseColor: const Color(0xFF2D7A56),
-      highlightColor: const Color(0xFF45A274),
-      torchGlow: torchGlow,
-      fogFactor: (canFog && !isVisited) ? 0.8 : 0.0,
-    );
-
-    // Subtle sunlit top pinnacle
-    final pinnaclePaint = Paint()
-      ..color = const Color(0xFF68C997).withValues(alpha: 0.7)
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(Offset(centerX, trunkTop - 26), 2.2, pinnaclePaint);
+    // 3. Species-Specific Canopies
+    if (species == 1) {
+      // Pine / Conifer (4 sharp conical tiers)
+      _drawCanopyTier(canvas, centerX: centerX, centerY: trunkTop + 6, width: 44, height: 18, baseColor: const Color(0xFF0A2B1D), highlightColor: const Color(0xFF144530), torchGlow: torchGlow, fogFactor: fog);
+      _drawCanopyTier(canvas, centerX: centerX, centerY: trunkTop - 4, width: 34, height: 16, baseColor: const Color(0xFF103D2A), highlightColor: const Color(0xFF1B593E), torchGlow: torchGlow, fogFactor: fog);
+      _drawCanopyTier(canvas, centerX: centerX, centerY: trunkTop - 14, width: 24, height: 14, baseColor: const Color(0xFF174F37), highlightColor: const Color(0xFF257551), torchGlow: torchGlow, fogFactor: fog);
+      _drawCanopyTier(canvas, centerX: centerX, centerY: trunkTop - 23, width: 14, height: 12, baseColor: const Color(0xFF1F6B49), highlightColor: const Color(0xFF329969), torchGlow: torchGlow, fogFactor: fog);
+      final pPaint = Paint()..color = const Color(0xFF48C78E).withValues(alpha: 0.85);
+      canvas.drawCircle(Offset(centerX, trunkTop - 29), 1.8, pPaint);
+    } else if (species == 2) {
+      // Weeping Willow (Cascading curved crown with teal/moss tones)
+      _drawCanopyTier(canvas, centerX: centerX, centerY: trunkTop + 6, width: 48, height: 26, baseColor: const Color(0xFF143026), highlightColor: const Color(0xFF1F4A3C), torchGlow: torchGlow, fogFactor: fog);
+      _drawCanopyTier(canvas, centerX: centerX, centerY: trunkTop - 6, width: 40, height: 22, baseColor: const Color(0xFF1F4A3C), highlightColor: const Color(0xFF2D6E59), torchGlow: torchGlow, fogFactor: fog);
+      _drawCanopyTier(canvas, centerX: centerX, centerY: trunkTop - 18, width: 30, height: 18, baseColor: const Color(0xFF2D6E59), highlightColor: const Color(0xFF42997D), torchGlow: torchGlow, fogFactor: fog);
+      final tendrilPaint = Paint()..color = const Color(0xFF327A63).withValues(alpha: 0.65)..strokeWidth = 1.4;
+      canvas.drawLine(Offset(centerX - 16, trunkTop + 14), Offset(centerX - 16, trunkTop + 22), tendrilPaint);
+      canvas.drawLine(Offset(centerX - 8, trunkTop + 16), Offset(centerX - 8, trunkTop + 24), tendrilPaint);
+      canvas.drawLine(Offset(centerX + 8, trunkTop + 16), Offset(centerX + 8, trunkTop + 24), tendrilPaint);
+      canvas.drawLine(Offset(centerX + 16, trunkTop + 14), Offset(centerX + 16, trunkTop + 22), tendrilPaint);
+    } else if (species == 3) {
+      // Autumn Birch / Golden Aspen (Amber gold, orange, yellow sunlit canopy)
+      _drawCanopyTier(canvas, centerX: centerX, centerY: trunkTop + 4, width: 46, height: 24, baseColor: const Color(0xFFB25E00), highlightColor: const Color(0xFFE68A00), torchGlow: torchGlow, fogFactor: fog);
+      _drawCanopyTier(canvas, centerX: centerX, centerY: trunkTop - 8, width: 38, height: 22, baseColor: const Color(0xFFD84315), highlightColor: const Color(0xFFFF8F00), torchGlow: torchGlow, fogFactor: fog);
+      _drawCanopyTier(canvas, centerX: centerX, centerY: trunkTop - 20, width: 28, height: 18, baseColor: const Color(0xFFFFB300), highlightColor: const Color(0xFFFFE082), torchGlow: torchGlow, fogFactor: fog);
+      final pPaint = Paint()..color = const Color(0xFFFFF59D).withValues(alpha: 0.85);
+      canvas.drawCircle(Offset(centerX, trunkTop - 26), 2.2, pPaint);
+    } else {
+      // Broadleaf Oak (Lush rich multi-layered emerald)
+      _drawCanopyTier(canvas, centerX: centerX, centerY: trunkTop + 4, width: 48, height: 24, baseColor: const Color(0xFF133926), highlightColor: const Color(0xFF1E5238), torchGlow: torchGlow, fogFactor: fog);
+      _drawCanopyTier(canvas, centerX: centerX, centerY: trunkTop - 8, width: 40, height: 22, baseColor: const Color(0xFF1E593E), highlightColor: const Color(0xFF2D7A56), torchGlow: torchGlow, fogFactor: fog);
+      _drawCanopyTier(canvas, centerX: centerX, centerY: trunkTop - 20, width: 30, height: 18, baseColor: const Color(0xFF2D7A56), highlightColor: const Color(0xFF45A274), torchGlow: torchGlow, fogFactor: fog);
+      final pPaint = Paint()..color = const Color(0xFF68C997).withValues(alpha: 0.7);
+      canvas.drawCircle(Offset(centerX, trunkTop - 26), 2.2, pPaint);
+    }
   }
 
   void _drawCanopyTier(
@@ -1604,6 +1646,61 @@ class _Iso3DWallPainter extends CustomPainter {
     canvas.drawCircle(Offset(w / 2, tileH - 5), 1.2, rivetPaint);
     canvas.drawCircle(Offset(9, tileH / 2), 1.2, rivetPaint);
     canvas.drawCircle(Offset(w - 9, tileH / 2), 1.2, rivetPaint);
+
+    // Architectural environment toppers
+    if (isVillage && !isDoor) {
+      final shinglePaint = Paint()
+        ..color = const Color(0xFFC04E2D).withValues(alpha: 0.85)
+        ..style = PaintingStyle.fill;
+      final shingleRidge = Paint()
+        ..color = const Color(0xFF8B3218)
+        ..strokeWidth = 1.4;
+      final roofRidge = Path()
+        ..moveTo(w / 2, 2)
+        ..lineTo(w - 4, tileH / 2)
+        ..lineTo(w / 2, tileH - 2)
+        ..lineTo(4, tileH / 2)
+        ..close();
+      canvas.drawPath(roofRidge, shinglePaint);
+      canvas.drawLine(Offset(w / 2, 2), Offset(w / 2, tileH - 2), shingleRidge);
+      canvas.drawLine(Offset(10, tileH / 2), Offset(w - 10, tileH / 2), shingleRidge);
+    } else if (isCastle && !isDoor) {
+      final merlonPaint = Paint()
+        ..color = const Color(0xFF3E4756)
+        ..style = PaintingStyle.fill;
+      final merlonHighlight = Paint()
+        ..color = const Color(0xFF637188)
+        ..strokeWidth = 1.0;
+      canvas.drawRect(Rect.fromLTWH(w / 2 - 3, -4, 6, 6), merlonPaint);
+      canvas.drawRect(Rect.fromLTWH(2, tileH / 2 - 5, 5, 5), merlonPaint);
+      canvas.drawRect(Rect.fromLTWH(w - 7, tileH / 2 - 5, 5, 5), merlonPaint);
+      canvas.drawLine(Offset(w / 2 - 3, -4), Offset(w / 2 + 3, -4), merlonHighlight);
+    } else if (isCity && !isDoor) {
+      final slatePaint = Paint()
+        ..color = const Color(0xFF455A64).withValues(alpha: 0.8)
+        ..style = PaintingStyle.fill;
+      final slateTrim = Paint()
+        ..color = const Color(0xFF78909C)
+        ..strokeWidth = 1.2;
+      final slatePath = Path()
+        ..moveTo(w / 2, 4)
+        ..lineTo(w - 8, tileH / 2)
+        ..lineTo(w / 2, tileH - 4)
+        ..lineTo(8, tileH / 2)
+        ..close();
+      canvas.drawPath(slatePath, slatePaint);
+      canvas.drawPath(slatePath, slateTrim..style = PaintingStyle.stroke);
+    } else if (isCave && !isDoor) {
+      final crystalPaint = Paint()
+        ..color = const Color(0xFF7E57C2).withValues(alpha: 0.75)
+        ..style = PaintingStyle.fill;
+      final shardPath = Path()
+        ..moveTo(w / 2 - 4, tileH / 2 - 2)
+        ..lineTo(w / 2, tileH / 2 - 8)
+        ..lineTo(w / 2 + 4, tileH / 2 - 2)
+        ..close();
+      canvas.drawPath(shardPath, crystalPaint);
+    }
   }
 
   @override
@@ -3450,3 +3547,384 @@ class _ThronePropWidget extends StatelessWidget {
     );
   }
 }
+
+class _StreetlampPropWidget extends StatelessWidget {
+  const _StreetlampPropWidget();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 44,
+      height: 52,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Positioned(
+            bottom: 2,
+            child: Container(
+              width: 14,
+              height: 6,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.black.withValues(alpha: 0.5),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: 4,
+            child: Container(
+              width: 4,
+              height: 34,
+              decoration: BoxDecoration(
+                color: const Color(0xFF1E212B),
+                borderRadius: BorderRadius.circular(2),
+                border: Border.all(color: const Color(0xFF4A4E5C), width: 0.8),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 14,
+            child: Container(
+              width: 18,
+              height: 2,
+              color: const Color(0xFF2C303E),
+            ),
+          ),
+          Positioned(
+            top: 2,
+            child: Container(
+              width: 18,
+              height: 20,
+              decoration: BoxDecoration(
+                color: const Color(0xFF1A1C24),
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(color: const Color(0xFFFFB300), width: 1.2),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFFFB300).withValues(alpha: 0.7),
+                    blurRadius: 12,
+                    spreadRadius: 2,
+                  ),
+                ],
+              ),
+              child: const Center(
+                child: Icon(Icons.light_mode_rounded, size: 12, color: Color(0xFFFFE082)),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FlowerBedPropWidget extends StatelessWidget {
+  const _FlowerBedPropWidget();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 44,
+      height: 34,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Positioned(
+            bottom: 2,
+            child: Container(
+              width: 40,
+              height: 16,
+              decoration: BoxDecoration(
+                color: const Color(0xFF3B271A),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFF5D4037), width: 1.2),
+                boxShadow: const [
+                  BoxShadow(color: Colors.black45, blurRadius: 4, offset: Offset(0, 2)),
+                ],
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: 6,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(width: 8, height: 8, decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFFE91E63))),
+                const SizedBox(width: 2),
+                Container(width: 10, height: 10, decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFFFFEB3B))),
+                const SizedBox(width: 2),
+                Container(width: 9, height: 9, decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFF9C27B0))),
+                const SizedBox(width: 2),
+                Container(width: 8, height: 8, decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFF00E5FF))),
+              ],
+            ),
+          ),
+          const Positioned(
+            top: 2,
+            child: Icon(Icons.local_florist_rounded, size: 14, color: Color(0xFF4CAF50)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HayBalePropWidget extends StatelessWidget {
+  const _HayBalePropWidget();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 42,
+      height: 34,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Positioned(
+            bottom: 2,
+            child: Container(
+              width: 36,
+              height: 10,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.black.withValues(alpha: 0.4),
+              ),
+            ),
+          ),
+          Container(
+            width: 36,
+            height: 22,
+            decoration: BoxDecoration(
+              color: const Color(0xFFD4A017),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: const Color(0xFFB8860B), width: 1.5),
+              boxShadow: const [
+                BoxShadow(color: Colors.black45, blurRadius: 4, offset: Offset(0, 2)),
+              ],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                Container(width: 2, height: 22, color: const Color(0xFF8B6508)),
+                Container(width: 2, height: 22, color: const Color(0xFF8B6508)),
+              ],
+            ),
+          ),
+          const Icon(Icons.grass_rounded, size: 14, color: Color(0xFFFFF176)),
+        ],
+      ),
+    );
+  }
+}
+
+class _VegetablePatchPropWidget extends StatelessWidget {
+  const _VegetablePatchPropWidget();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 46,
+      height: 36,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Container(
+            width: 42,
+            height: 24,
+            decoration: BoxDecoration(
+              color: const Color(0xFF2E1C0C),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: const Color(0xFF5D4037), width: 1.4),
+              boxShadow: const [
+                BoxShadow(color: Colors.black45, blurRadius: 4, offset: Offset(0, 2)),
+              ],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                Container(
+                  width: 11,
+                  height: 11,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Color(0xFFFF6F00),
+                  ),
+                ),
+                Container(
+                  width: 10,
+                  height: 10,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Color(0xFF2E7D32),
+                  ),
+                ),
+                Container(
+                  width: 11,
+                  height: 11,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Color(0xFFFF8F00),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Positioned(
+            top: 2,
+            child: Icon(Icons.eco_rounded, size: 12, color: Color(0xFF81C784)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ArcheryTargetPropWidget extends StatelessWidget {
+  const _ArcheryTargetPropWidget();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 40,
+      height: 44,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Positioned(
+            bottom: 4,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Transform.rotate(angle: -0.2, child: Container(width: 3, height: 22, color: const Color(0xFF5D4037))),
+                const SizedBox(width: 10),
+                Transform.rotate(angle: 0.2, child: Container(width: 3, height: 22, color: const Color(0xFF5D4037))),
+              ],
+            ),
+          ),
+          Positioned(
+            top: 2,
+            child: Container(
+              width: 26,
+              height: 26,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFFF5F5F5),
+                border: Border.all(color: const Color(0xFFC62828), width: 3.5),
+                boxShadow: const [
+                  BoxShadow(color: Colors.black54, blurRadius: 4, offset: Offset(0, 2)),
+                ],
+              ),
+              child: Center(
+                child: Container(
+                  width: 10,
+                  height: 10,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Color(0xFFFFD54F),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const Positioned(
+            top: 8,
+            right: 8,
+            child: Icon(Icons.arrow_upward_rounded, size: 10, color: Color(0xFF37474F)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MineCartPropWidget extends StatelessWidget {
+  const _MineCartPropWidget();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 44,
+      height: 40,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Positioned(
+            bottom: 2,
+            child: Container(
+              width: 38,
+              height: 6,
+              decoration: BoxDecoration(
+                color: const Color(0xFF3E2723),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          Container(
+            width: 34,
+            height: 22,
+            decoration: BoxDecoration(
+              color: const Color(0xFF37474F),
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(color: const Color(0xFF78909C), width: 1.5),
+              boxShadow: const [
+                BoxShadow(color: Colors.black54, blurRadius: 4, offset: Offset(0, 3)),
+              ],
+            ),
+            child: const Center(
+              child: Icon(Icons.diamond_rounded, size: 14, color: Color(0xFFAB47BC)),
+            ),
+          ),
+          Positioned(
+            bottom: 4,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(width: 8, height: 8, decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFF263238))),
+                const SizedBox(width: 14),
+                Container(width: 8, height: 8, decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFF263238))),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FencePropWidget extends StatelessWidget {
+  const _FencePropWidget();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 44,
+      height: 32,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Positioned(
+            top: 10,
+            child: Container(width: 40, height: 2.5, color: const Color(0xFF6D4C41)),
+          ),
+          Positioned(
+            top: 18,
+            child: Container(width: 40, height: 2.5, color: const Color(0xFF5D4037)),
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: List.generate(4, (_) => Container(
+              width: 4,
+              height: 22,
+              decoration: BoxDecoration(
+                color: const Color(0xFF8D6E63),
+                borderRadius: BorderRadius.circular(1.5),
+                border: Border.all(color: const Color(0xFF4E342E), width: 0.6),
+              ),
+            )),
+          ),
+        ],
+      ),
+    );
+  }
+}
+

@@ -22,6 +22,7 @@ import '../../domain/character.dart';
 import '../../domain/dm_turn_engine.dart';
 import '../../domain/pet_companion.dart';
 import '../../services/audio_service.dart';
+import '../../services/auth_service.dart';
 import '../../services/session_repository.dart';
 import '../../services/tts_service.dart';
 import '../../services/tv_cast_service.dart';
@@ -93,8 +94,10 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
   // actions; a guest never touches the model — it submits via Firestore and
   // renders whatever the host syncs back.
   bool? _isMultiplayerHost;
+  String? get _effectiveSessionId => widget.sessionId ?? SessionRepository.instance.activeSessionId;
   StreamSubscription<Map<String, dynamic>?>? _stateSub;
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _actionsSub;
+  StreamSubscription<List<SessionPlayer>>? _playersSub;
   int _renderedTurnCount = 0;
   bool _isTvCompanionMode = false;
   bool _isVoiceListening = false;
@@ -183,8 +186,7 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
   /// seed that's persisted on CampaignState (and synced for multiplayer)
   /// means revisiting this screen reconstructs the identical layout.
   void _ensureMapForCampaign(CampaignState? campaign) {
-    if (campaign == null && widget.sessionId != null) return;
-    final env = campaign?.mapEnvironment ?? 'dungeon';
+    final env = campaign?.mapEnvironment ?? _currentEnvironment ?? 'dungeon';
     final targetSeed = campaign != null ? campaign.seedForEnvironment(env) : _adHocSeed;
     if (_mapInitialized && _seed == targetSeed && _currentEnvironment == env) {
       if (campaign != null) {
@@ -373,7 +375,7 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
   /// rather than kept verbatim — that's an existing context-window
   /// tradeoff, not something this restores further back than.
   void _ensureChatForCampaign(CampaignState? campaign) {
-    if (_chatHydrated || campaign == null || widget.sessionId != null) return;
+    if (_chatHydrated || campaign == null || _effectiveSessionId != null) return;
     _chatHydrated = true;
     if (chat.isEmpty) {
       for (final t in campaign.recentTurns) {
@@ -436,8 +438,9 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
         ref.read(campaignProvider.notifier).load(campaign);
       });
       _maybeSpeak(beat.narration);
-      if (widget.sessionId != null && _isMultiplayerHost == true) {
-        SessionRepository.instance.pushState(widget.sessionId!, campaign);
+      final sid = _effectiveSessionId;
+      if (sid != null && _isMultiplayerHost == true) {
+        SessionRepository.instance.pushState(sid, campaign);
       }
     } catch (_) {
       // Flavor, not critical path — a failed beat just means a quieter turn.
@@ -513,8 +516,9 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
     _companionAutonomyTimer = Timer.periodic(const Duration(seconds: 5), (_) {
       _runCompanionAutonomousBehavior();
     });
-    if (widget.sessionId != null) {
-      _initMultiplayer();
+    final sid = _effectiveSessionId;
+    if (sid != null) {
+      _initMultiplayer(sid);
     } else {
       // Load persisted campaign if any (solo play only — a multiplayer
       // session's state comes from the host/Firestore instead).
@@ -522,10 +526,20 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
     }
   }
 
-  Future<void> _initMultiplayer() async {
-    final sessionId = widget.sessionId;
+  @override
+  void didUpdateWidget(GamePlayScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final sid = _effectiveSessionId;
+    if (sid != null && _stateSub == null && _actionsSub == null) {
+      _initMultiplayer(sid);
+    }
+  }
+
+  Future<void> _initMultiplayer([String? explicitSessionId]) async {
+    final sessionId = explicitSessionId ?? _effectiveSessionId;
     if (sessionId == null) return;
-    final host = await SessionRepository.instance.isHost(sessionId);
+    SessionRepository.instance.activeSessionId = sessionId;
+    final host = SessionRepository.instance.isLocalHost || await SessionRepository.instance.isHost(sessionId);
     if (!mounted) return;
     setState(() => _isMultiplayerHost = host);
     if (host) {
@@ -541,10 +555,120 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
       }
       final campaign = ref.read(campaignProvider);
       if (campaign != null) SessionRepository.instance.pushState(sessionId, campaign);
+      _actionsSub?.cancel();
       _actionsSub = SessionRepository.instance.watchPendingActions(sessionId).listen(_handlePendingActions);
+      _playersSub?.cancel();
+      _playersSub = SessionRepository.instance.watchPlayers(sessionId).listen(_handlePlayersChanged);
     } else {
+      _stateSub?.cancel();
       _stateSub = SessionRepository.instance.watchState(sessionId).listen(_handleSyncedState);
     }
+  }
+
+  void _handlePlayersChanged(List<SessionPlayer> players) {
+    if (_isMultiplayerHost != true || !mounted) return;
+    final campaign = ref.read(campaignProvider);
+    if (campaign == null) return;
+    final currentHostUid = AuthService.instance.currentUser?.uid;
+    bool partyChanged = false;
+
+    for (final p in players) {
+      if (p.uid == currentHostUid) continue;
+      final existingIdx = campaign.party.indexWhere(
+        (m) => (p.characterId != null && m.characterId == p.characterId) || m.name.toLowerCase() == p.displayName.toLowerCase(),
+      );
+
+      if (existingIdx == -1) {
+        final raceLabel = p.characterRace ?? 'Halfling';
+        final classLabel = p.characterClass ?? 'Fighter';
+        final hpVal = p.hp ?? 24;
+        final maxHpVal = p.maxHp ?? hpVal;
+        final newMember = PartyMemberStatus(
+          characterId: p.characterId ?? p.uid,
+          name: p.displayName,
+          raceLabel: raceLabel,
+          classLabel: classLabel,
+          persona: 'A loyal $raceLabel $classLabel adventuring with the party.',
+          abilities: const AbilityScores(str: 14, dex: 14, con: 13, int_: 10, wis: 12, cha: 10),
+          hp: hpVal,
+          maxHp: maxHpVal,
+          armorClass: 14,
+          inventory: ['Shortsword', 'Leather Armor', 'Rations (5)', 'Torch'],
+          equippedItems: ['Shortsword', 'Leather Armor'],
+          position: Point(playerPos.x, playerPos.y),
+        );
+        campaign.party.add(newMember);
+        partyChanged = true;
+        chat.add({
+          'role': 'dm',
+          'text': '${p.displayName} ($raceLabel $classLabel) joins the party!',
+        });
+      }
+    }
+
+    if (partyChanged) {
+      ref.read(campaignProvider.notifier).load(campaign);
+      final sid = _effectiveSessionId;
+      if (sid != null) {
+        SessionRepository.instance.pushState(sid, campaign);
+      }
+      setState(() {});
+    }
+  }
+
+  void _handleRemoteMove(String? fromUid, int tx, int ty) {
+    final campaign = ref.read(campaignProvider);
+    if (campaign == null) return;
+
+    final idx = campaign.party.indexWhere((m) => m.characterId == fromUid);
+    if (idx > 0) {
+      campaign.party[idx].position = Point(tx, ty);
+    } else {
+      campaign.partyPosition = Point(tx, ty);
+      playerPos = m.Point(tx, ty);
+    }
+
+    const visionRad = 2;
+    for (var dy = -visionRad; dy <= visionRad; dy++) {
+      for (var dx = -visionRad; dx <= visionRad; dx++) {
+        final vx = tx + dx;
+        final vy = ty + dy;
+        if (vx >= 0 && vy >= 0 && vx < _dungeon.width && vy < _dungeon.height) {
+          visited.add('$vx,$vy');
+          campaign.visitedTiles.add('$vx,$vy');
+        }
+      }
+    }
+
+    ref.read(campaignProvider.notifier).load(campaign);
+    final sid = _effectiveSessionId;
+    if (sid != null) {
+      SessionRepository.instance.pushState(sid, campaign);
+    }
+    setState(() {});
+  }
+
+  void _handleRemoteDoor(int dx, int dy) {
+    final campaign = ref.read(campaignProvider);
+    _openedDoors.add('$dx,$dy');
+    for (var dyOff = -3; dyOff <= 3; dyOff++) {
+      for (var dxOff = -3; dxOff <= 3; dxOff++) {
+        final nx = dx + dxOff;
+        final ny = dy + dyOff;
+        if (nx >= 0 && ny >= 0 && nx < _dungeon.width && ny < _dungeon.height) {
+          visited.add('$nx,$ny');
+          campaign?.visitedTiles.add('$nx,$ny');
+        }
+      }
+    }
+    ref.read(campaignProvider.notifier).openDoor(dx, dy);
+    final updated = ref.read(campaignProvider);
+    final sid = _effectiveSessionId;
+    if (sid != null && updated != null) {
+      SessionRepository.instance.pushState(sid, updated);
+    }
+    AudioService.instance.playSuccess();
+    setState(() {});
   }
 
   void _handleSyncedState(Map<String, dynamic>? json) {
@@ -563,15 +687,70 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
       _maybeSpeak(newTurns.last.dmResponse);
     }
     ref.read(campaignProvider.notifier).load(cs);
-    setState(() {});
+
+    // Sync environment & map layout if different or uninitialized
+    final targetEnv = cs.mapEnvironment;
+    final targetSeed = cs.seedForEnvironment(targetEnv);
+    if (!_mapInitialized || _currentEnvironment != targetEnv || _seed != targetSeed) {
+      _ensureMapForCampaign(cs);
+    }
+
+    setState(() {
+      playerPos = m.Point(cs.partyPosition.x, cs.partyPosition.y);
+      visited.addAll(cs.visitedTiles);
+      _openedDoors.addAll(cs.openedDoors);
+      _npcs.removeWhere((n) => cs.defeatedEnemies.contains(n.id));
+      if (cs.party.length > 1) {
+        for (var i = 1; i < cs.party.length; i++) {
+          if (cs.party[i].position != null) {
+            visited.add('${cs.party[i].position!.x},${cs.party[i].position!.y}');
+          }
+        }
+      }
+    });
+    _recenterOnPlayer();
   }
 
   Future<void> _handlePendingActions(QuerySnapshot<Map<String, dynamic>> snap) async {
-    final sessionId = widget.sessionId;
+    final sessionId = _effectiveSessionId;
     if (sessionId == null) return;
-    for (final doc in snap.docs) {
-      final text = (doc.data()['actionText'] as String?)?.trim() ?? '';
-      if (text.isNotEmpty) await _send(text, fromRemote: true);
+    final docs = snap.docs.toList()
+      ..sort((a, b) {
+        final aTime = (a.data()['submittedAt'] as Timestamp?)?.millisecondsSinceEpoch ?? 0;
+        final bTime = (b.data()['submittedAt'] as Timestamp?)?.millisecondsSinceEpoch ?? 0;
+        return aTime.compareTo(bTime);
+      });
+    for (final doc in docs) {
+      final data = doc.data();
+      final type = data['actionType'] as String? ?? 'chat';
+      final text = (data['actionText'] as String?)?.trim() ?? '';
+      final payload = (data['data'] as Map?)?.cast<String, dynamic>() ?? {};
+      final fromUid = data['fromUid'] as String?;
+
+      if (type == 'move') {
+        final tx = (payload['x'] as num?)?.toInt();
+        final ty = (payload['y'] as num?)?.toInt();
+        if (tx != null && ty != null) {
+          _handleRemoteMove(fromUid, tx, ty);
+        }
+      } else if (type == 'door') {
+        final dx = (payload['x'] as num?)?.toInt();
+        final dy = (payload['y'] as num?)?.toInt();
+        if (dx != null && dy != null) {
+          _handleRemoteDoor(dx, dy);
+        }
+      } else if (type == 'travel') {
+        final targetEnv = payload['targetEnv'] as String?;
+        final regionTitle = payload['regionTitle'] as String? ?? 'Charted Region';
+        if (targetEnv != null) {
+          _travelToEnvironment(targetEnv, regionTitle);
+        }
+      } else {
+        while (_isGenerating) {
+          await Future.delayed(const Duration(milliseconds: 300));
+        }
+        if (text.isNotEmpty) await _send(text, fromRemote: true);
+      }
       await SessionRepository.instance.markActionProcessed(sessionId, doc.id);
     }
   }
@@ -653,6 +832,7 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
     _mapController.dispose();
     _stateSub?.cancel();
     _actionsSub?.cancel();
+    _playersSub?.cancel();
     TtsService.instance.stop();
     SmartAiService.instance.dispose();
     super.dispose();
@@ -667,14 +847,15 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
     // Guest in a multiplayer session: never run the model locally — submit
     // the action to the host's device and wait for the synced state to
     // reflect it (see _handleSyncedState).
-    if (widget.sessionId != null && _isMultiplayerHost != true && !fromRemote) {
+    final sid = _effectiveSessionId;
+    if (sid != null && _isMultiplayerHost != true && !fromRemote) {
       setState(() {
         _isGenerating = true;
         _streamingText = '';
       });
       _inputController.clear();
       try {
-        await SessionRepository.instance.submitAction(widget.sessionId!, text);
+        await SessionRepository.instance.submitAction(sid, text);
       } catch (e) {
         if (!mounted) return;
         setState(() {
@@ -757,8 +938,8 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
         _maybeSpeak(result.narration);
         TvCastService.instance.broadcastNarration('Dungeon Master', result.narration);
         _broadcastTvState();
-        if (widget.sessionId != null && _isMultiplayerHost == true) {
-          SessionRepository.instance.pushState(widget.sessionId!, campaign);
+        if (sid != null && _isMultiplayerHost == true) {
+          SessionRepository.instance.pushState(sid, campaign);
         }
         // A one-on-one exchange with a specific companion (mention.addressedTo)
         // stays theirs alone — no unrelated beat butting in right after.
@@ -1018,6 +1199,24 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
     _roamNpcs();
     _roamAnimals();
     _broadcastTvState();
+    final sid = _effectiveSessionId;
+    if (sid != null) {
+      if (_isMultiplayerHost == true) {
+        final updated = ref.read(campaignProvider);
+        if (updated != null) {
+          updated.partyPosition = Point(nx, ny);
+          updated.visitedTiles.add('$nx,$ny');
+          SessionRepository.instance.pushState(sid, updated);
+        }
+      } else {
+        SessionRepository.instance.submitAction(
+          sid,
+          'Party explores to tile ($nx, $ny)',
+          actionType: 'move',
+          data: {'x': nx, 'y': ny},
+        );
+      }
+    }
 
     // Check newly discovered rooms
     for (final room in _dungeon.rooms) {
@@ -1326,6 +1525,25 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
       _roamAnimals();
       _broadcastTvState();
 
+      final sid = _effectiveSessionId;
+      if (sid != null) {
+        if (_isMultiplayerHost == true) {
+          final updated = ref.read(campaignProvider);
+          if (updated != null) {
+            updated.partyPosition = Point(playerPos.x, playerPos.y);
+            updated.visitedTiles.addAll(visited);
+            SessionRepository.instance.pushState(sid, updated);
+          }
+        } else {
+          SessionRepository.instance.submitAction(
+            sid,
+            'Party explores to tile (${playerPos.x}, ${playerPos.y})',
+            actionType: 'move',
+            data: {'x': playerPos.x, 'y': playerPos.y},
+          );
+        }
+      }
+
       final tile = _dungeon.tileAt(playerPos.x, playerPos.y);
       final desc = tile == m.TileType.door ? 'through the doorway' : 'into the chamber';
       _send('I traverse the corridor $desc.');
@@ -1527,9 +1745,19 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
                     }
                   });
                   ref.read(campaignProvider.notifier).openDoor(doorPos.x, doorPos.y);
-                  if (widget.sessionId != null && _isMultiplayerHost == true) {
-                    final c = ref.read(campaignProvider);
-                    if (c != null) SessionRepository.instance.pushState(widget.sessionId!, c);
+                  final sid = _effectiveSessionId;
+                  if (sid != null) {
+                    if (_isMultiplayerHost == true) {
+                      final c = ref.read(campaignProvider);
+                      if (c != null) SessionRepository.instance.pushState(sid, c);
+                    } else {
+                      SessionRepository.instance.submitAction(
+                        sid,
+                        'I push open the heavy dungeon door at (${doorPos.x}, ${doorPos.y}).',
+                        actionType: 'door',
+                        data: {'x': doorPos.x, 'y': doorPos.y},
+                      );
+                    }
                   }
                   AudioService.instance.playSuccess();
                   _send('I turn the rusted iron ring and push open the heavy dungeon door.');
@@ -1642,9 +1870,10 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
             _props.add(MapProp(pos: defeatedEnemy.pos, asset: 'assets/tiles/prop_bones.png'));
           });
           ref.read(campaignProvider.notifier).defeatEnemy(defeatedEnemy.id);
-          if (widget.sessionId != null && _isMultiplayerHost == true) {
+          final sid = _effectiveSessionId;
+          if (sid != null && _isMultiplayerHost == true) {
             final c = ref.read(campaignProvider);
-            if (c != null) SessionRepository.instance.pushState(widget.sessionId!, c);
+            if (c != null) SessionRepository.instance.pushState(sid, c);
           }
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -4633,8 +4862,18 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
             seed: targetSeed,
           );
       final updated = ref.read(campaignProvider);
-      if (widget.sessionId != null && _isMultiplayerHost == true && updated != null) {
-        SessionRepository.instance.pushState(widget.sessionId!, updated);
+      final sid = _effectiveSessionId;
+      if (sid != null) {
+        if (_isMultiplayerHost == true && updated != null) {
+          SessionRepository.instance.pushState(sid, updated);
+        } else if (_isMultiplayerHost != true) {
+          SessionRepository.instance.submitAction(
+            sid,
+            'Party fast travels to $regionTitle',
+            actionType: 'travel',
+            data: {'targetEnv': targetEnv, 'regionTitle': regionTitle},
+          );
+        }
       }
     }
 
@@ -4784,6 +5023,18 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
             // the +/-/locate buttons below drive the same TransformationController.
             LayoutBuilder(builder: (context, constraints) {
               _mapViewportSize = constraints.biggest;
+              if (!_mapInitialized) {
+                return Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const CircularProgressIndicator(color: ArcaneTheme.secondary),
+                      const SizedBox(height: 12),
+                      Text('Synchronizing party realm...', style: GoogleFonts.cinzel(color: Colors.white70, fontSize: 13, letterSpacing: 1.1)),
+                    ],
+                  ),
+                );
+              }
               if (!_mapCentered && !_recenterScheduled) {
                 _recenterScheduled = true;
                 WidgetsBinding.instance.addPostFrameCallback((_) {

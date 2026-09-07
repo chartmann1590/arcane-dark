@@ -36,6 +36,10 @@ class ForestGenerator {
         Room(4, 7, 25, 8, 6, type: RoomType.treasureVault, name: 'Sunken Brook Clearing', description: 'A tranquil riverbank glade where crystal-clear water pools against smooth river stones and wild ferns.'),
         Room(5, 23, 24, 7, 7, type: RoomType.bossChamber, name: 'Wolf Crag Overlook', description: 'A rugged plateau crowned with granite boulders, overlooking the sweeping expanse of the ancient woodland.'),
         Room(6, width - 11, 4, 6, 6, type: RoomType.alchemistLab, name: 'Fairy Mushroom Glade', description: 'Bioluminescent fungal spores drift lazily over damp moss and ancient fallen birch logs.'),
+        Room(7, 14, 16, 6, 6, type: RoomType.shrineSanctum, name: 'Faerie Ring Meadow', description: 'A circle of luminescent blue toadstools humming with playful fey enchantment.'),
+        Room(8, 15, 25, 6, 6, type: RoomType.armory, name: 'Ranger Archery Glade', description: 'Straw archery targets and wooden bowyer benches sheltered under birch trees.'),
+        Room(9, width - 11, 14, 6, 6, type: RoomType.treasureVault, name: 'Whispering Hollow Cache', description: 'An ancient hollow oak trunk where woodland rangers cache emergency supplies.'),
+        Room(10, width - 11, 24, 6, 6, type: RoomType.ancientLibrary, name: 'Wildflower Clearing', description: 'Carpeted with purple heather, wild chamomile, and golden arnica blossoms.'),
       ]);
 
     } else if (layoutType == 1) {
@@ -53,6 +57,10 @@ class ForestGenerator {
         Room(4, width - 12, height - 11, 8, 7, type: RoomType.bossChamber, name: 'Ancient Stag Ridge', description: 'An elevated mossy bluff overlooking the sweeping expanse of the ancient forest canopy.'),
         Room(5, 4, cy - 3, 7, 7, type: RoomType.armory, name: 'Hunter Lodging Glade', description: 'Canvas lean-to tents, archery targets, and racks of seasoned ash wood longbows.'),
         Room(6, width - 11, cy - 3, 7, 7, type: RoomType.treasureVault, name: 'Hidden Briar Grotto', description: 'Tangled blackberry brambles protecting an ancient stone cache buried beneath elder roots.'),
+        Room(7, cx - 11, 4, 6, 6, type: RoomType.ancientLibrary, name: 'Ancient Moss Menhirs', description: 'Carved runic pillars half-swallowed by emerald moss and creeping vines.'),
+        Room(8, cx + 5, 4, 6, 6, type: RoomType.treasureVault, name: 'Silver Leaf Grove', description: 'Shimmering white bark birch trees shedding leaves of spun silver.'),
+        Room(9, cx - 11, height - 11, 6, 6, type: RoomType.shrineSanctum, name: 'Druidic Sun Shrine', description: 'Carved solar disk resting atop an ivy-woven stone pedestal.'),
+        Room(10, cx + 5, height - 11, 6, 6, type: RoomType.armory, name: 'Woodland Trapper Outpost', description: 'Tanned deer hides, cedar drying racks, and hand-forged animal snares.'),
       ]);
 
     } else {
@@ -74,6 +82,10 @@ class ForestGenerator {
         Room(4, 5, 26, 8, 6, type: RoomType.treasureVault, name: 'Sunken Lotus Marsh', description: 'Floating water lilies with luminescent petals surrounded by quiet reeds and dragonflies.'),
         Room(5, 21, 25, 8, 7, type: RoomType.bossChamber, name: 'Bog Wyrm Hollow', description: 'A shadowed depression flanked by twisted cypress roots and ancient mossy stones.'),
         Room(6, width - 11, 4, 7, 7, type: RoomType.alchemistLab, name: 'Herbalist Drying Glade', description: 'Racks of wild thyme, yarrow, and coltsfoot drying in the sunlit breeze.'),
+        Room(7, width - 11, 15, 6, 6, type: RoomType.treasureVault, name: 'Sunken Pearl Grotto', description: 'Gentle shallows hiding freshwater mussels with shimmering wild pearls.'),
+        Room(8, 13, 10, 6, 5, type: RoomType.ancientLibrary, name: 'Elder Wood Bridge Camp', description: 'A cozy timber campsite watching over the river crossing.'),
+        Room(9, 13, 20, 6, 5, type: RoomType.shrineSanctum, name: 'Water Nymph Pool', description: 'Crystal-clear azure water where luminous dragonflies dance.'),
+        Room(10, width - 11, 25, 6, 6, type: RoomType.armory, name: 'Ranger Lookout Bluff', description: 'An elevated wooden observation platform perched in a colossal pine.'),
       ]);
     }
 

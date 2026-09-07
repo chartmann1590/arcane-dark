@@ -49,10 +49,10 @@ List<MapProp> generateCaveProps(DungeonMap cave) {
       case 3: // Mine Excavation / Forge
         props.add(MapProp(
           pos: center,
-          asset: 'assets/tiles/prop_crates.png',
+          asset: 'assets/tiles/prop_minecart.png',
           isSolid: true,
           name: 'Dwarven Ore Cart & Pickaxes',
-          interactionText: 'A wooden rail cart laden with raw silver ore and discarded iron excavation tools.',
+          interactionText: 'A heavy iron rail cart laden with raw silver ore, amethyst crystals, and iron excavation picks.',
         ));
         taken.add(key);
         break;
@@ -97,18 +97,19 @@ List<MapProp> generateCaveProps(DungeonMap cave) {
 
   final caveAssets = [
     ('assets/tiles/prop_crystals.png', 'Luminescent Crystal Shard', 'Subterranean mineral formation glowing with ambient cyan light.'),
+    ('assets/tiles/prop_minecart.png', 'Deep-Mine Ore Cart', 'A reinforced iron cart loaded with sparkling quartz and raw gold ore.'),
     ('assets/tiles/prop_chest.png', 'Prospector\'s Hidden Coffer', 'An ironbound strongbox wedged into a fissure in the rock.'),
     ('assets/tiles/prop_brazier.png', 'Dwarven Heating Brazier', 'Perpetual sulfur embers keeping the cavern chill at bay.'),
     ('assets/tiles/prop_crates.png', 'Mining Supply Crates', 'Saltpeter canisters and blasting cords for cavern excavation.'),
     ('assets/tiles/prop_rubble.png', 'Fallen Stalactite Rubble', 'Jagged stone debris shattered against the cavern flagstones.'),
   ];
 
-  for (final p in candidateTiles.take(10)) {
+  for (final p in candidateTiles.take(16)) {
     final (asset, name, desc) = caveAssets[rng.nextInt(caveAssets.length)];
     props.add(MapProp(
       pos: p,
       asset: asset,
-      isSolid: asset.contains('crystals') || asset.contains('chest') || asset.contains('crates'),
+      isSolid: asset.contains('crystals') || asset.contains('chest') || asset.contains('crates') || asset.contains('minecart'),
       name: name,
       interactionText: desc,
     ));
@@ -260,9 +261,11 @@ List<MapAnimal> generateCaveAnimals(DungeonMap cave, {Set<String> excluding = co
     ('beetle', 'Chasm Armor Beetle', 'Heavy carapaced burrower chewing through mineral veins.', 'Click-clack! The sturdy beetle taps its antennae harmlessly against your boots.', 'cave_beetle'),
     ('rat', 'Deep Scurrier Rat', 'Nimble subterranean rodent with exceptional low-light vision.', 'Snuffle... The cave rat nibbles a crumb from your hand with tiny paws.', 'cave_rat'),
     ('hound', 'Blind Cave Hound', 'Pale silky hound bred by deep dwellers for cavern guidance.', 'Whine... The loyal hound presses its cool muzzle into your palm lovingly.', 'cave_hound'),
+    ('salamander', 'Firebelly Cavern Newt', 'Orange-spotted amphibian crawling along damp geothermal vents.', 'Sssss! The warm little newt curls harmlessly around your glove.', 'cave_newt'),
+    ('spider', 'Crystal Cave Weaver', 'Translucent silk spinner creating luminescent webs between stalagmites.', 'The gentle cavern weaver watches calmly with multiple multifaceted eyes.', 'cave_spider'),
   ];
 
-  final count = 7 + rng.nextInt(4); // 7..10 animals
+  final count = 11 + rng.nextInt(4); // 11..14 animals
   for (int i = 0; i < count; i++) {
     final (species, name, flavor, dialogue, petId) = archetypes[i % archetypes.length];
     for (int attempts = 0; attempts < 35; attempts++) {

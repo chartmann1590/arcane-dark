@@ -127,19 +127,36 @@ List<MapProp> generateCityProps(DungeonMap city) {
     }
   }
 
-  // Streetlamps along boulevards
+  // 3. Boulevard Streetlamps & Ornamental Urns
   final rng = Random(city.seed);
-  for (int i = 0; i < 8; i++) {
-    final lx = 4 + rng.nextInt(city.width - 8);
-    final ly = 4 + rng.nextInt(city.height - 8);
+  for (int i = 0; i < 12; i++) {
+    final lx = 3 + rng.nextInt(city.width - 6);
+    final ly = 3 + rng.nextInt(city.height - 6);
     final k = '$lx,$ly';
     if (!taken.contains(k) && city.tileAt(lx, ly) == TileType.floor) {
       props.add(MapProp(
         pos: Point(lx, ly),
-        asset: 'assets/tiles/prop_torch.png',
+        asset: 'assets/tiles/prop_streetlamp.png',
         isSolid: false,
         name: 'Metropolitan Streetlamp',
         interactionText: 'A tall ornamental bronze lamppost illuminating the grand avenues.',
+      ));
+      taken.add(k);
+    }
+  }
+
+  // 4. Promenade Flowerbeds & Planters
+  for (int i = 0; i < 6; i++) {
+    final fx = 4 + rng.nextInt(city.width - 8);
+    final fy = 4 + rng.nextInt(city.height - 8);
+    final k = '$fx,$fy';
+    if (!taken.contains(k) && city.tileAt(fx, fy) == TileType.floor) {
+      props.add(MapProp(
+        pos: Point(fx, fy),
+        asset: 'assets/tiles/prop_flowerbed.png',
+        isSolid: false,
+        name: 'Promenade Marble Planter',
+        interactionText: 'Manicured royal lilies and purple petunias blooming in a sculpted marble planter.',
       ));
       taken.add(k);
     }
@@ -274,6 +291,53 @@ List<MapNpc> generateCityNpcs(DungeonMap city, {Set<String> excluding = const {}
       ],
       canRecruit: true,
     ),
+    MapNpc(
+      id: 'npc_jeweler_cassandra',
+      name: 'Lady Cassandra',
+      role: 'Guild Jeweler & Gemologist',
+      pos: const Point(0, 0),
+      portraitAsset: 'assets/avatar/portraits/elf.png',
+      greeting: 'Diamonds of the deep earth and radiant moonstones. Only the purest gems grace my velvet cases.',
+      dialogueOptions: [
+        'Can you appraise these gemstones for us?',
+        'Do you sell enchanted rings of warding?',
+      ],
+      shopItems: [
+        'Ring of Silver Shielding (50 Gold)',
+        'Amulet of Health (80 Gold)',
+      ],
+      canRecruit: false,
+    ),
+    MapNpc(
+      id: 'npc_artificer_zephyr',
+      name: 'Artificer Zephyr',
+      role: 'Arcane Clockwork Engineer',
+      pos: const Point(0, 0),
+      portraitAsset: 'assets/avatar/portraits/gnome.png',
+      greeting: 'Careful around the steam pipes! Arcane capacitors can discharge 10,000 volts of lightning without warning.',
+      dialogueOptions: [
+        'Show me your clockwork inventions.',
+        'Can you repair magical gadgets and rods?',
+      ],
+      shopItems: [
+        'Clockwork Scout Automaton (75 Gold)',
+        'Lightning Rod Battery (45 Gold)',
+      ],
+      canRecruit: true,
+    ),
+    MapNpc(
+      id: 'npc_harbormaster_thorne',
+      name: 'Harbormaster Thorne',
+      role: 'Canal Port Authority',
+      pos: const Point(0, 0),
+      portraitAsset: 'assets/avatar/portraits/human.png',
+      greeting: 'Keep moving, landlubbers. Three galleons from the eastern empire just docked with holds full of silk and spice.',
+      dialogueOptions: [
+        'What vessels are arriving in port?',
+        'Any rumors of pirate activity off the coast?',
+      ],
+      canRecruit: false,
+    ),
   ];
 
   for (final arch in archetypes) {
@@ -308,9 +372,12 @@ List<MapAnimal> generateCityAnimals(DungeonMap city, {Set<String> excluding = co
     ('bird', 'Courier Carrier Pigeon', 'Trained homing pigeon perched on the guildhall mail ledge.', 'Coo! A cooing dove tilts its head, inspecting you calmly.', 'city_pigeon'),
     ('horse', 'Governor\'s White Stallion', 'Magnificent snow-white courser caparisoned in royal silk.', 'Neigh! The stallion snorts proudly and stamps an iron shoe on the stone.', 'city_stallion'),
     ('dog', 'Market Terrier', 'Energetic terrier darting playfully between bazaar canopies.', 'Yip-yip! The spirited pup wags its tail eagerly at your party.', 'city_terrier'),
+    ('bird', 'Harbor Gull', 'Audacious white sea gull swooping around the canal docks.', 'Squawk! It tilts its beak and eyes your rations with bold interest.', 'city_gull'),
+    ('hound', 'Patrician Poodle', 'Groomed curly-coated hound wearing a velvet collar.', 'Arf! It prances gracefully and accepts gentle head pats.', 'city_poodle'),
+    ('cat', 'Guildhall Siamese', 'Striking blue-eyed cat resting upon parchment rolls.', 'Mrow... It purrs aloofly while sunning itself in a window.', 'city_siamese'),
   ];
 
-  final count = 7 + rng.nextInt(4); // 7..10 animals
+  final count = 11 + rng.nextInt(4); // 11..14 animals
   for (int i = 0; i < count; i++) {
     final (species, name, flavor, dialogue, petId) = archetypes[i % archetypes.length];
     for (int attempts = 0; attempts < 35; attempts++) {

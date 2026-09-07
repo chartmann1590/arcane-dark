@@ -124,6 +124,39 @@ List<MapProp> generateVillageProps(DungeonMap village) {
         ));
         taken.add(key);
         break;
+
+      case 10: // Granary
+        props.add(MapProp(
+          pos: center,
+          asset: 'assets/tiles/prop_hay.png',
+          isSolid: true,
+          name: 'Stacked Grain Sheaves & Hay',
+          interactionText: 'Bundles of golden barley and sun-dried meadow hay tied with hemp cords.',
+        ));
+        taken.add(key);
+        break;
+
+      case 11: // Chapel of the Grove
+        props.add(MapProp(
+          pos: center,
+          asset: 'assets/tiles/prop_shrine.png',
+          isSolid: true,
+          name: 'Silver Maiden Altar Shrine',
+          interactionText: 'A polished marble pedestal adorned with white lilies, glowing beeswax candles, and sanctified oils.',
+        ));
+        taken.add(key);
+        break;
+
+      case 12: // Fletcher / Archery Yard
+        props.add(MapProp(
+          pos: center,
+          asset: 'assets/tiles/prop_target.png',
+          isSolid: true,
+          name: 'Straw Bullseye Archery Target',
+          interactionText: 'A straw target ringed with red felt, bristling with tightly grouped fletched arrows.',
+        ));
+        taken.add(key);
+        break;
     }
   }
 
@@ -131,17 +164,22 @@ List<MapProp> generateVillageProps(DungeonMap village) {
   final plazaOffsets = [
     (-2, -2), (2, -2), (-2, 2), (2, 2),
     (0, -3), (0, 3), (-3, 0), (3, 0),
+    (-1, -3), (1, -3), (-1, 3), (1, 3),
   ];
 
   final marketProps = [
     ('assets/tiles/prop_market_stall.png', 'Market Produce Stall', 'Wooden crates piled high with crisp orchard apples, pumpkins, and herbs.'),
     ('assets/tiles/prop_barrel.png', 'Autumn Cider Casks', 'Tapped barrels of golden spiced cider fragrant with cinnamon and cloves.'),
     ('assets/tiles/prop_crates.png', 'Merchant Trade Crates', 'Imported bolts of velvet, ceramic spice jars, and silver trade trinkets.'),
-    ('assets/tiles/prop_torch.png', 'Town Iron Streetlamp', 'A sturdy cast-iron streetlamp keeping the cobblestone avenues warmly illuminated.'),
+    ('assets/tiles/prop_streetlamp.png', 'Wrought-Iron Lamppost', 'An ornate cast-iron streetlamp casting a warm amber glow over the cobblestones.'),
     ('assets/tiles/prop_cart.png', 'Farmstead Hay Wagon', 'A sturdy wooden cart stacked with sweet-smelling mountain timothy hay.'),
     ('assets/tiles/prop_table.png', 'Jeweler Display Table', 'Wares on green velvet: copper rings, polished amber pendants, and cut river gems.'),
+    ('assets/tiles/prop_flowerbed.png', 'Plaza Floral Planter', 'Vibrant marigolds, purple hyacinths, and sweet clover blooming in a carved stone planter.'),
     ('assets/tiles/prop_shrine.png', 'Wayfarer Blessing Shrine', 'A modest stone shrine dedicated to safe journeys on the realm highways.'),
-    ('assets/tiles/prop_torch.png', 'Square Lantern Post', 'Ornamental lantern beacon guiding travelers through the town square.'),
+    ('assets/tiles/prop_streetlamp.png', 'Bazaar Lantern Post', 'Ornamental lantern beacon guiding travelers through the town square.'),
+    ('assets/tiles/prop_hay.png', 'Golden Hay Stook', 'Tightly bundled agricultural straw resting beside feed troughs.'),
+    ('assets/tiles/prop_flowerbed.png', 'Sweetbriar Flower Bed', 'Fragrant blossoms attracting golden honeybees and butterflies.'),
+    ('assets/tiles/prop_crates.png', 'Spice Merchant Sacks', 'Jute bags spilling aromatic peppercorn, dried cardamom, and crushed ginger.'),
   ];
 
   for (int i = 0; i < plazaOffsets.length; i++) {
@@ -153,7 +191,7 @@ List<MapProp> generateVillageProps(DungeonMap village) {
       props.add(MapProp(
         pos: p,
         asset: asset,
-        isSolid: !asset.contains('torch') && !asset.contains('rug'),
+        isSolid: !asset.contains('streetlamp') && !asset.contains('flower') && !asset.contains('rug'),
         name: name,
         interactionText: desc,
       ));
@@ -163,18 +201,54 @@ List<MapProp> generateVillageProps(DungeonMap village) {
 
   // 4. Street Lamps along thoroughfares
   final rng = Random(village.seed);
-  for (int i = 0; i < 6; i++) {
-    final lx = 4 + rng.nextInt(village.width - 8);
-    final ly = 4 + rng.nextInt(village.height - 8);
+  for (int i = 0; i < 8; i++) {
+    final lx = 3 + rng.nextInt(village.width - 6);
+    final ly = 3 + rng.nextInt(village.height - 6);
     final k = '$lx,$ly';
     if (!taken.contains(k) && village.tileAt(lx, ly) == TileType.floor) {
       props.add(MapProp(
         pos: Point(lx, ly),
-        asset: 'assets/tiles/prop_torch.png',
+        asset: 'assets/tiles/prop_streetlamp.png',
         isSolid: false,
-        name: 'Village Lamppost',
-        interactionText: 'A warm streetlamp warding the road against night shadows.',
+        name: 'Town Iron Streetlamp',
+        interactionText: 'A sturdy cast-iron streetlamp keeping the cobblestone avenues warmly illuminated.',
       ));
+      taken.add(k);
+    }
+  }
+
+  // 5. Cottage Flower Beds, Fences & Homestead Vegetable Gardens
+  for (int i = 0; i < 6; i++) {
+    final gx = 3 + rng.nextInt(village.width - 6);
+    final gy = 3 + rng.nextInt(village.height - 6);
+    final k = '$gx,$gy';
+    if (!taken.contains(k) && village.tileAt(gx, gy) == TileType.plains) {
+      final propType = i % 3;
+      if (propType == 0) {
+        props.add(MapProp(
+          pos: Point(gx, gy),
+          asset: 'assets/tiles/prop_flowerbed.png',
+          isSolid: false,
+          name: 'Cottage Rose Garden',
+          interactionText: 'A lush patch of fragrant wild roses and sweet lavender.',
+        ));
+      } else if (propType == 1) {
+        props.add(MapProp(
+          pos: Point(gx, gy),
+          asset: 'assets/tiles/prop_vegetable.png',
+          isSolid: true,
+          name: 'Homestead Vegetable Patch',
+          interactionText: 'Plump golden pumpkins, crisp cabbages, and garden carrots growing in dark soil.',
+        ));
+      } else {
+        props.add(MapProp(
+          pos: Point(gx, gy),
+          asset: 'assets/tiles/prop_fence.png',
+          isSolid: true,
+          name: 'Rustic Picket Fence',
+          interactionText: 'A weathered cedar fence keeping pasture animals safe.',
+        ));
+      }
       taken.add(k);
     }
   }
@@ -378,6 +452,67 @@ List<MapNpc> generateVillageNpcs(DungeonMap village, {Set<String> excluding = co
       ],
       canRecruit: true,
     ),
+    MapNpc(
+      id: 'npc_fisherman_silas',
+      name: 'Silas Riverwind',
+      role: 'Riverside Fisherman',
+      pos: const Point(0, 0),
+      portraitAsset: 'assets/avatar/portraits/human.png',
+      greeting: 'River’s running cold and deep today. Caught a fine basket of silver perch if you need fresh rations.',
+      dialogueOptions: [
+        'What fish have you pulled from the waters?',
+        'Any signs of river monsters upstream?',
+      ],
+      shopItems: [
+        'Smoked Silver Perch Rations (5 Gold)',
+        'Woven Willow Creel (10 Gold)',
+      ],
+      canRecruit: false,
+    ),
+    MapNpc(
+      id: 'npc_stablemaster_rowan',
+      name: 'Rowan Ironhoof',
+      role: 'Village Stablemaster',
+      pos: const Point(0, 0),
+      portraitAsset: 'assets/avatar/portraits/human.png',
+      greeting: 'Need a fresh mount or spare horseshoes? My draft horses can pull any wagon across the mountain passes.',
+      dialogueOptions: [
+        'How much to shoe our party’s horses?',
+        'Have any fast couriers passed through?',
+      ],
+      canRecruit: false,
+    ),
+    MapNpc(
+      id: 'npc_bard_lyra',
+      name: 'Lyra Songweaver',
+      role: 'Minstrel & Lore Keeper',
+      pos: const Point(0, 0),
+      portraitAsset: 'assets/avatar/portraits/elf.png',
+      greeting: 'Strings tuned to the autumn breeze! For a coin, I can sing the Ballad of the Sunken Citadel.',
+      dialogueOptions: [
+        'Play a song of courage to bolster our party.',
+        'What legends have you heard of the surrounding wilds?',
+      ],
+      canRecruit: true,
+    ),
+    MapNpc(
+      id: 'npc_bowyer_finnian',
+      name: 'Finnian Greenfeather',
+      role: 'Master Fletcher & Archer',
+      pos: const Point(0, 0),
+      portraitAsset: 'assets/avatar/portraits/elf.png',
+      greeting: 'A straight shaft and razor-honed broadhead make all the difference when orcs charge from the brush.',
+      dialogueOptions: [
+        'Show me your custom fletched arrows.',
+        'Can you tune my longbow string?',
+      ],
+      shopItems: [
+        'Quiver of Broadhead Arrows (15 Gold)',
+        'Reinforced Yew Hunting Bow (45 Gold)',
+        'Hawkeye Archer Gloves (30 Gold)',
+      ],
+      canRecruit: true,
+    ),
   ];
 
   for (int i = 0; i < archetypes.length; i++) {
@@ -417,9 +552,12 @@ List<MapAnimal> generateVillageAnimals(DungeonMap village, {Set<String> excludin
     ('rat', 'Cellar Whisker Rat', 'Quick-witted little rat foraging crumbs behind the bakery.', 'Squeak! The tiny rat pauses, wiggling its whiskers curiously.', 'village_rat'),
     ('dog', 'Shepherd Collie', 'Eager herding dog keeping sheep safely inside the fences.', 'Arf-arf! The collie circles you happily and panting.', 'village_shepherd'),
     ('cat', 'Hearth Calico Cat', 'Plump sleeping cat curled up beside the tavern stone steps.', 'Mew... It stretches its paws contentedly.', 'village_calico'),
+    ('bird', 'Barnyard Rooster', 'Vibrant feathered rooster strutting proudly atop a fence.', 'Cock-a-doodle-doo! It puffs its emerald-green chest feathers proudly.', 'village_rooster'),
+    ('hound', 'Golden Farm Retriever', 'Affectionate golden dog carrying a wooden stick.', 'Woof! It drops the stick at your boots and wags its tail enthusiastically.', 'village_retriever'),
+    ('horse', 'Highland Pony', 'Shaggy mountain pony equipped with a small pack saddle.', 'Whinny! It nuzzles your hand looking for sugar cubes or apples.', 'village_pony'),
   ];
 
-  final count = 8 + rng.nextInt(4); // 8..11 animals
+  final count = 11 + rng.nextInt(4); // 11..14 animals
   for (int i = 0; i < count; i++) {
     final (species, name, flavor, dialogue, petId) = archetypes[i % archetypes.length];
     for (int attempts = 0; attempts < 35; attempts++) {

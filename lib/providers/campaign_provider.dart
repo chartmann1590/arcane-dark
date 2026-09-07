@@ -264,7 +264,7 @@ class CampaignNotifier extends StateNotifier<CampaignState?> {
     // companions wander independently between turns instead of teleporting
     // in lockstep (see GamePlayScreen._wanderCompanions).
     if (state!.party.isNotEmpty) state!.party.first.position = p;
-    state = state; // trigger notify
+    state = CampaignState.fromJson(state!.toJson()); // trigger notify with fresh reference
     _persist();
   }
 

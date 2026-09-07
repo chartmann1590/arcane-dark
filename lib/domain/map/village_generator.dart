@@ -81,6 +81,9 @@ class VillageGenerator {
         Room(7, width - 10, 3, 7, 5, type: RoomType.ancientLibrary, name: "Woodcutter's Lodge", description: 'Stacked cedar timber, split firewood piles, and woodworking benches in a tranquil grove.'),
         Room(8, 12, height - 14, 6, 5, type: RoomType.entryVestibule, name: 'River Weaver Cottage', description: 'A cozy thatched-roof cottage with flowerbeds, weaving looms, and colorful woven tapestries.'),
         Room(9, width - 12, 14, 6, 5, type: RoomType.entryVestibule, name: "Fisherman's Wharf Homestead", description: 'Drying fishing nets, willow fish traps, and a stone chimney puffing fragrant woodsmoke.'),
+        Room(10, 3, 11, 6, 5, type: RoomType.ancientLibrary, name: "Miller's Granary & Grain Store", description: 'Sacks of milled barley, spelt, and golden grain guarded by watchful barn owls.'),
+        Room(11, width - 9, height - 15, 6, 5, type: RoomType.shrineSanctum, name: "Chapel of the Sacred Grove", description: 'A quiet sunlit sanctuary with stained-glass depictions of the Silver Maiden.'),
+        Room(12, 12, 3, 6, 4, type: RoomType.armory, name: "Fletcher & Archery Yard", description: 'Seasoned ash wood recurve bows and feathered goose quills drying on racks.'),
       ]);
 
     } else if (layoutType == 1) {
@@ -128,6 +131,9 @@ class VillageGenerator {
         Room(6, cx + 5, cy - 3, 6, 6, type: RoomType.treasureVault, name: 'Hillcrest Bakery & Granary', description: 'Clay ovens churning out warm buns, alongside barrels of ground barley and spelt.'),
         Room(7, cx - 11, cy - 3, 6, 6, type: RoomType.entryVestibule, name: 'Stonecutter Cottage', description: 'A sturdy granite cottage flanked by chisels, stone urns, and flowering moss gardens.'),
         Room(8, cx - 3, height - 5, 7, 3, type: RoomType.bossChamber, name: 'South Palisade Gate', description: 'Timber barricade gate opening into the verdant provincial pasturelands.'),
+        Room(9, 4, cy - 3, 6, 6, type: RoomType.treasureVault, name: "Stonemason Guild Workshop", description: 'Chiseled marble blocks, gargoyles, and ornamental fountains awaiting placement.'),
+        Room(10, cx + 5, height - 10, 6, 6, type: RoomType.alchemistLab, name: "Candle & Soap Works", description: 'Fragrant blocks of beeswax and lavender-infused soap cakes drying in willow trays.'),
+        Room(11, cx - 11, height - 10, 6, 6, type: RoomType.ancientLibrary, name: "Hillside Herbal Tea House", description: 'Steaming samovars, private curtained booths, and rare floral tisanes.'),
       ]);
 
     } else {
@@ -166,6 +172,9 @@ class VillageGenerator {
         Room(7, width - 9, 12, 6, 6, type: RoomType.ancientLibrary, name: 'Tanner & Leatherworker Guild', description: 'Supple dragonleather boots, cured cowhide saddles, and reinforced leather jerkins.'),
         Room(8, 12, height - 9, 6, 5, type: RoomType.entryVestibule, name: 'Farmer Hodge’s Homestead', description: 'Charming farmstead cottage with stone well, pumpkin patches, and a thatched roof.'),
         Room(9, width - 11, cy - 3, 6, 6, type: RoomType.entryVestibule, name: 'Merchant Caravanserai', description: 'Resting quarters for traveling silk and gem traders displaying rare wares from afar.'),
+        Room(10, 3, cy - 3, 6, 6, type: RoomType.treasureVault, name: "Silversmith & Trinket Vault", description: 'Glass display cases gleaming with filigree silver brooches and moonstone amulets.'),
+        Room(11, cx + 5, 4, 6, 5, type: RoomType.alchemistLab, name: "Alchemist Glassblowing Studio", description: 'Muffled furnaces, blowing rods, and crystalline retorts glowing with magical tincture.'),
+        Room(12, cx + 5, height - 9, 6, 5, type: RoomType.ancientLibrary, name: "Cartographer & Scribe Emporium", description: 'Inked regional charts, star maps, and rolls of vellum tied with silk ribbon.'),
       ]);
     }
 
