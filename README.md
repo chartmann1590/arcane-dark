@@ -9,8 +9,9 @@
 
 <p align="center">
   <strong>Your AI Dungeon Master lives on your phone.</strong><br/>
-  A cozy, torch-lit D&D adventure you can play anywhere — solo and private, or with up to 5 friends around one table.<br/>
-  <em>No subscriptions. No waiting. Your story, your way.</em>
+  A cozy, torch-lit fantasy adventure you can play anywhere — alone under a blanket fort,<br/>
+  or with up to 5 friends gathered around one living map.<br/>
+  <em>No subscriptions. No waiting. Just say what you do, and watch the story answer.</em>
 </p>
 
 <p align="center">
@@ -19,34 +20,37 @@
   <a href="#-peek-inside">Screenshots</a>
 </p>
 
-> **🚀 Coming soon to Google Play for Android** — iOS planned for later. The website and privacy policy are live today.
+> **🚀 Coming soon to Google Play for Android** — iPhone planned for later. The website and trailer are live today.
 
 ---
 
 ### ✨ Why players love it
 
-- **Private by design.** Solo quests stay on your phone. No account needed to play alone.
-- **Plays offline.** After a quick one-time setup on Wi-Fi, solo adventures work with no signal — perfect for planes, cabins, or the couch.
-- **Make a hero you love.** Pick ancestry, calling, and background, roll or choose ability scores, and shape your look with a live portrait preview.
-- **A new dungeon every time.** Ever-changing maps with cozy fog-of-war, hidden doors, traps, taverns, and wild encounters.
-- **Real tabletop feel.** Type what you do in plain words — *“I inspect the altar,” “I try to talk them down”* — and the story answers back with narration, dice rolls, and consequences.
-- **Bring your friends.** Host or join with a code or QR scan — up to 6 players share the same map and story.
+- **A storyteller that's always ready.** No need to find a host or learn rulebooks. If you can describe what you'd do, you can play.
+- **Private by design.** Your solo quests stay on your phone. No account needed to play alone.
+- **Plays anywhere.** After one quick setup on Wi-Fi, solo adventures work with no signal — perfect for planes, cabins, campouts, or the couch.
+- **A hero that's truly yours.** Choose your ancestry, calling, and past, shape your look with a live portrait, give yourself a title and battle-cry — even bring an animal friend.
+- **A new dungeon every time.** Winding crypts, sunken citadels, haunted manors, bustling cities, deep forests and cozy taverns — with fog, hidden doors, traps and treasure.
+- **Real table magic.** Type in plain words — *“I inspect the altar,” “I try to talk them down,” “Thorin, smash the door!”* — and get narration, open dice rolls, and consequences back.
+- **Bring your whole party.** Host or join with a code or QR scan — up to 6 heroes share the same map, story, and laughter.
 
 ### 🎮 How a game feels
 
-1. **Make your hero** — who you are, how you fight, what you carry, even a pet companion.
-2. **Step into the dark** — explore the map, talk to townsfolk, open doors, dodge traps.
-3. **Watch the story answer** — your AI Dungeon Master narrates line by line, rolls dice in the open, and remembers your choices in your campaign journal.
+1. **Make your hero** — who you are, how you fight, what you carry, what you look like, and which little companion trots beside you.
+2. **Step into the dark** — wander the map, chat with townsfolk, open doors, dodge traps, follow whispers.
+3. **Watch the story answer** — your Dungeon Master narrates line by line, rolls dice where you can see them, remembers your quests, places, and people in your journal, and lets your companions pipe up on their own.
+
+Five minutes or five hours — your adventure waits right where you left it.
 
 ---
 
 ### 📺 Watch the trailer
 
 <p align="center">
-  <a href="https://chartmann1590.github.io/arcane-dark/#promo"><img src="docs/assets/img/promo-thumbnail.png" alt="Arcane Dark promo video thumbnail — Your AI Dungeon Master lives on your phone" width="600"/></a>
+  <a href="https://chartmann1590.github.io/arcane-dark/#promo"><img src="docs/assets/img/promo-thumbnail.png" alt="Arcane Dark trailer — Your AI Dungeon Master lives on your phone" width="600"/></a>
 </p>
 
-<p align="center"><em>60-second look at Arcane Dark — also showing on our website and coming to Google Play.</em></p>
+<p align="center"><em>A 60-second stroll through tavern light, shadowy crypts, and a party laughing around the fire.</em></p>
 
 ### 👀 Peek inside
 
@@ -56,102 +60,126 @@
 
 <table>
   <tr>
-    <td align="center" width="20%"><a href="https://chartmann1590.github.io/arcane-dark/store/phone/01-onboarding.png"><img src="docs/store/phone/01-onboarding.png" alt="Welcome screen — quick setup then offline solo" width="160"/></a><br/><sub><strong>Welcome</strong><br/>Quick setup, then play offline</sub></td>
-    <td align="center" width="20%"><a href="https://chartmann1590.github.io/arcane-dark/store/phone/02-character-creation.png"><img src="docs/store/phone/02-character-creation.png" alt="Character creation — ancestry, class, looks" width="160"/></a><br/><sub><strong>Your Hero</strong><br/>Ancestry, calling, looks</sub></td>
-    <td align="center" width="20%"><a href="https://chartmann1590.github.io/arcane-dark/store/phone/03-campaign-hub.png"><img src="docs/store/phone/03-campaign-hub.png" alt="Home — current campaign and heroes" width="160"/></a><br/><sub><strong>Home</strong><br/>Campaigns & heroes</sub></td>
+    <td align="center" width="20%"><a href="https://chartmann1590.github.io/arcane-dark/store/phone/01-onboarding.png"><img src="docs/store/phone/01-onboarding.png" alt="Welcome screen — quick setup then play anywhere" width="160"/></a><br/><sub><strong>Welcome</strong><br/>Cozy setup in minutes</sub></td>
+    <td align="center" width="20%"><a href="https://chartmann1590.github.io/arcane-dark/store/phone/02-character-creation.png"><img src="docs/store/phone/02-character-creation.png" alt="Character creation — ancestry, calling, looks" width="160"/></a><br/><sub><strong>Your Hero</strong><br/>Ancestry, calling, looks</sub></td>
+    <td align="center" width="20%"><a href="https://chartmann1590.github.io/arcane-dark/store/phone/03-campaign-hub.png"><img src="docs/store/phone/03-campaign-hub.png" alt="Home — current adventure and heroes" width="160"/></a><br/><sub><strong>Home</strong><br/>Adventures & heroes</sub></td>
     <td align="center" width="20%"><a href="https://chartmann1590.github.io/arcane-dark/store/phone/04-gameplay.png"><img src="docs/store/phone/04-gameplay.png" alt="At the table — map, dice, living story" width="160"/></a><br/><sub><strong>At the Table</strong><br/>Map, dice, story</sub></td>
-    <td align="center" width="20%"><a href="https://chartmann1590.github.io/arcane-dark/store/phone/05-multiplayer.png"><img src="docs/store/phone/05-multiplayer.png" alt="With friends — QR and party up to 6" width="160"/></a><br/><sub><strong>With Friends</strong><br/>QR invite, up to 6</sub></td>
+    <td align="center" width="20%"><a href="https://chartmann1590.github.io/arcane-dark/store/phone/05-multiplayer.png"><img src="docs/store/phone/05-multiplayer.png" alt="With friends — QR invite, party up to 6" width="160"/></a><br/><sub><strong>With Friends</strong><br/>QR invite, up to 6</sub></td>
   </tr>
 </table>
 
 **What you're seeing, left to right:**
-- **Welcome** – Get set up in minutes. After that, solo play doesn't need internet.
-- **Your Hero** – 6 guided steps: ancestry, calling, background, ability scores, appearance with live preview, then review.
-- **Home** – Pick up where you left off, manage heroes and campaigns.
-- **At the Table** – Isometric map with fog-of-war, story chat, open dice rolls, inventory, journal, combat, NPC talk, and read-aloud narration.
+- **Welcome** – Settle in quickly. After that, solo play doesn't need internet.
+- **Your Hero** – 6 gentle steps: ancestry, calling, background, strengths, appearance with live preview, then review.
+- **Home** – Pick up where you left off, meet your heroes, choose your next legend.
+- **At the Table** – Touch-to-move map with soft fog, story chat, open dice, backpack, journal, battles, heart-to-hearts, and read-aloud tale-telling.
 - **With Friends** – Host a table or join one with a short code or QR scan.
 
 #### Tablets — made for the big table
 
-Arcane Dark shines on 7" and 10" tablets — bigger map, easier reading, perfect for passing around.
+Arcane Dark glows on 7" and 10" tablets — bigger map, easier reading, perfect for passing around the couch.
 
 <table>
   <tr>
-    <td align="center" width="33%"><a href="https://chartmann1590.github.io/arcane-dark/store/7in/04-gameplay.png"><img src="docs/store/7in/04-gameplay.png" alt="Gameplay on 7-inch tablet" width="220"/></a><br/><sub><strong>7" Tablet — At the Table</strong></sub></td>
-    <td align="center" width="33%"><a href="https://chartmann1590.github.io/arcane-dark/store/10in/04-gameplay.png"><img src="docs/store/10in/04-gameplay.png" alt="Gameplay on 10-inch tablet" width="260"/></a><br/><sub><strong>10" Tablet — At the Table</strong></sub></td>
-    <td align="center" width="33%"><a href="https://chartmann1590.github.io/arcane-dark/store/10in/02-character-creation.png"><img src="docs/store/10in/02-character-creation.png" alt="Character creation on 10-inch tablet" width="260"/></a><br/><sub><strong>10" Tablet — Your Hero</strong></sub></td>
+    <td align="center" width="33%"><a href="https://chartmann1590.github.io/arcane-dark/store/7in/04-gameplay.png"><img src="docs/store/7in/04-gameplay.png" alt="Adventure on 7-inch tablet" width="220"/></a><br/><sub><strong>7" Tablet — At the Table</strong></sub></td>
+    <td align="center" width="33%"><a href="https://chartmann1590.github.io/arcane-dark/store/10in/04-gameplay.png"><img src="docs/store/10in/04-gameplay.png" alt="Adventure on 10-inch tablet" width="260"/></a><br/><sub><strong>10" Tablet — At the Table</strong></sub></td>
+    <td align="center" width="33%"><a href="https://chartmann1590.github.io/arcane-dark/store/10in/02-character-creation.png"><img src="docs/store/10in/02-character-creation.png" alt="Hero creation on 10-inch tablet" width="260"/></a><br/><sub><strong>10" Tablet — Your Hero</strong></sub></td>
   </tr>
 </table>
 
-> See all phone + tablet shots with the trailer on the [website #screenshots](https://chartmann1590.github.io/arcane-dark/#screenshots).
+> See the trailer and full gallery on the [website](https://chartmann1590.github.io/arcane-dark/#screenshots).
 
 ---
 
+### 🗺️ Twelve legends to chase
+
+Pick your mood and wander in. Every tale starts in a warm, lived-in place — a tavern, an outpost, a market — then pulls you somewhere wonderful and strange:
+
+- **The Whispering Crypts** — restless spirits beneath Oakhaven and a king who should have stayed buried
+- **Ember of the Wastes** — a dying ember that could rekindle the world, or end it
+- **The Frostpeak Spire** — a frozen observatory where time itself has stopped
+- **The Sunken Citadel** — black tides, abyssal idols, and something vast below
+- **Whispers of the Clockwork Vault** — ticking automatons guarding a heart of brass and time
+- **Descent into the Shadow Rift** — a fissure in the earth pouring out living dark
+- **The Celestial Forge** — a star-drifted forge where angels have gone rogue
+- **Curse of Blood Moon Manor** — bells toll, villagers vanish, the manor waits
+- **The Royal Citadel of Valoria** — a banquet, a king, and a dagger in the dark
+- **Shadows Over Highgate** — canals, bazaars, cathedrals, and smuggled soul-gems
+- **Wrath of the Emerald Canopy** — a weeping Heart-Tree and a forest turning wild
+- **Echoes of the Obsidian Geode** — crystal caverns humming with hungry light
+
+Each legend unfolds in beats — investigate, gather, confront, choose — but how you get there is gloriously up to you.
+
 ### 🧙 What's inside the adventure
 
-**Create your hero**
-- Classic fantasy ancestries, callings, and backgrounds
-- Point-buy, standard array, or rolled ability scores
-- Appearance builder with live portrait preview
-- Name, backstory flavor, starting gear, and an optional animal companion
+**Create a hero you adore**
+- 7 ancestries: Human, Elf, Dwarf, Halfling, Orc, Tiefling, Dragonborn
+- 8 callings: Fighter, Wizard, Rogue, Cleric, Ranger, Bard, Barbarian, Paladin
+- 8 backgrounds, from Soldier and Sage to Folk Hero and Outlander
+- Roll for strengths, take the classic set, or spend points your way
+- Appearance studio with live portrait, titles, battle-cries, cloaks, trinkets, and signature weapons
+- 8 animal friends, each with its own gift: a Tavern Hound who smells traps, a Spectral Owl who sees farther in the dark, a tiny Pygmy Drake who warms the party, a jiggly Gelatinous Buddy who adores copper coins, and more
 
-**Explore a living dungeon**
-- New layout every campaign — rooms, corridors, locked doors, traps, treasure
-- Cozy fog-of-war: you only see what you've explored
-- Bustling tavern home-base with townsfolk to talk to, plus wilds and ruins beyond
-- Torch-lit art, dice sounds, tavern music, and optional read-aloud narration
+**Explore a living world**
+- A fresh layout every adventure — rooms, corridors, locked doors, traps, treasure
+- Cozy fog that lifts as you wander — you only see what you've bravely explored
+- Taverns full of chatter, villages, cities, castles, forests, caves, and wilds beyond
+- Torch-lit art, dice sounds, tavern music, and a gentle voice that can read the tale aloud
 
-**Everything at the table**
-- Open dice rolls with modifiers and criticals — you always see why things happen
-- Campaign journal that remembers quests, places, and people
-- Inventory, tactical combat view, NPC conversations, and pet companions
-- Zoom, pan, and tap-to-move map built for touch
+**Everything you need at the table**
+- Open dice — you always see the roll, the bonus, and why things happen, crits and fumbles included
+- A journal that remembers your quests, places, and people
+- Backpack and gear, up-close battles, one-on-one chats with townsfolk, and companions who wander, joke, and sometimes steal the scene
+- Tap-to-move map made for fingers, with pinch, zoom, and a warm isometric glow
 
-**Solo or together**
-- **Solo:** just play. No sign-in required, story never leaves your device.
-- **Together:** sign in free to host or join. Up to 6 heroes share one live map — invite with a code or QR. Only what's needed to keep the table in sync is shared.
+**Solo or together — your call**
+- **Solo:** just play. No sign-in, story never leaves your device.
+- **Together:** sign in free to host or join. Up to 6 heroes share one living map — invite with a code or QR. Only what's needed to keep the table together is shared.
 
-### 🔒 Privacy, plain and simple
+### 🔒 Private, plain and simple
 
-Solo = offline & private. Your solo heroes and stories stay on your phone.
+Solo = cozy and private. Your solo heroes and stories stay on your phone.
 
-Multiplayer needs the internet to keep everyone in sync, and you can delete any hero or campaign with a tap. The app shows a few ads to stay free — you control ad choices in Settings.
+When you play with friends, a little sync magic keeps everyone on the same map. You can delete any hero or adventure with a tap. The app shows a few ads to stay free — you control ad choices in Settings.
 
-Full policy: **[chartmann1590.github.io/arcane-dark/privacy.html](https://chartmann1590.github.io/arcane-dark/privacy.html)** (also in-app under Settings → Privacy Policy).
+Full story in plain words: **[Privacy Policy](https://chartmann1590.github.io/arcane-dark/privacy.html)** (also in the app under Settings → Privacy Policy).
 
 ### 📋 Good to know
 
 | | |
 |---|---|
-| **Players** | Solo, or up to 6 in multiplayer |
-| **Internet** | Needed once for setup, then solo works offline. Multiplayer needs internet. |
-| **Devices** | Android phones + 7" and 10" tablets (Android 8 and up). iOS planned later. |
-| **Storage** | About 3 GB free for the one-time story-engine download (best on Wi-Fi) |
-| **Cost** | Free to play, supported by ads. No subscription. Optional tip if you love it. |
-| **Experience needed** | None — if you can describe what you'd do, you can play. |
+| **Players** | Solo, or up to 6 around one table |
+| **Internet** | Needed once for setup, then solo works offline. Playing together needs internet. |
+| **Devices** | Android phones + 7" and 10" tablets. iPhone planned later. |
+| **Setup** | One quick download on Wi-Fi when you first arrive, then you're free to roam |
+| **Cost** | Free to play, kindly supported by ads. No subscription. Optional tip if you love it. |
+| **Experience needed** | None — if you can imagine what you'd do, you can play. Brand-new adventurers adored. |
 
 ### ❓ Quick answers
 
-**I've never played D&D. Can I still play?**
-Yes — just say what you'd do in plain words and the Dungeon Master handles the rules, dice, and story.
+**I've never played anything like this. Can I still play?**
+Oh yes — that's who it's for. Just say what you'd do in plain words and your Dungeon Master handles the rules, dice, and story. You'll feel clever in minutes.
 
 **Does it work on a plane?**
-Yes, for solo. Do the one-time setup on Wi-Fi first, then you're good with no signal.
+Yes, for solo. Do the quick setup on Wi-Fi first, then you're good with no signal — clouds optional.
 
 **Do I need an account?**
-Only for multiplayer and cloud backup. Solo works as a guest.
+Only for playing with friends and backing things up. Solo works as a guest, no strings.
 
-**Will my story be uploaded somewhere?**
-No — solo campaigns live only on your device unless you choose to sign in and play multiplayer.
+**Will my story be sent somewhere?**
+No — solo adventures live only on your device unless you choose to play together.
 
 **When can I download it?**
-We're finishing Google Play review now. This page and the website will link it the moment it's approved — follow the repo to get notified.
+We're putting the final polish on the Google Play lanterns now. This page and the website will light up the moment it's approved.
+
+**What do I actually do moment-to-moment?**
+Wander, look, talk, sneak, bluff, befriend, barter, flee bravely, pet the tavern hound. Try *“I listen at the door,” “I offer them my bread,” “I run — elegantly.”*
 
 ---
 
 ### 📲 Get it
 
-**Coming soon to Google Play — Android first, iOS later.**
+**Coming soon to Google Play — Android first, iPhone later.**
 
 [![Coming soon on Google Play](https://img.shields.io/badge/Coming%20soon%20on-Google%20Play-000000?style=for-the-badge&logo=googleplay&logoColor=white)](https://chartmann1590.github.io/arcane-dark/)
 
@@ -160,7 +188,7 @@ We're finishing Google Play review now. This page and the website will link it t
 
 ### ☕ Support the tavern
 
-Arcane Dark is made by a solo developer. Keeping the story going takes time, art, and a lot of coffee — if you're having fun, a small tip keeps the lights on and the dungeons warm.
+Arcane Dark is hand-made by a solo storyteller. Keeping the candles lit takes time, art, and a truly heroic amount of coffee — if you're having fun, a small tip keeps the dungeons warm and the tavern songs coming.
 
 <p align="center">
   <a href="https://buymeacoffee.com/charleshartmann"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" width="180"/></a>
@@ -172,26 +200,8 @@ Arcane Dark is made by a solo developer. Keeping the story going takes time, art
 
 ### 💬 Questions or ideas?
 
-Open an issue — we read every one.
-
-<details>
-<summary><strong>🛠️ For developers (click to expand)</strong></summary>
-
-Flutter app. Start with `plan/00-overview.md` for architecture.
-
-```bash
-flutter pub get
-flutter run
-```
-
-See `plan/` for build, backend, and launch notes.
-
-</details>
+Open an issue — we read every single one, usually with tea.
 
 ---
-
-### License
-
-No license has been chosen yet. All rights reserved unless a `LICENSE` file says otherwise.
 
 <p align="center"><em>© 2026 Arcane Dark • <a href="https://chartmann1590.github.io/arcane-dark/">Website</a> • <a href="https://chartmann1590.github.io/arcane-dark/privacy.html">Privacy Policy</a> • <a href="https://buymeacoffee.com/charleshartmann">☕ Buy me a coffee</a> • Coming soon to Google Play</em></p>

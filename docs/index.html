@@ -85,6 +85,7 @@
       <div class="nav-links">
         <a href="#promo" class="hide-sm">Trailer</a>
         <a href="#features" class="hide-sm">Why it’s different</a>
+        <a href="#adventures" class="hide-sm">Adventures</a>
         <a href="#screenshots" class="hide-sm">Screenshots</a>
         <a href="#faq" class="hide-sm">FAQ</a>
         <a href="privacy.html">Privacy</a>
@@ -102,7 +103,7 @@
         <div class="pill"><span class="dot" aria-hidden="true"></span> COMING SOON TO GOOGLE PLAY • ANDROID FIRST • iOS LATER</div>
         <h1>Your AI<br/>Dungeon Master<br/><span>lives on your phone.</span></h1>
         <p class="lead">
-          A cozy, torch-lit D&amp;D adventure you can play anywhere. Make a hero you love, wander ever-changing dungeons, and watch an AI storyteller react to every choice — <strong style="color:white">solo and private, or with up to 5 friends at the same table.</strong>
+          A cozy, torch-lit D&amp;D adventure you can play anywhere. Make a hero you adore, wander ever-changing dungeons, and watch an AI storyteller react to every choice — <strong style="color:white">solo and private, or with up to 5 friends at the same table.</strong>
         </p>
 
         <!-- Play Store coming soon -->
@@ -192,44 +193,36 @@
   <section id="promo" class="section alt" style="padding-top:28px;padding-bottom:28px">
     <div class="container reveal">
       <div class="section-head" style="margin-bottom:18px">
-        <div class="kicker-label">Watch the 60-sec trailer</div>
+        <div class="kicker-label">Watch the trailer</div>
         <h2>The tavern doors are <em>open.</em></h2>
-        <p>Solo & private or with friends — see how a story answers you line by line. The same promo video that appears on Google Play and YouTube lives here too.</p>
+        <p>A minute inside Arcane Dark — make a hero, step into torchlight, and hear the story answer you back. Cozy alone, rowdier with friends.</p>
       </div>
       <div style="max-width:900px;margin:0 auto;display:grid;gap:16px">
-        <!-- Real promo video — self-hosted MP4 + YouTube. Upload MP4 to YouTube and replace YOUTUBE_VIDEO_ID -->
         <div style="position:relative;aspect-ratio:16/9;background:#0F0D17;border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:0 18px 40px rgba(0,0,0,0.35)">
           <video controls playsinline poster="assets/img/promo-thumbnail.png" style="width:100%;height:100%;display:block;background:#0F0D17" preload="metadata">
             <source src="assets/video/arcane-dark-promo.mp4" type="video/mp4"/>
-            <!-- Fallback: thumbnail link to YouTube -->
+            <!-- Fallback poster links to trailer -->
           </video>
-          <span style="position:absolute;bottom:12px;left:12px;padding:7px 10px;border-radius:999px;background:rgba(0,0,0,0.72);border:1px solid rgba(255,255,255,0.12);color:white;font-size:11px;font-weight:800;letter-spacing:0.6px">▶ 60s • 1920×1080 • with audio</span>
+          <span style="position:absolute;bottom:12px;left:12px;padding:7px 10px;border-radius:999px;background:rgba(0,0,0,0.72);border:1px solid rgba(255,255,255,0.12);color:white;font-size:11px;font-weight:800;letter-spacing:0.6px">Trailer • with sound</span>
         </div>
         <div style="display:grid;grid-template-columns:1fr auto;gap:16px;align-items:center;background:var(--surface-card);border:1px solid var(--border);border-radius:14px;padding:14px">
           <div>
-            <div style="font-weight:800;font-size:13px;color:white;display:flex;gap:8px;align-items:center"><span style="width:28px;height:28px;border-radius:8px;background:#FF0000;color:white;display:grid;place-items:center;font-size:12px">▶</span> Real promo video — on this site, YouTube & Play Store</div>
-            <div style="margin-top:4px;color:var(--text-secondary);font-size:13px;line-height:1.5">This is the <strong style="color:white">real 60s cut</strong> (1920×1080, AAC) at <code style="background:rgba(255,255,255,0.08);padding:2px 6px;border-radius:6px">assets/video/arcane-dark-promo.mp4</code> — also at <code style="background:rgba(255,255,255,0.08);padding:2px 6px;border-radius:6px">store/arcane-dark-promo.mp4</code> and <code style="background:rgba(255,255,255,0.08);padding:2px 6px;border-radius:6px">docs/store/arcane-dark-promo.mp4</code>. Upload that exact MP4 to YouTube, then replace <code style="background:rgba(255,255,255,0.08);padding:2px 6px;border-radius:6px">arcane-dark-promo</code> in <code style="background:rgba(255,255,255,0.08);padding:2px 6px;border-radius:6px">fastlane/.../video.txt</code> and the iframe comment below with the real ID.</div>
+            <div style="font-weight:800;font-size:13px;color:white;display:flex;gap:8px;align-items:center"><span style="width:28px;height:28px;border-radius:8px;background:#FF0000;color:white;display:grid;place-items:center;font-size:12px">▶</span> A tale that listens back</div>
+            <div style="margin-top:4px;color:var(--text-secondary);font-size:13px;line-height:1.5">Wander, wonder, whisper, bluff, befriend — say what you would do in plain words and your Dungeon Master weaves it into narration, dice, and delightful consequences.</div>
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <a class="btn btn-primary" href="assets/video/arcane-dark-promo.mp4" download>Download MP4</a>
-            <a class="btn btn-ghost" href="https://www.youtube.com/watch?v=arcane-dark-promo" target="_blank" rel="noopener">YouTube →</a>
+            <a class="btn btn-primary" href="#screenshots">Peek inside</a>
+            <a class="btn btn-ghost" href="#faq">Good to know</a>
           </div>
         </div>
-        <!-- YouTube iframe (uncomment after upload):
-        <div style="position:relative;aspect-ratio:16/9;background:#0F0D17;border:1px solid var(--border);border-radius:16px;overflow:hidden">
-          <iframe width="100%" height="100%" src="https://www.youtube-nocookie.com/embed/YOUTUBE_VIDEO_ID?rel=0" title="Arcane Dark — promo video" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="position:absolute;inset:0;width:100%;height:100%"></iframe>
-        </div>
-        -->
         <!-- Feature graphic showcase -->
         <div style="background:var(--surface-card);border:1px solid var(--border);border-radius:14px;padding:14px">
-          <div style="font-weight:800;font-size:12px;letter-spacing:0.7px;color:var(--text-muted)">FEATURE GRAPHIC — 1024×500 (Google Play)</div>
+          <div style="font-weight:800;font-size:12px;letter-spacing:0.7px;color:var(--text-muted)">ARCANE DARK — YOUR AI DUNGEON MASTER LIVES ON YOUR PHONE</div>
           <div style="margin-top:10px;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:#0F0D17">
-            <img src="assets/img/feature-graphic.png" alt="Arcane Dark feature graphic 1024×500 — ARCANE DARK Your AI Dungeon Master lives on your phone" style="width:100%;height:auto;display:block"/>
+            <img src="assets/img/feature-graphic.png" alt="Arcane Dark — Your AI Dungeon Master lives on your phone" style="width:100%;height:auto;display:block"/>
           </div>
-          <div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;color:var(--text-secondary);font-size:12px">
-            <span>Hi-res icon: <a href="assets/img/icon-512.png" style="color:var(--violet);text-decoration:underline">512×512</a> • <a href="assets/img/icon-1024.png" style="color:var(--violet);text-decoration:underline">1024×1024</a></span>
-            <span style="opacity:0.4">|</span>
-            <span>Also in <code style="background:rgba(255,255,255,0.08);padding:2px 6px;border-radius:6px">docs/store/</code> and <code style="background:rgba(255,255,255,0.08);padding:2px 6px;border-radius:6px">fastlane/</code> for automated uploads</span>
+          <div style="margin-top:10px;color:var(--text-secondary);font-size:12px">
+            Deep violet, warm gold, soft tavern light — a cozy dungeon that feels like your favorite table.
           </div>
         </div>
       </div>
@@ -242,7 +235,7 @@
       <div class="section-head reveal">
         <div class="kicker-label">Why players love it</div>
         <h2>A real table, <em>inside</em> your pocket.</h2>
-        <p>No subscriptions. No waiting for a host. Just you, your dice, and a storyteller that’s always ready — whether you have five minutes or five hours.</p>
+        <p>No rulebooks to memorize. No waiting for game night. Just you, your dice, and a storyteller that is always awake — whether you have five minutes or five hours.</p>
       </div>
 
       <div class="features reveal">
@@ -251,7 +244,7 @@
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 10h6M12 7v6"/></svg>
           </div>
           <h3>Your story stays private</h3>
-          <p>Solo quests live only on your phone. No cloud saves, no “training on your story” — your characters and choices are yours alone.</p>
+          <p>Solo quests live only on your phone. Your heroes, choices, and whispered plans are yours alone — cozy and safe as a locked diary.</p>
           <ul><li>No account needed for solo</li><li>Stays on your device</li><li>Delete anytime</li></ul>
         </div>
         <div class="feature">
@@ -259,31 +252,31 @@
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2l8 4.5v7c0 4-2.7 7.7-8 8.5-5.3-.8-8-4.5-8-8.5v-7L12 2z"/><path d="M9 12l2 2 4-5"/></svg>
           </div>
           <h3>Play anywhere — no signal</h3>
-          <p>After a quick one-time setup, solo mode works fully offline. On a plane, in a cabin, underground — the dungeon goes where you go.</p>
-          <ul><li>Works offline for solo</li><li>Quick one-time setup</li><li>Resumes where you paused</li></ul>
+          <p>After one quick hello on Wi-Fi, solo tales roam fully offline. Planes, cabins, basements, blankets — the dungeon follows you anywhere.</p>
+          <ul><li>Lovely offline for solo</li><li>Quick one-time hello</li><li>Picks up where you paused</li></ul>
         </div>
         <div class="feature">
           <div class="feature-icon" aria-hidden="true">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M6 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>
           </div>
           <h3>Make a hero you love</h3>
-          <p>Choose ancestry, calling, and background — then shape looks and personality with an easy, step-by-step portrait builder.</p>
-          <ul><li>Many races & classes</li><li>Point-buy the tabletop way</li><li>Live portrait preview</li></ul>
+          <p>Ancestry, calling, past, looks, voice, title, battle-cry — even a loyal beast at your side. Watch your portrait shimmer to life as you choose.</p>
+          <ul><li>Elves, dwarves, dragonborn & more</li><li>Fighters, wizards, bards & more</li><li>Live portrait as you dream</li></ul>
         </div>
         <div class="feature">
           <div class="feature-icon" aria-hidden="true">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/><rect x="11" y="11" width="4" height="4" rx="1"/></svg>
           </div>
           <h3>A new dungeon every time</h3>
-          <p>Every run shuffles rooms, corridors, and secrets. Explore with a gentle fog-of-war that rewards curiosity.</p>
-          <ul><li>Never the same twice</li><li>Cozy torch-lit maps</li><li>Explore at your pace</li></ul>
+          <p>Crypts, sunken citadels, haunted manors, bright markets, deep woods. Every adventure shuffles its rooms, secrets, traps, and treasure.</p>
+          <ul><li>Never the same twice</li><li>Cozy torch-lit maps</li><li>Twelve legends to chase</li></ul>
         </div>
         <div class="feature">
           <div class="feature-icon" aria-hidden="true">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="10" r="2.5"/><path d="M3 20c0-2.8 2.2-5 5-5h2c2.8 0 5 2.2 5 5"/></svg>
           </div>
           <h3>Bring your friends</h3>
-          <p>Host a party or join one — up to 6 at the same table. Share a code or QR and adventure together, everyone seeing the same world.</p>
+          <p>Host a table or slip into one — up to 6 heroes, one living map. Share a little code or QR and laugh at the same goblin together.</p>
           <ul><li>Up to 6 players</li><li>QR + invite code</li><li>Same world for all</li></ul>
         </div>
         <div class="feature">
@@ -291,8 +284,46 @@
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l7 4v6c0 3.8-2.6 7.3-7 8-4.4-.7-7-4.2-7-8V7l7-4z"/><circle cx="12" cy="12" r="1.8"/><path d="M12 16v2"/></svg>
           </div>
           <h3>Free to start, fair to play</h3>
-          <p>Jump in for free — no paywalls on your story. Ads help keep the lights on, and you’re in control of your preferences.</p>
-          <ul><li>Free to play</li><li><a href="privacy.html" style="color:var(--violet);text-decoration:underline">Private by design</a></li><li>Coming soon to Play Store</li></ul>
+          <p>Stroll in free — your story is never behind a wall. A few friendly ads keep the candles lit, and you are always in charge.</p>
+          <ul><li>Free to play</li><li><a href="privacy.html" style="color:var(--violet);text-decoration:underline">Private by design</a></li><li>Coming soon to Play</li></ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ADVENTURES — twelve legends -->
+  <section id="adventures" class="section alt">
+    <div class="container">
+      <div class="section-head reveal">
+        <div class="kicker-label">Twelve legends to chase</div>
+        <h2>Pick your mood. <em>We will handle the moonlight.</em></h2>
+        <p>Every tale begins somewhere warm — a tavern, a market, an outpost — then tugs you somewhere wonderful and strange. Investigate, gather, confront, choose. How you get there is gloriously up to you.</p>
+      </div>
+      <div class="features reveal">
+        <div class="feature"><h3>🕯️ The Whispering Crypts</h3><p>Restless spirits beneath Oakhaven and a king who should have stayed buried.</p></div>
+        <div class="feature"><h3>🔥 Ember of the Wastes</h3><p>A dying ember that could rekindle the world — or end it.</p></div>
+        <div class="feature"><h3>❄️ The Frostpeak Spire</h3><p>A frozen observatory where time itself has stopped ticking.</p></div>
+        <div class="feature"><h3>🌊 The Sunken Citadel</h3><p>Black tides, abyssal idols, and something vast below.</p></div>
+        <div class="feature"><h3>⚙️ Whispers of the Clockwork Vault</h3><p>Ticking automatons guarding a heart of brass and time.</p></div>
+        <div class="feature"><h3>🌑 Descent into the Shadow Rift</h3><p>A crack in the earth pouring out living dark.</p></div>
+        <div class="feature"><h3>✨ The Celestial Forge</h3><p>A star-drifted forge where angels have gone rogue.</p></div>
+        <div class="feature"><h3>🌕 Curse of Blood Moon Manor</h3><p>Bells toll, villagers vanish, the manor waits with its mirrors.</p></div>
+        <div class="feature"><h3>👑 The Royal Citadel of Valoria</h3><p>A banquet, a beloved king, and a dagger in the dark.</p></div>
+        <div class="feature"><h3>🌃 Shadows Over Highgate</h3><p>Canals, bazaars, cathedrals — and smuggled soul-gems.</p></div>
+        <div class="feature"><h3>🌿 Wrath of the Emerald Canopy</h3><p>A weeping Heart-Tree and a forest turning wild.</p></div>
+        <div class="feature"><h3>💎 Echoes of the Obsidian Geode</h3><p>Crystal caverns humming with hungry, beautiful light.</p></div>
+      </div>
+      <div class="privacy-card reveal" style="margin-top:22px">
+        <div>
+          <div class="kicker-label">Small friends, big hearts</div>
+          <h3>Bring a little companion.</h3>
+          <p>A Tavern Hound who smells traps before you step, a Spectral Owl who sees farther in the dark, a Pygmy Drake who warms the party on cold nights, a jiggly Gelatinous Buddy who purrs for copper coins — plus cats, wolves, falcons, and a very polite clockwork spider.</p>
+          <p style="margin-top:8px;color:var(--text-secondary);font-size:13px">At the table you will also find open dice where you can see every roll, a journal that remembers your quests and friends, a backpack full of odd treasures, cozy tavern music, dice sounds, and a gentle voice that can read the tale aloud.</p>
+        </div>
+        <div class="privacy-points">
+          <div class="point"><div class="point-icon">♥</div><div><strong>Heroes with history</strong><br/><span>Soldiers, sages, urchins, nobles, hermits — titles, cloaks, trinkets, battle-cries.</span></div></div>
+          <div class="point"><div class="point-icon" style="background:rgba(139,92,246,0.12);border-color:rgba(139,92,246,0.18);color:#8B5CF6">◈</div><div><strong>Talk to anyone</strong><br/><span>Chat with innkeepers, bargain with merchants, coax a goblin, comfort a ghost.</span></div></div>
+          <div class="point"><div class="point-icon" style="background:rgba(201,162,39,0.12);border-color:rgba(201,162,39,0.22);color:#C9A227">◎</div><div><strong>Never played before? Perfect.</strong><br/><span>If you can imagine it, you can try it. Your storyteller handles the rest.</span></div></div>
         </div>
       </div>
     </div>
@@ -304,15 +335,14 @@
       <div class="section-head reveal">
         <div class="kicker-label">A peek inside — on every screen</div>
         <h2>Step into the <em>tavern light.</em></h2>
-        <p>Deep purple, warm gold, soft shadows — a cozy dungeon that feels like a favorite table. Tap any image to enlarge. Shown here at phone size; the same story is re-laid for 7″ and 10″ tablets for the Play Store.</p>
-        <p style="margin-top:8px;color:var(--text-muted);font-size:12px">PNG sets for upload live in <code style="background:rgba(255,255,255,0.08);padding:2px 6px;border-radius:6px">docs/store/phone/</code> (1080×1920) • <code style="background:rgba(255,255,255,0.08);padding:2px 6px;border-radius:6px">docs/store/7in/</code> (1200×1920) • <code style="background:rgba(255,255,255,0.08);padding:2px 6px;border-radius:6px">docs/store/10in/</code> (1600×2560). Fastlane copies are in <code style="background:rgba(255,255,255,0.08);padding:2px 6px;border-radius:6px">fastlane/metadata/android/</code>. SVGs remain in <code style="background:rgba(255,255,255,0.08);padding:2px 6px;border-radius:6px">docs/screenshots/</code> for the web gallery.</p>
+        <p>Deep purple, warm gold, soft shadows — a cozy dungeon that feels like a favorite table. Tap any image to enlarge. Beautiful on phones, even roomier on tablets for passing around the couch.</p>
       </div>
 
       <div class="screenshots reveal">
         <a class="screenshot" href="store/phone/01-onboarding.png" data-lightbox data-title="First time — quick setup, then offline (also on 7in/10in)">
           <div class="shot-frame">
             <span class="badge">01 • Welcome</span>
-            <img src="store/phone/01-onboarding.png" alt="Welcome screen showing quick setup and offline solo play — phone 1080×1920, also for 7in and 10in" loading="lazy" width="390" height="844"/>
+            <img src="store/phone/01-onboarding.png" alt="Welcome screen showing quick setup and offline solo play" loading="lazy" width="390" height="844"/>
           </div>
           <div class="shot-caption">
             <h4>Welcome & quick setup</h4>
@@ -368,11 +398,11 @@
         <div class="feature" style="display:flex;flex-direction:column;justify-content:center;min-height:260px">
           <div class="docs-badge">📱 Phone • 7″ Tablet • 10″ Tablet</div>
           <h3 style="margin-top:12px">Every screen, same warmth</h3>
-          <p>The gallery above is the phone set (1080×1920). Matching 7″ (1200×1920) and 10″ (1600×2560) sets are already exported for the Play Store — same 5 screens, re-laid for bigger canvases.</p>
+          <p>Made for thumbs and for big tables alike — the map glows bigger on tablets, the words stay easy, and the whole party can lean in.</p>
           <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
-            <a class="btn btn-ghost" href="store/phone/01-onboarding.png" target="_blank" rel="noopener">Phone PNG</a>
-            <a class="btn btn-ghost" href="store/7in/01-onboarding.png" target="_blank" rel="noopener">7in PNG</a>
-            <a class="btn btn-ghost" href="store/10in/01-onboarding.png" target="_blank" rel="noopener">10in PNG</a>
+            <a class="btn btn-ghost" href="store/phone/01-onboarding.png" target="_blank" rel="noopener">Phone</a>
+            <a class="btn btn-ghost" href="store/7in/01-onboarding.png" target="_blank" rel="noopener">7″ tablet</a>
+            <a class="btn btn-ghost" href="store/10in/01-onboarding.png" target="_blank" rel="noopener">10″ tablet</a>
           </div>
           <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
             <a class="btn btn-primary" href="https://github.com/chartmann1590/arcane-dark" target="_blank" rel="noopener">Follow on GitHub</a>
@@ -382,12 +412,12 @@
       </div>
 
       <div style="margin-top:18px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px" class="reveal">
-        <a href="store/7in/01-onboarding.png" data-lightbox data-title="7in tablet — 01 Welcome (1200×1920)" style="display:block;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:#0F0D17"><img src="store/7in/01-onboarding.png" alt="7in tablet screenshot" style="width:100%;height:auto;display:block"/><span style="display:block;padding:8px;font-size:11px;font-weight:700;color:var(--text-secondary);text-align:center">7″ • 1200×1920</span></a>
-        <a href="store/10in/01-onboarding.png" data-lightbox data-title="10in tablet — 01 Welcome (1600×2560)" style="display:block;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:#0F0D17"><img src="store/10in/01-onboarding.png" alt="10in tablet screenshot" style="width:100%;height:auto;display:block"/><span style="display:block;padding:8px;font-size:11px;font-weight:700;color:var(--text-secondary);text-align:center">10″ • 1600×2560</span></a>
+        <a href="store/7in/01-onboarding.png" data-lightbox data-title="7in tablet — welcome by firelight" style="display:block;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:#0F0D17"><img src="store/7in/01-onboarding.png" alt="Adventure on a 7 inch tablet" style="width:100%;height:auto;display:block"/><span style="display:block;padding:8px;font-size:11px;font-weight:700;color:var(--text-secondary);text-align:center">7″ tablet</span></a>
+        <a href="store/10in/01-onboarding.png" data-lightbox data-title="10in tablet — welcome by firelight" style="display:block;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:#0F0D17"><img src="store/10in/01-onboarding.png" alt="Adventure on a 10 inch tablet" style="width:100%;height:auto;display:block"/><span style="display:block;padding:8px;font-size:11px;font-weight:700;color:var(--text-secondary);text-align:center">10″ tablet</span></a>
         <div style="background:var(--surface-card);border:1px solid var(--border);border-radius:12px;padding:14px;display:flex;flex-direction:column;justify-content:center">
-          <div style="font-weight:800;font-size:12px">Tablet-ready uploads</div>
-          <p style="margin:6px 0 0;color:var(--text-secondary);font-size:12px;line-height:1.5">All 5 screens × 3 sizes = 15 PNGs, each within Play Store specs. Swap the placeholder YouTube ID before launch and you’re store-ready.</p>
-          <a href="#promo" style="margin-top:10px;color:var(--violet);font-size:12px;font-weight:700;text-decoration:underline">Watch trailer ↑</a>
+          <div style="font-weight:800;font-size:12px">Made for the big table</div>
+          <p style="margin:6px 0 0;color:var(--text-secondary);font-size:12px;line-height:1.5">More map to love, words that stay easy, portraits with room to shine. Bring popcorn — the dungeon loves an audience.</p>
+          <a href="#promo" style="margin-top:10px;color:var(--violet);font-size:12px;font-weight:700;text-decoration:underline">Watch the trailer ↑</a>
         </div>
       </div>
     </div>
@@ -398,23 +428,23 @@
     <div class="container">
       <div class="section-head reveal">
         <div class="kicker-label">How it works</div>
-        <h2>Three taps to <em>your legend.</em></h2>
+        <h2>Three little steps to <em>your legend.</em></h2>
       </div>
       <div class="steps reveal">
         <div class="step">
           <div class="step-num">1</div>
           <h3>Make your hero</h3>
-          <p>Choose who you are, how you fight, and what you carry — the portrait updates live as you pick.</p>
+          <p>Choose who you are, how you fight, what you carry — and who trots beside you. Your portrait blooms to life as you dream.</p>
         </div>
         <div class="step">
           <div class="step-num">2</div>
           <h3>Step into the dark</h3>
-          <p>Start a new tale or let the dungeon surprise you. Move, look, talk, bluff — just say what you do.</p>
+          <p>Pick a legend or let the dungeon surprise you. Move, look, talk, sneak, bluff — just say what you would do.</p>
         </div>
         <div class="step">
           <div class="step-num">3</div>
-          <h3>Play your way</h3>
-          <p>Five minutes on the couch or a full night with friends — your progress waits right where you left it.</p>
+          <h3>Live your story</h3>
+          <p>Five cozy minutes or a full night with friends. Dice glint, friends gasp, the journal remembers — and home is where you left off.</p>
         </div>
       </div>
 
@@ -472,7 +502,15 @@
         </details>
         <details style="background:var(--surface-card);border:1px solid var(--border);border-radius:14px;padding:16px">
           <summary style="cursor:pointer;font-weight:800;list-style:none;display:flex;justify-content:space-between;align-items:center">Is it free? <span style="color:var(--violet)">+</span></summary>
-          <p style="margin:10px 0 0;color:var(--text-secondary);font-size:13px;line-height:1.6">Yes — free with friendly ads that help keep development going. You can manage ad preferences anytime in Settings.</p>
+          <p style="margin:10px 0 0;color:var(--text-secondary);font-size:13px;line-height:1.6">Yes — free with friendly ads that keep the tavern candles lit. You can manage choices anytime in Settings.</p>
+        </details>
+        <details style="background:var(--surface-card);border:1px solid var(--border);border-radius:14px;padding:16px">
+          <summary style="cursor:pointer;font-weight:800;list-style:none;display:flex;justify-content:space-between;align-items:center">I have never played anything like this. Can I still play? <span style="color:var(--violet)">+</span></summary>
+          <p style="margin:10px 0 0;color:var(--text-secondary);font-size:13px;line-height:1.6">Oh yes — you are exactly who it is for. Just say what you would do in plain words and your Dungeon Master handles the rules, dice, and story. You will feel clever in minutes.</p>
+        </details>
+        <details style="background:var(--surface-card);border:1px solid var(--border);border-radius:14px;padding:16px">
+          <summary style="cursor:pointer;font-weight:800;list-style:none;display:flex;justify-content:space-between;align-items:center">What do I actually do moment to moment? <span style="color:var(--violet)">+</span></summary>
+          <p style="margin:10px 0 0;color:var(--text-secondary);font-size:13px;line-height:1.6">Wander, look, talk, sneak, bluff, befriend, barter, flee bravely, pet the tavern hound. Try “I listen at the door,” “I offer them my bread,” “I run — elegantly.”</p>
         </details>
       </div>
       <div style="text-align:center;margin-top:18px" class="reveal">
@@ -522,6 +560,7 @@
           <h4>Explore</h4>
           <div style="display:grid;gap:8px">
             <a href="#features">Why it’s different</a>
+            <a href="#adventures">Twelve adventures</a>
             <a href="#screenshots">Screenshots</a>
             <a href="#faq">FAQ</a>
             <a href="privacy.html">Privacy policy</a>
