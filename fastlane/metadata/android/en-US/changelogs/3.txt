@@ -1,0 +1,4 @@
+New in this release:
+• Account & Data Deletion: Added direct in-app account deletion and web data removal request options for full user privacy and Google Play compliance.
+• Firebase Performance Monitoring & Crashlytics: Enhanced custom telemetry and performance traces for on-device AI storytelling and model loading.
+• Story & Stability Improvements: Optimized on-device Gemma AI inference latency and memory management.

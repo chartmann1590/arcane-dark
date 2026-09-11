@@ -1,7 +1,7 @@
 name: dnd_ai
 description: "Solo/Co-op On-Device AI Dungeon Master — mobile D&D RPG with Gemma 4 offline narration."
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.0.0+3
 
 environment:
   sdk: ^3.9.2
@@ -27,6 +27,8 @@ dependencies:
   firebase_core: ^3.8.0
   firebase_auth: ^5.3.3
   cloud_firestore: ^5.5.0
+  firebase_crashlytics: ^4.1.5
+  firebase_performance: ^0.10.0+9
   google_sign_in: ^6.2.2
   qr_flutter: ^4.1.0
   mobile_scanner: ^6.0.2
@@ -34,6 +36,7 @@ dependencies:
   flutter_tts: ^4.2.0
   speech_to_text: ^7.4.0
   google_mlkit_smart_reply: ^0.14.0
+  google_mlkit_translation: ^0.14.0
 
 dev_dependencies:
   flutter_test:

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:firebase_performance/firebase_performance.dart';
 import 'package:flutter/services.dart';
 import 'model_download_manager.dart';
 
@@ -45,12 +46,18 @@ class LiteRtModelInferenceService implements ModelInferenceService {
       throw ModelLoadException('MODEL_NOT_DOWNLOADED', 'Gemma 4 model file is not on disk yet — download it from Settings or Onboarding first.');
     }
     final path = await downloadManager.modelFilePath();
+    final trace = FirebasePerformance.instance.newTrace('load_gemma_model');
+    await trace.start();
     try {
       final ok = await _control.invokeMethod<bool>('loadModel', {'path': path});
       _ready = ok ?? false;
       if (!_ready) throw ModelLoadException('LOAD_FAILED', 'Engine returned false for loadModel');
+      trace.putAttribute('tier', _tier);
     } on PlatformException catch (e) {
+      trace.putAttribute('error_code', e.code);
       throw ModelLoadException(e.code, e.message ?? 'Unknown platform error loading model');
+    } finally {
+      await trace.stop();
     }
   }
 
@@ -61,12 +68,17 @@ class LiteRtModelInferenceService implements ModelInferenceService {
     late final StreamSubscription sub;
     Timer? heartbeatTimer;
     bool hasReceivedFirstToken = false;
+    int tokensGenerated = 0;
+    final trace = FirebasePerformance.instance.newTrace('story_turn_inference');
+    await trace.start();
 
     void resetHeartbeat(Duration duration) {
       heartbeatTimer?.cancel();
       heartbeatTimer = Timer(duration, () {
         sub.cancel();
         _control.invokeMethod('cancelGeneration').catchError((_) => null);
+        trace.putAttribute('status', 'timeout');
+        trace.stop();
         controller.addError(ModelLoadException('TIMEOUT', 'Inference timed out after ${duration.inSeconds}s of inactivity'));
         controller.close();
       });
@@ -79,13 +91,18 @@ class LiteRtModelInferenceService implements ModelInferenceService {
       (event) {
         if (!hasReceivedFirstToken) {
           hasReceivedFirstToken = true;
+          trace.putAttribute('first_token_received', 'true');
         }
+        tokensGenerated++;
         // Per-token heartbeat: reset to 25 seconds for each generated token
         resetHeartbeat(const Duration(seconds: 25));
         controller.add(event as String);
       },
       onError: (Object e) {
         heartbeatTimer?.cancel();
+        trace.putAttribute('status', 'error');
+        trace.setMetric('tokens_generated', tokensGenerated);
+        trace.stop();
         if (e is PlatformException) {
           controller.addError(ModelLoadException(e.code, e.message ?? 'generation error'));
         } else {
@@ -95,6 +112,9 @@ class LiteRtModelInferenceService implements ModelInferenceService {
       },
       onDone: () {
         heartbeatTimer?.cancel();
+        trace.putAttribute('status', 'complete');
+        trace.setMetric('tokens_generated', tokensGenerated);
+        trace.stop();
         controller.close();
       },
       cancelOnError: true,
@@ -104,6 +124,8 @@ class LiteRtModelInferenceService implements ModelInferenceService {
       heartbeatTimer?.cancel();
       sub.cancel();
       _control.invokeMethod('cancelGeneration').catchError((_) => null);
+      trace.putAttribute('status', 'canceled');
+      trace.stop();
     };
 
     yield* controller.stream;
