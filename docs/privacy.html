@@ -33,6 +33,7 @@
         <a href="./#features">Why it’s different</a>
         <a href="./#screenshots">Screenshots</a>
         <a href="privacy.html" style="color:var(--text-primary)" aria-current="page">Privacy</a>
+        <a href="delete-account.html">Delete Account</a>
         <a href="https://github.com/chartmann1590/arcane-dark" target="_blank" rel="noopener">GitHub</a>
         <a class="btn btn-primary" href="./">Back to site</a>
       </div>
@@ -44,15 +45,23 @@
       <div class="prose reveal in">
         <div style="display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border-radius:999px;background:rgba(61,214,140,0.10);border:1px solid rgba(61,214,140,0.18);color:#3DD68C;font-size:11px;font-weight:800;letter-spacing:0.8px">✓ SOLO STAYS ON YOUR PHONE — NEVER UPLOADED</div>
         <h1 style="margin-top:14px">Privacy Policy</h1>
-        <p class="muted" style="font-size:13px">Last updated: August 29, 2026 • Plain-English version of <a href="https://github.com/chartmann1590/arcane-dark/blob/main/PRIVACY.md" target="_blank" rel="noopener">PRIVACY.md</a> • <a href="./">← Back to Arcane Dark</a> • Coming soon to Google Play</p>
+        <p class="muted" style="font-size:13px">Last updated: September 11, 2026 • Plain-English version of <a href="https://github.com/chartmann1590/arcane-dark/blob/main/PRIVACY.md" target="_blank" rel="noopener">PRIVACY.md</a> • <a href="./">← Back to Arcane Dark</a> • Ready for Google Play</p>
 
         <div style="background:var(--surface-card);border:1px solid var(--border);border-radius:16px;padding:16px;margin:18px 0">
           <h3 style="margin:0;font-family:'Playfair Display',serif;font-size:16px">The short version</h3>
-          <p style="margin:8px 0 0">When you play alone, your story never leaves your phone. We don’t see it, store it, or sell it. The app only uses the internet for three things you choose: a one-time setup download, syncing a multiplayer table you join, and showing ads to keep the lights on.</p>
+          <p style="margin:8px 0 0">When you play alone, your story never leaves your phone. We don’t see it, store it, or sell it. The app only uses the internet for four things: a one-time setup download, syncing a multiplayer table you join, showing ads to keep the lights on, and securely sending AI content reports you choose to submit.</p>
         </div>
 
         <h2>Solo play — private by design</h2>
         <p>Everything about your solo games — your hero, your choices, the story the Dungeon Master tells — is made and saved only on your device. No upload, anywhere. After the first quick setup you can play fully offline and nothing about your adventure reaches us or anyone else.</p>
+
+        <h2>Artificial Intelligence & Content Safety</h2>
+        <p>Arcane Dark uses on-device Artificial Intelligence (Google Gemma via LiteRT-LM) to generate immersive fantasy storytelling and Dungeon Master responses. We enforce strict safety policies aligned with Google Gemma Prohibited Use and Google Play Generative AI guidelines:</p>
+        <ul>
+          <li><strong style="color:white">In-App AI Reporting:</strong> You can report any inappropriate, offensive, sexually explicit, harmful, or rule-violating narrative at any time by tapping the flag icon on any story card or in <em>Settings → AI Safety & Compliance</em>.</li>
+          <li><strong style="color:white">How Reports Are Handled:</strong> When submitted, the reported AI text, category, and your optional notes are securely transmitted to our Cloudflare Worker reporting service (<code>arcane-dark-reports.charles-h-hartmann1.workers.dev</code>) and stored in encrypted KV storage.</li>
+          <li><strong style="color:white">Safety & Moderation:</strong> Reports are reviewed strictly by our trust & safety moderation team to improve guardrails and maintain a safe experience for all players. Report data is never sold or used for advertising.</li>
+        </ul>
 
         <h2>Playing with friends</h2>
         <p>If you host or join a shared table, the bits needed to keep everyone together — like party stats, where you are on the map, quest progress, and the messages you send at that table — are saved with Google Firebase so friends in your party can see them. This is linked to a simple anonymous account (we never ask for your name or email). It’s kept only as long as your party exists, plus a short window for fixing bugs.</p>
@@ -69,15 +78,25 @@
         <h2>You’re in control</h2>
         <ul>
           <li><strong style="color:white">Play solo, offline</strong> — nothing leaves your device.</li>
+          <li><strong style="color:white">Flag inappropriate AI content</strong> — easily report any output with one tap.</li>
           <li>Change ad choices anytime in <strong style="color:white">Settings → Privacy Choices</strong>.</li>
           <li>Delete any hero or campaign with a tap — gone from your device right away.</li>
           <li>Uninstall the app to clear all local data and the setup download.</li>
+        </ul>
+
+        <h2>Account & Data Deletion</h2>
+        <p>In compliance with Google Play’s User Data policies, you have full control over your data and may request permanent deletion of your account and any associated cloud data at any time:</p>
+        <ul>
+          <li><strong style="color:white">In-App Deletion:</strong> If you are signed into an account, navigate to <strong style="color:white">Settings → Account → Delete Account & Cloud Data</strong> to immediately and permanently delete your account credentials and all synced heroes from our servers.</li>
+          <li><strong style="color:white">Web Request Form:</strong> You can submit an account and data deletion request online through our dedicated deletion portal: <a href="delete-account.html" style="color:#3DD68C;font-weight:700">Request Account & Data Deletion →</a>.</li>
+          <li><strong style="color:white">Email Request:</strong> You can also email us directly at <a href="mailto:charles.h.hartmann1@gmail.com?subject=Arcane%20Dark%20Account%20and%20Data%20Deletion%20Request" style="color:var(--violet);font-weight:700">charles.h.hartmann1@gmail.com</a> with the subject "Arcane Dark Account and Data Deletion Request". Requests are verified and fulfilled within 48 hours.</li>
         </ul>
 
         <h2>Other services we use</h2>
         <ul>
           <li>Google Firebase (sign-in, syncing tables, crash & performance)</li>
           <li>Google AdMob (ads)</li>
+          <li>Cloudflare Workers & KV (secure AI safety reporting & moderation)</li>
           <li>Hugging Face (one-time download of the open story model)</li>
         </ul>
         <p>Each has its own privacy policy for how they handle data.</p>
@@ -86,13 +105,14 @@
         <p>If this changes in a meaningful way we’ll update the date above and note it on the store listing.</p>
 
         <h2>Questions?</h2>
-        <p>Use the contact on the store page when it’s live, or <a href="https://github.com/chartmann1590/arcane-dark/issues" target="_blank" rel="noopener">open an issue on GitHub</a> — we read it.</p>
+        <p>Use the contact on our <a href="https://play.google.com/store/apps/details?id=com.arcane.dndai.dnd_ai" target="_blank" rel="noopener">Google Play Store listing</a>, or <a href="https://github.com/chartmann1590/arcane-dark/issues" target="_blank" rel="noopener">open an issue on GitHub</a> — we read it.</p>
 
         <hr/>
         <p style="font-size:12px;color:var(--text-muted)">This is a plain-language summary for players. If you build your own version, please have a lawyer review your policy and update the contact details.</p>
 
         <div style="margin-top:22px;display:flex;gap:12px;flex-wrap:wrap">
           <a class="btn btn-primary" href="./">← Back to Arcane Dark</a>
+          <a class="btn btn-ghost" href="delete-account.html">Delete Account / Data</a>
           <a class="btn btn-ghost" href="https://github.com/chartmann1590/arcane-dark/blob/main/PRIVACY.md" target="_blank" rel="noopener">View source on GitHub</a>
         </div>
       </div>
@@ -102,7 +122,7 @@
   <footer class="footer">
     <div class="container">
       <div class="footer-bottom" style="margin-top:0;border-top:none;padding-top:0">
-        <span>© 2026 Arcane Dark • <a href="./">Home</a> • <a href="privacy.html">Privacy</a> • Coming soon to Google Play • <a href="https://github.com/chartmann1590/arcane-dark" target="_blank" rel="noopener">GitHub</a></span>
+        <span>© 2026 Arcane Dark • <a href="./">Home</a> • <a href="privacy.html">Privacy</a> • <a href="delete-account.html">Delete Account</a> • <a href="https://play.google.com/store/apps/details?id=com.arcane.dndai.dnd_ai" target="_blank" rel="noopener">Google Play</a> • <a href="https://github.com/chartmann1590/arcane-dark" target="_blank" rel="noopener">GitHub</a></span>
         <span><a href="./">arcane-dark</a> • chartmann1590</span>
       </div>
     </div>
