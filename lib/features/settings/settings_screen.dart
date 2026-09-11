@@ -12,6 +12,9 @@ import '../../providers/settings_provider.dart';
 import '../../services/ad_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/crash_reporting.dart';
+import '../../services/translation_service.dart';
+import '../../widgets/ai_report_dialog.dart';
+import '../../widgets/translated_text.dart';
 import '../auth/auth_screen.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -23,59 +26,141 @@ class SettingsScreen extends ConsumerWidget {
     final hasRealAccount = ref.watch(hasRealAccountProvider);
     return Scaffold(
       backgroundColor: ArcaneTheme.background,
-      appBar: AppBar(title: Text('SETTINGS', style: GoogleFonts.ibmPlexSans(fontWeight: FontWeight.w800, letterSpacing: 1.1, fontSize: 13))),
+      appBar: AppBar(title: TrText('SETTINGS', style: GoogleFonts.ibmPlexSans(fontWeight: FontWeight.w800, letterSpacing: 1.1, fontSize: 13))),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
         children: [
-          Text('ACCOUNT', style: GoogleFonts.ibmPlexSans(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.1, color: ArcaneTheme.textMuted)),
+          TrText('LANGUAGE & TRANSLATION', style: GoogleFonts.ibmPlexSans(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.1, color: ArcaneTheme.textMuted)),
+          const SizedBox(height: 10),
+          ListenableBuilder(
+            listenable: TranslationService.instance,
+            builder: (context, _) {
+              final service = TranslationService.instance;
+              final currentLang = service.currentLanguage;
+              final isDownloading = service.isDownloadingModel;
+              return Container(
+                decoration: ArcaneTheme.cardDecoration(),
+                padding: const EdgeInsets.all(14),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Row(children: [
+                    Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: ArcaneTheme.secondary.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(8)), child: const Icon(Icons.translate_rounded, color: ArcaneTheme.secondary, size: 18)),
+                    const SizedBox(width: 10),
+                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      TrText('App & Story Language', style: GoogleFonts.ibmPlexSans(fontWeight: FontWeight.w700, color: Colors.white)),
+                      Text('${currentLang.flag} ${currentLang.nativeName} (${currentLang.name})', style: GoogleFonts.ibmPlexSans(fontSize: 12, color: ArcaneTheme.textSecondary)),
+                    ])),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: isDownloading
+                            ? ArcaneTheme.primary.withValues(alpha: 0.15)
+                            : currentLang.code == 'en'
+                                ? Colors.blue.withValues(alpha: 0.15)
+                                : const Color(0xFF3DD68C).withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        isDownloading
+                            ? 'Downloading...'
+                            : currentLang.code == 'en'
+                                ? 'Native'
+                                : 'Active ✓',
+                        style: GoogleFonts.ibmPlexSans(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: isDownloading
+                              ? ArcaneTheme.primary
+                              : currentLang.code == 'en'
+                                  ? Colors.blue
+                                  : const Color(0xFF3DD68C),
+                        ),
+                      ),
+                    ),
+                  ]),
+                  const SizedBox(height: 10),
+                  TrText(
+                    'On-device ML Kit translates all AI Dungeon Master narratives, chat messages, choices, and menus offline. Changing language downloads the translation pack and updates the entire app immediately.',
+                    style: GoogleFonts.ibmPlexSans(fontSize: 12, color: ArcaneTheme.textSecondary, height: 1.4),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: isDownloading ? null : () => showLanguageSelectionSheet(context),
+                      icon: const Icon(Icons.language_rounded, size: 16),
+                      label: TrText(
+                        'Change Language',
+                        style: GoogleFonts.ibmPlexSans(fontWeight: FontWeight.w700, fontSize: 12),
+                      ),
+                    ),
+                  ),
+                ]),
+              );
+            },
+          ),
+          const SizedBox(height: 18),
+          TrText('ACCOUNT', style: GoogleFonts.ibmPlexSans(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.1, color: ArcaneTheme.textMuted)),
           const SizedBox(height: 10),
           Container(
             decoration: ArcaneTheme.cardDecoration(),
             padding: const EdgeInsets.all(14),
             child: hasRealAccount
-                ? Row(children: [
-                    Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: const Color(0xFF3DD68C).withOpacity(0.15), borderRadius: BorderRadius.circular(8)), child: const Icon(Icons.verified_user_rounded, color: Color(0xFF3DD68C), size: 18)),
-                    const SizedBox(width: 10),
-                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text('Signed in', style: GoogleFonts.ibmPlexSans(fontWeight: FontWeight.w700, color: Colors.white)),
-                      Text(authUser?.email ?? authUser?.displayName ?? 'Characters sync to the cloud', style: GoogleFonts.ibmPlexSans(fontSize: 12, color: ArcaneTheme.textSecondary)),
-                    ])),
-                    TextButton(onPressed: () => AuthService.instance.signOut(), child: Text('Sign Out', style: GoogleFonts.ibmPlexSans(color: ArcaneTheme.tertiary, fontWeight: FontWeight.w700, fontSize: 12))),
+                ? Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Row(children: [
+                      Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: const Color(0xFF3DD68C).withValues(alpha: 0.15), borderRadius: BorderRadius.circular(8)), child: const Icon(Icons.verified_user_rounded, color: Color(0xFF3DD68C), size: 18)),
+                      const SizedBox(width: 10),
+                      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        TrText('Signed in', style: GoogleFonts.ibmPlexSans(fontWeight: FontWeight.w700, color: Colors.white)),
+                        Text(authUser?.email ?? authUser?.displayName ?? 'Characters sync to the cloud', style: GoogleFonts.ibmPlexSans(fontSize: 12, color: ArcaneTheme.textSecondary)),
+                      ])),
+                      TextButton(onPressed: () => AuthService.instance.signOut(), child: TrText('Sign Out', style: GoogleFonts.ibmPlexSans(color: ArcaneTheme.tertiary, fontWeight: FontWeight.w700, fontSize: 12))),
+                    ]),
+                    const Divider(height: 20),
+                    Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                      Expanded(
+                        child: TrText('Delete account & cloud data', style: GoogleFonts.ibmPlexSans(fontSize: 12, color: ArcaneTheme.textMuted)),
+                      ),
+                      TextButton.icon(
+                        onPressed: () => _confirmDeleteAccount(context),
+                        icon: const Icon(Icons.delete_forever_rounded, size: 16, color: Color(0xFFEF4444)),
+                        label: TrText('Delete Account', style: GoogleFonts.ibmPlexSans(color: const Color(0xFFEF4444), fontSize: 12, fontWeight: FontWeight.w700)),
+                      ),
+                    ]),
                   ])
                 : Row(children: [
-                    Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: ArcaneTheme.primary.withOpacity(0.15), borderRadius: BorderRadius.circular(8)), child: const Icon(Icons.person_outline_rounded, color: ArcaneTheme.primary, size: 18)),
+                    Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: ArcaneTheme.primary.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(8)), child: const Icon(Icons.person_outline_rounded, color: ArcaneTheme.primary, size: 18)),
                     const SizedBox(width: 10),
                     Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text('Playing as a guest', style: GoogleFonts.ibmPlexSans(fontWeight: FontWeight.w700, color: Colors.white)),
-                      Text('Sign in to back up characters and play multiplayer', style: GoogleFonts.ibmPlexSans(fontSize: 12, color: ArcaneTheme.textSecondary)),
+                      TrText('Playing as a guest', style: GoogleFonts.ibmPlexSans(fontWeight: FontWeight.w700, color: Colors.white)),
+                      TrText('Sign in to back up characters and play multiplayer', style: GoogleFonts.ibmPlexSans(fontSize: 12, color: ArcaneTheme.textSecondary)),
                     ])),
                     ElevatedButton(
                       onPressed: () async {
                         await Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AuthScreen()));
                       },
                       style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 14)),
-                      child: Text('Sign In', style: GoogleFonts.ibmPlexSans(fontWeight: FontWeight.w700, fontSize: 12)),
+                      child: TrText('Sign In', style: GoogleFonts.ibmPlexSans(fontWeight: FontWeight.w700, fontSize: 12)),
                     ),
                   ]),
           ),
           const SizedBox(height: 18),
-          Text('AI CONFIGURATION', style: GoogleFonts.ibmPlexSans(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.1, color: ArcaneTheme.textMuted)),
+          TrText('AI CONFIGURATION', style: GoogleFonts.ibmPlexSans(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.1, color: ArcaneTheme.textMuted)),
           const SizedBox(height: 10),
           Container(
             decoration: ArcaneTheme.cardDecoration(),
             padding: const EdgeInsets.all(14),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
-                Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: ArcaneTheme.primary.withOpacity(0.15), borderRadius: BorderRadius.circular(8)), child: const Icon(Icons.memory_rounded, color: ArcaneTheme.primary, size: 18)),
+                Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: ArcaneTheme.primary.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(8)), child: const Icon(Icons.memory_rounded, color: ArcaneTheme.primary, size: 18)),
                 const SizedBox(width: 10),
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('On-Device Model', style: GoogleFonts.ibmPlexSans(fontWeight: FontWeight.w700, color: Colors.white)),
+                  TrText('On-Device Model', style: GoogleFonts.ibmPlexSans(fontWeight: FontWeight.w700, color: Colors.white)),
                   Text('Gemma 4 • LiteRT-LM • ${settings.modelTier}', style: GoogleFonts.ibmPlexSans(fontSize: 12, color: ArcaneTheme.textSecondary)),
                 ])),
-                Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: settings.hasDownloadedModel ? const Color(0xFF3DD68C).withOpacity(0.15) : ArcaneTheme.tertiary.withOpacity(0.15), borderRadius: BorderRadius.circular(6)), child: Text(settings.hasDownloadedModel ? 'Ready' : 'Not downloaded', style: GoogleFonts.ibmPlexSans(fontSize: 11, fontWeight: FontWeight.w700, color: settings.hasDownloadedModel ? const Color(0xFF3DD68C) : ArcaneTheme.tertiary))),
+                Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: settings.hasDownloadedModel ? const Color(0xFF3DD68C).withValues(alpha: 0.15) : ArcaneTheme.tertiary.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(6)), child: Text(settings.hasDownloadedModel ? 'Ready' : 'Not downloaded', style: GoogleFonts.ibmPlexSans(fontSize: 11, fontWeight: FontWeight.w700, color: settings.hasDownloadedModel ? const Color(0xFF3DD68C) : ArcaneTheme.tertiary))),
               ]),
               const SizedBox(height: 14),
-              Text('MODEL TIER  •  Device RAM determines availability  •  <6GB → E2B only; ≥6GB can pick E4B', style: GoogleFonts.ibmPlexSans(fontSize: 11, color: ArcaneTheme.textMuted)),
+              TrText('MODEL TIER  •  Device RAM determines availability  •  <6GB → E2B only; ≥6GB can pick E4B', style: GoogleFonts.ibmPlexSans(fontSize: 11, color: ArcaneTheme.textMuted)),
               const SizedBox(height: 10),
               Row(children: [
                 Expanded(
@@ -83,7 +168,7 @@ class SettingsScreen extends ConsumerWidget {
                     label: Text('E2B  •  ~1.6GB  •  Broad compatibility', style: GoogleFonts.ibmPlexSans(fontSize: 12, fontWeight: FontWeight.w600)),
                     selected: settings.modelTier == 'E2B',
                     onSelected: (_) => ref.read(settingsProvider.notifier).setModelTier('E2B'),
-                    selectedColor: ArcaneTheme.primary.withOpacity(0.2),
+                    selectedColor: ArcaneTheme.primary.withValues(alpha: 0.2),
                     labelStyle: GoogleFonts.ibmPlexSans(color: settings.modelTier == 'E2B' ? ArcaneTheme.primary : Colors.white),
                   ),
                 ),
@@ -95,7 +180,7 @@ class SettingsScreen extends ConsumerWidget {
                     label: Text('E4B  •  ~4GB  •  Higher quality (6GB+ devices)', style: GoogleFonts.ibmPlexSans(fontSize: 12, fontWeight: FontWeight.w600)),
                     selected: settings.modelTier == 'E4B',
                     onSelected: (_) => ref.read(settingsProvider.notifier).setModelTier('E4B'),
-                    selectedColor: ArcaneTheme.secondary.withOpacity(0.18),
+                    selectedColor: ArcaneTheme.secondary.withValues(alpha: 0.18),
                     labelStyle: GoogleFonts.ibmPlexSans(color: settings.modelTier == 'E4B' ? ArcaneTheme.secondary : Colors.white),
                   ),
                 ),
@@ -106,13 +191,13 @@ class SettingsScreen extends ConsumerWidget {
                 child: ElevatedButton.icon(
                   onPressed: () => context.push('/onboarding'),
                   icon: const Icon(Icons.download_rounded, size: 16),
-                  label: Text(settings.hasDownloadedModel ? 'Re-download Model' : 'Download Model (≈2.6 GB, Wi-Fi recommended)', style: GoogleFonts.ibmPlexSans(fontWeight: FontWeight.w700, fontSize: 12)),
+                  label: TrText(settings.hasDownloadedModel ? 'Re-download Model' : 'Download Model (≈2.6 GB, Wi-Fi recommended)', style: GoogleFonts.ibmPlexSans(fontWeight: FontWeight.w700, fontSize: 12)),
                 ),
               ),
             ]),
           ),
           const SizedBox(height: 18),
-          Text('AUDIO', style: GoogleFonts.ibmPlexSans(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.1, color: ArcaneTheme.textMuted)),
+          TrText('AUDIO', style: GoogleFonts.ibmPlexSans(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.1, color: ArcaneTheme.textMuted)),
           const SizedBox(height: 10),
           Container(
             decoration: ArcaneTheme.cardDecoration(),
@@ -121,40 +206,40 @@ class SettingsScreen extends ConsumerWidget {
                 value: settings.musicEnabled,
                 onChanged: (v) => ref.read(settingsProvider.notifier).setMusicEnabled(v),
                 activeThumbColor: ArcaneTheme.primary,
-                secondary: Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: ArcaneTheme.primary.withOpacity(0.15), borderRadius: BorderRadius.circular(8)), child: const Icon(Icons.music_note_rounded, color: ArcaneTheme.primary, size: 18)),
-                title: Text('Music', style: GoogleFonts.ibmPlexSans(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
-                subtitle: Text('Ambient tavern & dungeon music', style: GoogleFonts.ibmPlexSans(fontSize: 12, color: ArcaneTheme.textMuted)),
+                secondary: Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: ArcaneTheme.primary.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(8)), child: const Icon(Icons.music_note_rounded, color: ArcaneTheme.primary, size: 18)),
+                title: TrText('Music', style: GoogleFonts.ibmPlexSans(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
+                subtitle: TrText('Ambient tavern & dungeon music', style: GoogleFonts.ibmPlexSans(fontSize: 12, color: ArcaneTheme.textMuted)),
               ),
               const Divider(height: 1),
               SwitchListTile(
                 value: settings.sfxEnabled,
                 onChanged: (v) => ref.read(settingsProvider.notifier).setSfxEnabled(v),
                 activeThumbColor: ArcaneTheme.primary,
-                secondary: Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: ArcaneTheme.secondary.withOpacity(0.15), borderRadius: BorderRadius.circular(8)), child: const Icon(Icons.graphic_eq_rounded, color: ArcaneTheme.secondary, size: 18)),
-                title: Text('Sound Effects', style: GoogleFonts.ibmPlexSans(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
-                subtitle: Text('Dice rolls, taps, and notifications', style: GoogleFonts.ibmPlexSans(fontSize: 12, color: ArcaneTheme.textMuted)),
+                secondary: Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: ArcaneTheme.secondary.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(8)), child: const Icon(Icons.graphic_eq_rounded, color: ArcaneTheme.secondary, size: 18)),
+                title: TrText('Sound Effects', style: GoogleFonts.ibmPlexSans(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
+                subtitle: TrText('Dice rolls, taps, and notifications', style: GoogleFonts.ibmPlexSans(fontSize: 12, color: ArcaneTheme.textMuted)),
               ),
               const Divider(height: 1),
               SwitchListTile(
                 value: settings.voiceNarrationEnabled,
                 onChanged: (v) => ref.read(settingsProvider.notifier).setVoiceNarrationEnabled(v),
                 activeThumbColor: ArcaneTheme.primary,
-                secondary: Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: ArcaneTheme.tertiary.withOpacity(0.15), borderRadius: BorderRadius.circular(8)), child: const Icon(Icons.record_voice_over_rounded, color: ArcaneTheme.tertiary, size: 18)),
-                title: Text('Voice Narration', style: GoogleFonts.ibmPlexSans(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
-                subtitle: Text('Speaks DM narration and character chat aloud using free on-device voices. Assign voices per character from their Heroes page.', style: GoogleFonts.ibmPlexSans(fontSize: 12, color: ArcaneTheme.textMuted)),
+                secondary: Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: ArcaneTheme.tertiary.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(8)), child: const Icon(Icons.record_voice_over_rounded, color: ArcaneTheme.tertiary, size: 18)),
+                title: TrText('Voice Narration', style: GoogleFonts.ibmPlexSans(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
+                subtitle: TrText('Speaks DM narration aloud using on-device voices', style: GoogleFonts.ibmPlexSans(fontSize: 12, color: ArcaneTheme.textMuted)),
               ),
             ]),
           ),
           const SizedBox(height: 18),
-          Text('DIAGNOSTICS', style: GoogleFonts.ibmPlexSans(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.1, color: ArcaneTheme.textMuted)),
+          TrText('DIAGNOSTICS', style: GoogleFonts.ibmPlexSans(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.1, color: ArcaneTheme.textMuted)),
           const SizedBox(height: 10),
           Container(
             decoration: ArcaneTheme.cardDecoration(),
             child: Column(children: [
               ListTile(
                 leading: Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: ArcaneTheme.surfaceElevated, borderRadius: BorderRadius.circular(8)), child: const Icon(Icons.bug_report_rounded, color: ArcaneTheme.textSecondary, size: 18)),
-                title: Text('Send Diagnostics', style: GoogleFonts.ibmPlexSans(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
-                subtitle: Text('Flush crash logs & copy device info', style: GoogleFonts.ibmPlexSans(fontSize: 12, color: ArcaneTheme.textMuted)),
+                title: TrText('Send Diagnostics', style: GoogleFonts.ibmPlexSans(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
+                subtitle: TrText('Flush crash logs & copy device info', style: GoogleFonts.ibmPlexSans(fontSize: 12, color: ArcaneTheme.textMuted)),
                 trailing: const Icon(Icons.chevron_right_rounded, color: ArcaneTheme.textMuted),
                 onTap: () async {
                   CrashReporting.log('User tapped Send Diagnostics');
@@ -186,7 +271,47 @@ class SettingsScreen extends ConsumerWidget {
             ]),
           ),
           const SizedBox(height: 18),
-          Text('ABOUT', style: GoogleFonts.ibmPlexSans(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.1, color: ArcaneTheme.textMuted)),
+          TrText('AI SAFETY & COMPLIANCE', style: GoogleFonts.ibmPlexSans(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.1, color: ArcaneTheme.textMuted)),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: ArcaneTheme.cardDecoration(),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(color: ArcaneTheme.tertiary.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(8)),
+                  child: const Icon(Icons.shield_outlined, color: ArcaneTheme.tertiary, size: 18),
+                ),
+                const SizedBox(width: 10),
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  TrText('Content Safety & Reporting', style: GoogleFonts.ibmPlexSans(fontWeight: FontWeight.w700, color: Colors.white)),
+                  TrText('Flag inappropriate, harmful, or rule-violating AI output', style: GoogleFonts.ibmPlexSans(fontSize: 12, color: ArcaneTheme.textSecondary)),
+                ])),
+              ]),
+              const SizedBox(height: 10),
+              TrText(
+                'Arcane Dark adheres strictly to Google Play Generative AI policies. You can report any AI narrative in-game via the flag icon or directly submit a safety report below.',
+                style: GoogleFonts.ibmPlexSans(fontSize: 12, color: ArcaneTheme.textMuted, height: 1.45),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => showAiReportDialog(context),
+                  icon: const Icon(Icons.report_problem_outlined, size: 16),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: ArcaneTheme.surfaceElevated,
+                    foregroundColor: ArcaneTheme.tertiary,
+                    side: BorderSide(color: ArcaneTheme.tertiary.withValues(alpha: 0.5)),
+                  ),
+                  label: TrText('Report AI Content / Issue', style: GoogleFonts.ibmPlexSans(fontWeight: FontWeight.w700, fontSize: 12)),
+                ),
+              ),
+            ]),
+          ),
+          const SizedBox(height: 18),
+          TrText('ABOUT', style: GoogleFonts.ibmPlexSans(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.1, color: ArcaneTheme.textMuted)),
           const SizedBox(height: 10),
           Container(
             padding: const EdgeInsets.all(14),
@@ -194,12 +319,14 @@ class SettingsScreen extends ConsumerWidget {
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text('Arcane Dark • DnD AI — Mobile', style: GoogleFonts.cinzel(fontWeight: FontWeight.w700, color: Colors.white)),
               const SizedBox(height: 6),
-              Text('On-device AI Dungeon Master powered by Gemma 4 (LiteRT-LM). Solo mode works fully offline after the one-time model download. Multiplayer sessions sync via Firebase Firestore — only session state leaves the device, never raw prompts.', style: GoogleFonts.ibmPlexSans(fontSize: 12, color: ArcaneTheme.textSecondary, height: 1.5)),
+              TrText('On-device AI Dungeon Master powered by Gemma 4 (LiteRT-LM). Solo mode works fully offline after the one-time model download. Multiplayer sessions sync via Firebase Firestore — only session state leaves the device, never raw prompts.', style: GoogleFonts.ibmPlexSans(fontSize: 12, color: ArcaneTheme.textSecondary, height: 1.5)),
               const SizedBox(height: 10),
-              Text('Privacy: solo play is private by design — no campaign text leaves the device unless you join a multiplayer party.', style: GoogleFonts.ibmPlexSans(fontSize: 11, color: ArcaneTheme.textMuted, fontStyle: FontStyle.italic)),
+              TrText('Privacy: solo play is private by design — no campaign text leaves the device unless you join a multiplayer party.', style: GoogleFonts.ibmPlexSans(fontSize: 11, color: ArcaneTheme.textMuted, fontStyle: FontStyle.italic)),
               const SizedBox(height: 10),
               Wrap(spacing: 8, runSpacing: 8, children: [
                 _LinkChip('Privacy Policy', onTap: () => context.push('/privacy')),
+                _LinkChip('Delete Account / Data', url: 'https://chartmann1590.github.io/arcane-dark/delete-account.html'),
+                _LinkChip('Report AI Issue', onTap: () => showAiReportDialog(context)),
                 _LinkChip('Privacy Choices', onTap: () => showPrivacyOptionsFormIfAvailable()),
                 _LinkChip('Gemma Terms', url: 'https://ai.google.dev/gemma/terms'),
                 _LinkChip('Prohibited Use', url: 'https://ai.google.dev/gemma/prohibited_use_policy'),
@@ -209,6 +336,58 @@ class SettingsScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _confirmDeleteAccount(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: ArcaneTheme.surface,
+        title: Row(children: [
+          const Icon(Icons.warning_amber_rounded, color: Color(0xFFEF4444)),
+          const SizedBox(width: 10),
+          Expanded(child: Text('Delete Account?', style: GoogleFonts.cinzel(fontWeight: FontWeight.w700, color: Colors.white, fontSize: 18))),
+        ]),
+        content: Text(
+          'This will permanently delete your account, authentication credentials, and all cloud-synced hero rosters from our servers. Solo campaigns saved locally on this device will not be affected.\n\nThis action cannot be undone.',
+          style: GoogleFonts.ibmPlexSans(fontSize: 13, color: ArcaneTheme.textSecondary, height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text('Cancel', style: GoogleFonts.ibmPlexSans(color: ArcaneTheme.textMuted, fontWeight: FontWeight.w600)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFB0263A), foregroundColor: Colors.white),
+            child: Text('Permanently Delete', style: GoogleFonts.ibmPlexSans(fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      try {
+        await AuthService.instance.deleteAccount();
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              backgroundColor: Color(0xFF3DD68C),
+              content: Text('Your account and associated cloud data have been deleted.'),
+            ),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              backgroundColor: const Color(0xFFB0263A),
+              content: Text(AuthService.instance.friendlyError(e)),
+            ),
+          );
+        }
+      }
+    }
   }
 
   Future<String> _realDeviceLine() async {

@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
@@ -64,6 +65,38 @@ class AuthService {
     await _auth.signOut();
   }
 
+  /// Permanently deletes the current user's Firebase Auth account and all associated cloud data.
+  Future<void> deleteAccount() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    // 1. Delete cloud-synced character documents from Firestore if present
+    try {
+      final charsSnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('characters')
+          .get();
+      for (final doc in charsSnapshot.docs) {
+        await doc.reference.delete();
+      }
+      await FirebaseFirestore.instance.collection('users').doc(user.uid).delete();
+    } catch (_) {
+      // Continue even if Firestore records don't exist
+    }
+
+    // 2. Disconnect Google Sign-In if active
+    try {
+      await _google.signOut();
+    } catch (_) {}
+
+    // 3. Delete Firebase Auth user record
+    await user.delete();
+
+    // 4. Re-sign in anonymously so the app returns cleanly to default offline guest state
+    await _auth.signInAnonymously();
+  }
+
   String friendlyError(Object e) {
     if (e is FirebaseAuthException) {
       return switch (e.code) {
@@ -75,6 +108,7 @@ class AuthService {
         'weak-password' => 'Choose a password with at least 6 characters.',
         'network-request-failed' => 'No internet connection.',
         'credential-already-in-use' => 'That Google account is already linked to a different Arcane Dark account.',
+        'requires-recent-login' => 'This sensitive operation requires a recent login. Please sign in again before deleting your account.',
         _ => e.message ?? 'Something went wrong — please try again.',
       };
     }

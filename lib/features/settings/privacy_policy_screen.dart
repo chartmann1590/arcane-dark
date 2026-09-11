@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../app/theme.dart';
 
 class PrivacyPolicyScreen extends StatelessWidget {
@@ -15,14 +16,14 @@ class PrivacyPolicyScreen extends StatelessWidget {
         children: [
           Text('Arcane Dark Privacy Policy', style: GoogleFonts.cinzel(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white)),
           const SizedBox(height: 4),
-          Text('Last updated: August 29, 2026', style: GoogleFonts.ibmPlexSans(fontSize: 12, color: ArcaneTheme.textMuted, fontStyle: FontStyle.italic)),
+          Text('Last updated: September 11, 2026', style: GoogleFonts.ibmPlexSans(fontSize: 12, color: ArcaneTheme.textMuted, fontStyle: FontStyle.italic)),
           const SizedBox(height: 20),
           const _Section(
             title: 'The short version',
             body:
                 'When you play solo, your story stays on your phone. We never see it, store it, or sell it. '
-                'Arcane Dark only talks to the internet for three things: downloading the AI model once, '
-                'syncing a multiplayer game you choose to join, and showing ads.',
+                'Arcane Dark only talks to the internet for four things: downloading the AI model once, '
+                'syncing a multiplayer game you choose to join, showing ads, and transmitting safety reports you submit.',
           ),
           const _Section(
             title: 'Solo play',
@@ -30,6 +31,17 @@ class PrivacyPolicyScreen extends StatelessWidget {
                 'Everything about your solo campaigns — your character, your choices, the story the AI tells you — is generated '
                 'and stored only on your device. It is never uploaded anywhere. You can play entirely offline (after the '
                 'one-time AI model download) and nothing about your adventure ever reaches us or anyone else.',
+          ),
+          const _Section(
+            title: 'Artificial Intelligence & Content Safety',
+            body:
+                'Arcane Dark uses on-device Generative AI (Google Gemma via LiteRT-LM) to dynamically generate '
+                'fantasy roleplaying narratives. In accordance with Google Play Generative AI policies, players can flag '
+                'and report inappropriate, offensive, harmful, or policy-violating content using the flag icon on any '
+                'scene card or in Settings → AI Safety & Compliance.\n\n'
+                'When submitted, reports are sent via encrypted HTTPS to our Cloudflare Worker service and stored in '
+                'access-controlled KV storage. They are reviewed strictly by our safety team to enforce guardrails and '
+                'prevent harmful output. Reports are never sold or used for advertising.',
           ),
           const _Section(
             title: 'Multiplayer play',
@@ -65,15 +77,43 @@ class PrivacyPolicyScreen extends StatelessWidget {
             title: 'Your choices',
             body:
                 '• Play solo and offline — nothing leaves your device.\n'
+                '• Report inappropriate AI outputs instantly via the in-app flag icon.\n'
                 '• Manage or withdraw ad consent anytime from Settings → Privacy Choices.\n'
                 '• Delete a character or campaign anytime from within the app — this removes it from your device immediately.\n'
                 '• Uninstalling the app removes all locally stored data, including the downloaded AI model.',
+          ),
+          const _Section(
+            title: 'Account & Data Deletion',
+            body:
+                'In compliance with Google Play User Data & Account Deletion policies, you can request that your account and all associated cloud data be permanently deleted:\n\n'
+                '• In-app: Under Settings → Account, tap "Delete Account" while signed in to instantly erase your authentication record and all synced character rosters from our servers.\n'
+                '• Web Portal: Visit our web deletion request page if you have uninstalled the app.\n'
+                '• Email: Contact charles.h.hartmann1@gmail.com with subject "Arcane Dark Account and Data Deletion Request". Requests are fulfilled within 48 hours.',
+          ),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 20),
+            child: OutlinedButton.icon(
+              onPressed: () => launchUrl(
+                Uri.parse('https://chartmann1590.github.io/arcane-dark/delete-account.html'),
+                mode: LaunchMode.externalApplication,
+              ),
+              icon: const Icon(Icons.delete_outline_rounded, size: 16, color: Color(0xFFEF4444)),
+              label: Text(
+                'Open Web Deletion Request Portal',
+                style: GoogleFonts.ibmPlexSans(fontWeight: FontWeight.w700, fontSize: 12, color: const Color(0xFFEF4444)),
+              ),
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: Color(0xFFEF4444)),
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              ),
+            ),
           ),
           const _Section(
             title: 'Third parties this app uses',
             body:
                 '• Google Firebase (Authentication, Firestore, Crashlytics, Performance Monitoring)\n'
                 '• Google AdMob (advertising)\n'
+                '• Cloudflare Workers & KV (secure AI safety reporting & moderation)\n'
                 '• Hugging Face (one-time download of the open-source Gemma model file)\n'
                 'Each of these has its own privacy policy governing how they handle data on their end.',
           ),
@@ -85,7 +125,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
           ),
           const _Section(
             title: 'Contact',
-            body: 'Questions about this policy can be sent to the contact address listed on this app\'s store listing page.',
+            body: 'Questions about this policy can be sent to the contact address listed on this app\'s store listing page or to charles.h.hartmann1@gmail.com.',
           ),
         ],
       ),

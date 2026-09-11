@@ -4,7 +4,7 @@
   <a href="https://chartmann1590.github.io/arcane-dark/"><img src="https://img.shields.io/badge/Website-arcane--dark-8B5CF6?style=for-the-badge&logo=sparkles&logoColor=white" alt="Website"/></a>
   <a href="https://chartmann1590.github.io/arcane-dark/privacy.html"><img src="https://img.shields.io/badge/Privacy-Solo%20stays%20on--device-3DD68C?style=for-the-badge" alt="Privacy"/></a>
   <a href="https://buymeacoffee.com/charleshartmann"><img src="https://img.shields.io/badge/Buy%20me%20a%20coffee-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=black" alt="Buy me a coffee"/></a>
-  <img src="https://img.shields.io/badge/Coming%20soon-Google%20Play-000000?style=for-the-badge&logo=googleplay&logoColor=white" alt="Coming soon to Google Play"/>
+  <a href="https://play.google.com/store/apps/details?id=com.arcane.dndai.dnd_ai"><img src="https://img.shields.io/badge/Google%20Play-Download%20Free-34A853?style=for-the-badge&logo=googleplay&logoColor=white" alt="Download on Google Play"/></a>
 </p>
 
 <p align="center">
@@ -15,12 +15,13 @@
 </p>
 
 <p align="center">
-  <a href="https://chartmann1590.github.io/arcane-dark/"><strong>🌐 Official website → chartmann1590.github.io/arcane-dark</strong></a> •
+  <a href="https://play.google.com/store/apps/details?id=com.arcane.dndai.dnd_ai"><strong>📲 Download on Google Play Store</strong></a> •
+  <a href="https://chartmann1590.github.io/arcane-dark/">Official Website</a> •
   <a href="https://chartmann1590.github.io/arcane-dark/privacy.html">Privacy</a> •
   <a href="#-peek-inside">Screenshots</a>
 </p>
 
-> **🚀 Coming soon to Google Play for Android** — iPhone planned for later. The website and trailer are live today.
+> **🚀 Available on Google Play for Android:** [Download Arcane Dark on Google Play](https://play.google.com/store/apps/details?id=com.arcane.dndai.dnd_ai) — iPhone planned for later. Check out the [Official Trailer on YouTube](https://youtu.be/sLaqCrVsjWQ).
 
 ---
 
@@ -47,10 +48,10 @@ Five minutes or five hours — your adventure waits right where you left it.
 ### 📺 Watch the trailer
 
 <p align="center">
-  <a href="https://chartmann1590.github.io/arcane-dark/#promo"><img src="docs/assets/img/promo-thumbnail.png" alt="Arcane Dark trailer — Your AI Dungeon Master lives on your phone" width="600"/></a>
+  <a href="https://youtu.be/sLaqCrVsjWQ" target="_blank"><img src="docs/assets/img/promo-thumbnail.png" alt="Arcane Dark trailer — Your AI Dungeon Master lives on your phone" width="600"/></a>
 </p>
 
-<p align="center"><em>A 60-second stroll through tavern light, shadowy crypts, and a party laughing around the fire.</em></p>
+<p align="center"><em><a href="https://youtu.be/sLaqCrVsjWQ">▶ Watch the 1080p Official Promo Video on YouTube (with sound & narration)</a></em></p>
 
 ### 👀 Peek inside
 
@@ -142,7 +143,7 @@ Solo = cozy and private. Your solo heroes and stories stay on your phone.
 
 When you play with friends, a little sync magic keeps everyone on the same map. You can delete any hero or adventure with a tap. The app shows a few ads to stay free — you control ad choices in Settings.
 
-Full story in plain words: **[Privacy Policy](https://chartmann1590.github.io/arcane-dark/privacy.html)** (also in the app under Settings → Privacy Policy).
+Full story in plain words: **[Privacy Policy](https://chartmann1590.github.io/arcane-dark/privacy.html)** • **[Account & Data Deletion Request](https://chartmann1590.github.io/arcane-dark/delete-account.html)** (also accessible directly within the app under Settings → Account / About).
 
 ### 📋 Good to know
 
@@ -170,7 +171,7 @@ Only for playing with friends and backing things up. Solo works as a guest, no s
 No — solo adventures live only on your device unless you choose to play together.
 
 **When can I download it?**
-We're putting the final polish on the Google Play lanterns now. This page and the website will light up the moment it's approved.
+Right now on Google Play! [Download Arcane Dark for Android](https://play.google.com/store/apps/details?id=com.arcane.dndai.dnd_ai) — free to play.
 
 **What do I actually do moment-to-moment?**
 Wander, look, talk, sneak, bluff, befriend, barter, flee bravely, pet the tavern hound. Try *“I listen at the door,” “I offer them my bread,” “I run — elegantly.”*
@@ -179,12 +180,21 @@ Wander, look, talk, sneak, bluff, befriend, barter, flee bravely, pet the tavern
 
 ### 📲 Get it
 
-**Coming soon to Google Play — Android first, iPhone later.**
+**Download free on Google Play for Android:**
 
-[![Coming soon on Google Play](https://img.shields.io/badge/Coming%20soon%20on-Google%20Play-000000?style=for-the-badge&logo=googleplay&logoColor=white)](https://chartmann1590.github.io/arcane-dark/)
+<p align="center">
+  <a href="https://play.google.com/store/apps/details?id=com.arcane.dndai.dnd_ai">
+    <img src="https://img.shields.io/badge/Google%20Play-Download%20Free-34A853?style=for-the-badge&logo=googleplay&logoColor=white" alt="Download on Google Play" height="48"/>
+  </a>
+</p>
 
-- **Website (live today):** [https://chartmann1590.github.io/arcane-dark/](https://chartmann1590.github.io/arcane-dark/)
-- **Privacy:** [https://chartmann1590.github.io/arcane-dark/privacy.html](https://chartmann1590.github.io/arcane-dark/privacy.html)
+<p align="center">
+  👉 <a href="https://play.google.com/store/apps/details?id=com.arcane.dndai.dnd_ai"><strong>https://play.google.com/store/apps/details?id=com.arcane.dndai.dnd_ai</strong></a>
+</p>
+
+- **Official Website:** [https://chartmann1590.github.io/arcane-dark/](https://chartmann1590.github.io/arcane-dark/)
+- **Privacy Policy:** [https://chartmann1590.github.io/arcane-dark/privacy.html](https://chartmann1590.github.io/arcane-dark/privacy.html)
+- **YouTube Promo Video:** [https://youtu.be/sLaqCrVsjWQ](https://youtu.be/sLaqCrVsjWQ)
 
 ### ☕ Support the tavern
 
@@ -204,4 +214,4 @@ Open an issue — we read every single one, usually with tea.
 
 ---
 
-<p align="center"><em>© 2026 Arcane Dark • <a href="https://chartmann1590.github.io/arcane-dark/">Website</a> • <a href="https://chartmann1590.github.io/arcane-dark/privacy.html">Privacy Policy</a> • <a href="https://buymeacoffee.com/charleshartmann">☕ Buy me a coffee</a> • Coming soon to Google Play</em></p>
+<p align="center"><em>© 2026 Arcane Dark • <a href="https://chartmann1590.github.io/arcane-dark/">Website</a> • <a href="https://play.google.com/store/apps/details?id=com.arcane.dndai.dnd_ai">Google Play</a> • <a href="https://chartmann1590.github.io/arcane-dark/privacy.html">Privacy Policy</a> • <a href="https://buymeacoffee.com/charleshartmann">☕ Buy me a coffee</a></em></p>
