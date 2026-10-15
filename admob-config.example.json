@@ -1,0 +1,9 @@
+{
+  "ADMOB_USE_TEST_ADS": "false",
+  "ADMOB_ANDROID_APP_ID_REAL": "ca-app-pub-xxxxxxxxxxxxxxxx~xxxxxxxxxx",
+  "ADMOB_ANDROID_BANNER_ID_REAL": "ca-app-pub-xxxxxxxxxxxxxxxx/xxxxxxxxxx",
+  "ADMOB_ANDROID_INTERSTITIAL_ID_REAL": "ca-app-pub-xxxxxxxxxxxxxxxx/xxxxxxxxxx",
+  "ADMOB_IOS_APP_ID_REAL": "ca-app-pub-xxxxxxxxxxxxxxxx~xxxxxxxxxx",
+  "ADMOB_IOS_BANNER_ID_REAL": "ca-app-pub-xxxxxxxxxxxxxxxx/xxxxxxxxxx",
+  "ADMOB_IOS_INTERSTITIAL_ID_REAL": "ca-app-pub-xxxxxxxxxxxxxxxx/xxxxxxxxxx"
+}

@@ -1,0 +1,5 @@
+New in this release:
+• Real-time on-device language translation powered by Google ML Kit — play in English, Spanish, French, German, Japanese, and 12+ more native languages.
+• Instant language switching in Onboarding and Settings with offline model caching.
+• Translated AI Dungeon Master narrative, dialogue, and UI.
+• Enhanced stability and performance improvements.
