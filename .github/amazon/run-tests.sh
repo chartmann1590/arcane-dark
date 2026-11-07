@@ -8,6 +8,6 @@ adb wait-for-device; adb shell getprop ro.build.version.release </dev/null | sed
 adb shell pm list packages </dev/null | grep -iE "google|gms|vending|amazon" | tee -a $OUT/device.txt
 A=$(ls amz-apk/*-amazon-release.apk | head -1)
 PKG=$($BT/aapt2 dump packagename "$A" 2>/dev/null || cat $D/package.txt)
-bash $D/amazon-test.sh "$A" "$PKG" $D/steps-release.txt release || true
+timeout -k 10 1500 bash $D/amazon-test.sh "$A" "$PKG" $D/steps-release.txt release || echo "walk ended rc=$? (124 = 25 min cap, e.g. emulator went offline)" | tee -a $OUT/steps.log
 ls -la $OUT | tail -60
 cat $OUT/*-fatal.txt 2>/dev/null | head -40
