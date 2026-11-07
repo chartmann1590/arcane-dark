@@ -17,14 +17,17 @@ tap (?i)^play
 wait 5
 adclose
 shot 05-play
-back
-wait 2
+launch
+wait 8
+adclose
+shot 05b-home-again
 tap (?i)^party
 wait 4
 adclose
 shot 06-party
-back
-wait 2
+launch
+wait 8
+adclose
 tap (?i)^settings
 wait 4
 adclose
