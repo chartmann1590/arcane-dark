@@ -11,7 +11,7 @@ import 'dart:io' show Platform;
 /// unit IDs once you have them, and set [useTestAds] to false.
 class AdConfig {
   /// Flip to false once the real IDs below are filled in.
-  static const bool useTestAds = true;
+  static const bool useTestAds = false;
 
   /// Also set the matching value in:
   ///   android/app/src/main/AndroidManifest.xml -> com.google.android.gms.ads.APPLICATION_ID
@@ -20,17 +20,17 @@ class AdConfig {
   static const String _iosAppIdTest = 'ca-app-pub-3940256099942544~1458002511';
 
   // TODO: paste your real IDs here once AdMob issues them.
-  static const String _androidAppIdReal = 'ca-app-pub-REPLACE_ME~REPLACE_ME';
+  static const String _androidAppIdReal = 'ca-app-pub-8382831211800454~9783872666';
   static const String _iosAppIdReal = 'ca-app-pub-REPLACE_ME~REPLACE_ME';
 
   static const String _androidBannerTest = 'ca-app-pub-3940256099942544/6300978111';
   static const String _iosBannerTest = 'ca-app-pub-3940256099942544/2934735716';
-  static const String _androidBannerReal = 'ca-app-pub-REPLACE_ME/REPLACE_ME';
+  static const String _androidBannerReal = 'ca-app-pub-8382831211800454/6634965148';
   static const String _iosBannerReal = 'ca-app-pub-REPLACE_ME/REPLACE_ME';
 
   static const String _androidInterstitialTest = 'ca-app-pub-3940256099942544/1033173712';
   static const String _iosInterstitialTest = 'ca-app-pub-3940256099942544/4411468910';
-  static const String _androidInterstitialReal = 'ca-app-pub-REPLACE_ME/REPLACE_ME';
+  static const String _androidInterstitialReal = 'ca-app-pub-8382831211800454/9842592731';
   static const String _iosInterstitialReal = 'ca-app-pub-REPLACE_ME/REPLACE_ME';
 
   static String get appId {
