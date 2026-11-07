@@ -49,6 +49,11 @@ jobs:
         PY
     - name: Build direct APK (store=direct)
       shell: bash
+      env:
+        KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+        KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
       run: |
         set -o pipefail
         flutter pub get 2>&1 | tee -a /tmp/dsk-build.log
@@ -57,6 +62,11 @@ jobs:
         cp build/app/outputs/flutter-apk/app-release.apk dsk-apk/ArcaneDark-direct-release.apk
         ls -la dsk-apk
         BT=$ANDROID_HOME/build-tools/$(ls $ANDROID_HOME/build-tools | sort -V | tail -1)
+        # The app's gradle signs release with the debug key; the direct APK is re-signed with Charles's Hartmann Studios release key.
+        if [ -z "$KEYSTORE_BASE64" ]; then echo "::error::No release keystore secret"; exit 1; fi
+        printf %s "$KEYSTORE_BASE64" | tr -cd 'A-Za-z0-9+/=' | base64 -d > /tmp/hs-release.jks
+        $BT/apksigner sign --ks /tmp/hs-release.jks --ks-key-alias "$KEY_ALIAS" --ks-pass env:KEYSTORE_PASSWORD --key-pass env:KEY_PASSWORD --out dsk-apk/signed.apk dsk-apk/ArcaneDark-direct-release.apk
+        mv dsk-apk/signed.apk dsk-apk/ArcaneDark-direct-release.apk; rm -f /tmp/hs-release.jks dsk-apk/*.idsig
         $BT/apksigner verify --print-certs dsk-apk/ArcaneDark-direct-release.apk | head -3 || true
         $BT/aapt2 dump badging dsk-apk/ArcaneDark-direct-release.apk | head -3 || true
         unzip -l dsk-apk/ArcaneDark-direct-release.apk | grep "lib/" | awk '{print $4}' | cut -d/ -f2 | sort | uniq -c || true
