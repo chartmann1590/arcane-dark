@@ -40,6 +40,8 @@ android {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
+            // Direct build (2026-11-07): keep the LiteRT-LM JNI callbacks (R8 stripped them; the AI Dungeon Master would crash on its first reply).
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
 }
