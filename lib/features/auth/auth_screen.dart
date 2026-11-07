@@ -16,6 +16,8 @@ class AuthScreen extends ConsumerStatefulWidget {
   ConsumerState<AuthScreen> createState() => _AuthScreenState();
 }
 
+const bool _amazonStore = String.fromEnvironment('STORE') == 'amazon';
+
 class _AuthScreenState extends ConsumerState<AuthScreen> {
   bool _isRegister = false;
   bool _busy = false;
@@ -98,21 +100,25 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
           const SizedBox(height: 8),
           Text('Sign in to host or join multiplayer sessions and back your characters up to the cloud. Solo play never requires this.', style: GoogleFonts.ibmPlexSans(fontSize: 13, color: ArcaneTheme.textSecondary, height: 1.5)),
           const SizedBox(height: 28),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: _busy ? null : _google,
-              icon: const Icon(Icons.g_mobiledata_rounded, size: 26),
-              label: Text('Continue with Google', style: GoogleFonts.ibmPlexSans(fontWeight: FontWeight.w700)),
-              style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14), side: const BorderSide(color: ArcaneTheme.border)),
+          // Amazon Appstore build (--dart-define=STORE=amazon): Fire tablets have no Google Play services,
+          // so Google Sign-In can't work there; email sign-in stays.
+          if (!_amazonStore) ...[
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _busy ? null : _google,
+                icon: const Icon(Icons.g_mobiledata_rounded, size: 26),
+                label: Text('Continue with Google', style: GoogleFonts.ibmPlexSans(fontWeight: FontWeight.w700)),
+                style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14), side: const BorderSide(color: ArcaneTheme.border)),
+              ),
             ),
-          ),
-          const SizedBox(height: 18),
-          Row(children: [
-            const Expanded(child: Divider(color: ArcaneTheme.border)),
-            Padding(padding: const EdgeInsets.symmetric(horizontal: 10), child: Text('OR', style: GoogleFonts.ibmPlexSans(fontSize: 11, color: ArcaneTheme.textMuted))),
-            const Expanded(child: Divider(color: ArcaneTheme.border)),
-          ]),
+            const SizedBox(height: 18),
+            Row(children: [
+              const Expanded(child: Divider(color: ArcaneTheme.border)),
+              Padding(padding: const EdgeInsets.symmetric(horizontal: 10), child: Text('OR', style: GoogleFonts.ibmPlexSans(fontSize: 11, color: ArcaneTheme.textMuted))),
+              const Expanded(child: Divider(color: ArcaneTheme.border)),
+            ]),
+          ],
           const SizedBox(height: 18),
           TextField(
             controller: _emailCtrl,
