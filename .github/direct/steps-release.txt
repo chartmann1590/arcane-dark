@@ -13,10 +13,6 @@ tap (?i)^heroes
 wait 4
 adclose
 shot 04-heroes
-tap (?i)^play
-wait 5
-adclose
-shot 05-play
 launch
 wait 8
 adclose
